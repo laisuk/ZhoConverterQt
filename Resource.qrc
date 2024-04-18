@@ -1,0 +1,11 @@
+<RCC>
+  <qresource prefix="/">
+    <file>resource/preview_FILL0_wght400_GRAD0_opsz24.png</file>
+    <file>resource/icons8-document-64.png</file>
+    <file>resource/icons8-documents-64.png</file>
+    <file>resource/icons8-folder-32.png</file>
+    <file>resource/icons8-preview-48.png</file>
+    <file>resource/icons8-refresh-48.png</file>
+    <file>resource/icons8-start-48.png</file>
+  </qresource>
+</RCC>

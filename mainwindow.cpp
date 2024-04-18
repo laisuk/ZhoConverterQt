@@ -177,7 +177,7 @@ void MainWindow::on_btnProcess_clicked() const {
         }
 
 
-        const auto output = opencc_convert(converter, config.toUtf8(), input.toUtf8(), is_punctuation);
+        const auto output = opencc_convert(converter, input.toUtf8(), config.toUtf8(), is_punctuation);
 
         ui->tbDestination->document()->clear();
         ui->tbDestination->document()->setPlainText(
@@ -227,7 +227,7 @@ void MainWindow::on_btnProcess_clicked() const {
                     input_file.close();
 
                     const auto converted_text =
-                            opencc_convert(converter, config.toUtf8(), input_text.toStdString().c_str(),
+                            opencc_convert(converter, input_text.toUtf8(), config.toUtf8(),
                                            is_punctuation);
 
                     std::string output_text = converted_text;
