@@ -346,7 +346,7 @@
          <normaloff>:/resource/icons8-document-64.png</normaloff>:/resource/icons8-document-64.png</iconset>
        </attribute>
        <attribute name="title">
-        <string>Main Convert （单件）</string>
+        <string>Main Convert （单项）</string>
        </attribute>
        <layout class="QVBoxLayout" name="verticalLayout_3">
         <item>
@@ -1162,7 +1162,7 @@
  </resources>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup_region"/>
   <buttongroup name="buttonGroup_config"/>
+  <buttongroup name="buttonGroup_region"/>
  </buttongroups>
 </ui>
