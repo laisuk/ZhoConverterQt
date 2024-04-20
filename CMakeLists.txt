@@ -6,6 +6,12 @@ include(qt.cmake)
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
+if (WIN32)
+    set(CMAKE_PREFIX_PATH "C:/Qt/6.6.3/mingw_64")
+elseif (UNIX)
+    set(CMAKE_PREFIX_PATH "/opt/Qt/6.6.3/gcc_64")
+endif ()
+
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core)
 find_package(Qt${QT_VERSION_MAJOR}
         COMPONENTS
