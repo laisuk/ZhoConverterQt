@@ -9,8 +9,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 if (WIN32)
     set(CMAKE_PREFIX_PATH "C:/Qt/6.6.3/mingw_64")
 elseif (UNIX)
-    set(CMAKE_PREFIX_PATH "/opt/Qt/6.6.3/gcc_64")
+    set(CMAKE_PREFIX_PATH "/home/bryan/Qt/6.7.0/gcc_64")
 endif ()
+
+set(QT_DIR "${CMAKE_PREFIX_PATH}/lib/cmake/Qt6")
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core)
 find_package(Qt${QT_VERSION_MAJOR}
@@ -18,6 +20,7 @@ find_package(Qt${QT_VERSION_MAJOR}
         Core
         Gui
         Widgets
+        REQUIRED
 )
 qt_standard_project_setup()
 
