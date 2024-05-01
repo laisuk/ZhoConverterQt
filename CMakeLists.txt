@@ -7,10 +7,20 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if (WIN32)
-    set(CMAKE_PREFIX_PATH "C:/Qt/6.6.3/mingw_64")
+	if(MSVC)
+		set(CMAKE_PREFIX_PATH "C:/QT/6.6.3/MSVC2019_64")
+	else()
+		set(CMAKE_PREFIX_PATH "C:/Qt/6.6.3/mingw_64")
+	endif()
+
+elseif (APPLE)
+    set(CMAKE_PREFIX_PATH "/Users/bryan/Qt/6.7.0/macos")
+
 elseif (UNIX)
-    set(CMAKE_PREFIX_PATH "/opt/Qt/6.6.3/gcc_64")
+    set(CMAKE_PREFIX_PATH "/home/bryan/Qt/6.7.0/gcc_64")
 endif ()
+
+set(QT_DIR "${CMAKE_PREFIX_PATH}/lib/cmake/Qt6")
 
 find_package(QT NAMES Qt6 Qt5 REQUIRED COMPONENTS Core)
 find_package(Qt${QT_VERSION_MAJOR}
@@ -59,6 +69,8 @@ target_link_libraries(ZhoConverterQt
 # Conditionally link the appropriate DLL file based on the operating system
 if (WIN32)
     target_link_libraries(ZhoConverterQt PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/opencc-fmmseg/opencc_fmmseg_capi.dll.lib")
+elseif (APPLE)
+    target_link_libraries(ZhoConverterQt PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/opencc-fmmseg/libopencc_fmmseg_capi.dylib")
 elseif (UNIX)
     target_link_libraries(ZhoConverterQt PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/opencc-fmmseg/libopencc_fmmseg_capi.so")
 endif ()

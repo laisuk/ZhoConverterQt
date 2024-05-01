@@ -14,16 +14,7 @@
    <string>ZhoConverterQt</string>
   </property>
   <widget class="QWidget" name="centralWidget">
-   <layout class="QVBoxLayout" name="verticalLayout">
-    <property name="spacing">
-     <number>0</number>
-    </property>
-    <property name="topMargin">
-     <number>0</number>
-    </property>
-    <property name="bottomMargin">
-     <number>0</number>
-    </property>
+   <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,1,0">
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout_Config">
       <property name="spacing">
@@ -581,7 +572,7 @@
            </layout>
           </item>
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_Destination">
+           <layout class="QHBoxLayout" name="horizontalLayout_Destination" stretch="0,1,0,0">
             <property name="rightMargin">
              <number>3</number>
             </property>
@@ -836,7 +827,7 @@
            </layout>
           </item>
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_preview">
+           <layout class="QHBoxLayout" name="horizontalLayout_preview" stretch="0,1,0,0">
             <item>
              <widget class="QLabel" name="label">
               <property name="sizePolicy">
@@ -990,7 +981,7 @@
        </layout>
       </item>
       <item row="0" column="2">
-       <layout class="QHBoxLayout" name="horizontalLayout_Action3">
+       <layout class="QHBoxLayout" name="horizontalLayout_Action3" stretch="1,0,0">
         <property name="spacing">
          <number>10</number>
         </property>
@@ -1056,7 +1047,7 @@
        </layout>
       </item>
       <item row="0" column="0">
-       <layout class="QHBoxLayout" name="horizontalLayout_Action1">
+       <layout class="QHBoxLayout" name="horizontalLayout_Action1" stretch="0,1">
         <property name="spacing">
          <number>5</number>
         </property>
