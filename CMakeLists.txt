@@ -7,11 +7,11 @@ set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if (WIN32)
-	if(MSVC)
-		set(CMAKE_PREFIX_PATH "C:/QT/6.6.3/MSVC2019_64")
-	else()
-		set(CMAKE_PREFIX_PATH "C:/Qt/6.6.3/mingw_64")
-	endif()
+    if (MSVC)
+        set(CMAKE_PREFIX_PATH "C:/QT/6.6.3/MSVC2019_64")
+    else ()
+        set(CMAKE_PREFIX_PATH "C:/Qt/6.7.1/mingw_64")
+    endif ()
 
 elseif (APPLE)
     set(CMAKE_PREFIX_PATH "/Users/bryan/Qt/6.7.0/macos")
@@ -28,7 +28,6 @@ find_package(Qt${QT_VERSION_MAJOR}
         Core
         Gui
         Widgets
-        REQUIRED
 )
 qt_standard_project_setup()
 

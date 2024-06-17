@@ -8,7 +8,7 @@
 #include "draglistwidget.h"
 
 MainWindow::MainWindow(QWidget *parent)
-        : QMainWindow(parent), ui(new Ui::MainWindowClass()) {
+    : QMainWindow(parent), ui(new Ui::MainWindowClass()) {
     ui->setupUi(this);
     ui->tabWidget->setCurrentIndex(0);
 }
@@ -44,7 +44,7 @@ void MainWindow::update_tbSource_info(const int text_code) const {
             break;
     }
     ui->lblFileName->setText(
-            ui->tbSource->contentFilename.section("/", -1, -1));
+        ui->tbSource->contentFilename.section("/", -1, -1));
 
     if (!ui->tbSource->contentFilename.isEmpty()) {
         ui->statusBar->showMessage("File: " + ui->tbSource->contentFilename);
@@ -58,20 +58,20 @@ QString MainWindow::getCurrentConfig() const {
     } else {
         config =
                 ui->rbS2t->isChecked()
-                ? (ui->rbStd->isChecked()
-                   ? "s2t"
-                   : (ui->rbHK->isChecked()
-                      ? "s2hk"
-                      : (ui->cbTWCN->isChecked()
-                         ? "s2twp"
-                         : "s2tw")))
-                : (ui->rbStd->isChecked()
-                   ? "t2s"
-                   : (ui->rbHK->isChecked()
-                      ? "t2hk"
-                      : (ui->cbTWCN->isChecked()
-                         ? "tw2sp"
-                         : "tw2s")));
+                    ? (ui->rbStd->isChecked()
+                           ? "s2t"
+                           : (ui->rbHK->isChecked()
+                                  ? "s2hk"
+                                  : (ui->cbTWCN->isChecked()
+                                         ? "s2twp"
+                                         : "s2tw")))
+                    : (ui->rbStd->isChecked()
+                           ? "t2s"
+                           : (ui->rbHK->isChecked()
+                                  ? "t2hk"
+                                  : (ui->cbTWCN->isChecked()
+                                         ? "tw2sp"
+                                         : "tw2s")));
     }
     return config;
 }
@@ -88,8 +88,7 @@ void MainWindow::displayFileList(const QStringList &files) const {
 bool MainWindow::filePathExists(const QString &file_path) const {
     // Check if the file path is already in the list box
     for (int index = 0; index < ui->listSource->count(); ++index) {
-        const QListWidgetItem *item = ui->listSource->item(index);
-        if (item && item->text() == file_path) {
+        if (const QListWidgetItem *item = ui->listSource->item(index); item && item->text() == file_path) {
             return true;
         }
     }
@@ -139,8 +138,7 @@ void MainWindow::on_btnPaste_clicked() const {
         ui->tbSource->document()->setPlainText(text);
         ui->tbSource->contentFilename = "";
         ui->statusBar->showMessage("Clipboard contents pasted.");
-    }
-    catch (...) {
+    } catch (...) {
         ui->statusBar->showMessage("Clipboard error.");
         return;
     }
@@ -170,8 +168,9 @@ void MainWindow::on_btnProcess_clicked() const {
             ui->lblDestinationCode->setText(ui->cbManual->currentText());
         else if (!ui->lblSourceCode->text().contains("non")) {
             ui->lblDestinationCode->setText(
-                    ui->rbS2t->isChecked() ? u8"zh-Hant (繁体)"
-                                           : u8"zh-hans (简体)");
+                ui->rbS2t->isChecked()
+                    ? u8"zh-Hant (繁体)"
+                    : u8"zh-hans (简体)");
         } else {
             ui->lblDestinationCode->setText(u8"non-zho （其它）");
         }
@@ -181,7 +180,7 @@ void MainWindow::on_btnProcess_clicked() const {
 
         ui->tbDestination->document()->clear();
         ui->tbDestination->document()->setPlainText(
-                QString::fromStdString(output));
+            QString::fromStdString(output));
 
         ui->statusBar->showMessage("Conversion process completed.");
         opencc_string_free(output); // delete char* output
@@ -214,9 +213,9 @@ void MainWindow::on_btnProcess_clicked() const {
                     out_dir + "/" + QFileInfo(file_path).fileName();
             if (file_path == output_file_name) {
                 ui->tbPreview->appendPlainText(
-                        QString("%1: %2 --> Skip: Output Path = Source Path.")
-                                .arg(index + 1)
-                                .arg(output_file_name));
+                    QString("%1: %2 --> Skip: Output Path = Source Path.")
+                    .arg(index + 1)
+                    .arg(output_file_name));
                 continue;
             }
             if (QFile(file_path).exists()) {
@@ -240,24 +239,24 @@ void MainWindow::on_btnProcess_clicked() const {
                         out << QString::fromStdString(output_text);
                         output_file.close();
                         ui->tbPreview->appendPlainText(QString("%1: %2 --> Done.")
-                                                               .arg(index + 1)
-                                                               .arg(output_file_name));
+                            .arg(index + 1)
+                            .arg(output_file_name));
                     } else {
                         ui->tbPreview->appendPlainText(
-                                QString("%1: %2 --> Error writing to file.")
-                                        .arg(index + 1)
-                                        .arg(output_file_name));
+                            QString("%1: %2 --> Error writing to file.")
+                            .arg(index + 1)
+                            .arg(output_file_name));
                     }
                 } else {
                     ui->tbPreview->appendPlainText(
-                            QString("%1: %2 --> Skip: Not text file.")
-                                    .arg(index + 1)
-                                    .arg(file_path));
+                        QString("%1: %2 --> Skip: Not text file.")
+                        .arg(index + 1)
+                        .arg(file_path));
                 }
             } else {
                 ui->tbPreview->appendPlainText(QString("%1: %2 --> File not found.")
-                                                       .arg(index + 1)
-                                                       .arg(file_path));
+                    .arg(index + 1)
+                    .arg(file_path));
             }
         }
         ui->statusBar->showMessage("Process completed");
@@ -273,9 +272,8 @@ void MainWindow::on_btnCopy_clicked() const {
 
     try {
         QGuiApplication::clipboard()->setText(
-                ui->tbDestination->document()->toPlainText());
-    }
-    catch (...) {
+            ui->tbDestination->document()->toPlainText());
+    } catch (...) {
         ui->statusBar->showMessage("Clipboard error.");
         return;
     }
@@ -284,11 +282,11 @@ void MainWindow::on_btnCopy_clicked() const {
 
 void MainWindow::on_btnOpenFile_clicked() {
     const QString file_name = QFileDialog::getOpenFileName(
-            this, tr("Open Text File"), ".",
-            tr("Text Files (*.txt);;"
-               "Subtitle Files (*.srt *.vtt *.ass *.ttml2 *.xml));;"
-               "XML Files (*.xml *.ttml2);;"
-               "All Files (*.*)"));
+        this, tr("Open Text File"), ".",
+        tr("Text Files (*.txt);;"
+            "Subtitle Files (*.srt *.vtt *.ass *.ttml2 *.xml));;"
+            "XML Files (*.xml *.ttml2);;"
+            "All Files (*.*)"));
     if (file_name.isEmpty())
         return;
 
@@ -338,7 +336,7 @@ void MainWindow::on_btnRefresh_clicked() const {
 
 void MainWindow::on_tbSource_textChanged() const {
     ui->lblCharCount->setText(
-            QStringLiteral("[ %L1 chars ]").arg(ui->tbSource->document()->toPlainText().length()));
+        QStringLiteral("[ %L1 chars ]").arg(ui->tbSource->document()->toPlainText().length()));
 }
 
 void MainWindow::on_btnAdd_clicked() {
@@ -346,13 +344,13 @@ void MainWindow::on_btnAdd_clicked() {
     file_dialog.setFileMode(QFileDialog::ExistingFiles);
 
     if (const QStringList files =
-                QFileDialog::getOpenFileNames(this,
-                                              "Open Files",
-                                              "",
-                                              "Text Files (*.txt);;"
-                                              "Subtitle Files (*.srt *.vtt *.ass *.ttml2 *.xml));;"
-                                              "XML Files (*.xml *.ttml2);;"
-                                              "All Files (*.*)"); !files.isEmpty()) {
+            QFileDialog::getOpenFileNames(this,
+                                          "Open Files",
+                                          "",
+                                          "Text Files (*.txt);;"
+                                          "Subtitle Files (*.srt *.vtt *.ass *.ttml2 *.xml));;"
+                                          "XML Files (*.xml *.ttml2);;"
+                                          "All Files (*.*)"); !files.isEmpty()) {
         displayFileList(files);
         ui->statusBar->showMessage("File(s) added.");
     }

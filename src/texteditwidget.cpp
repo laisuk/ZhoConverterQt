@@ -11,15 +11,13 @@
 }
 
 void TextEditWidget::dragEnterEvent(QDragEnterEvent *event) {
-    const QMimeData *mimeData = event->mimeData();
-    if (mimeData->hasUrls() || mimeData->hasText()) {
+    if (const QMimeData *mimeData = event->mimeData(); mimeData->hasUrls() || mimeData->hasText()) {
         event->acceptProposedAction();
     }
 }
 
 void TextEditWidget::dropEvent(QDropEvent *event) {
-    const QMimeData *mimeData = event->mimeData();
-    if (mimeData->hasUrls()) {
+    if (const QMimeData *mimeData = event->mimeData(); mimeData->hasUrls()) {
         const QString filePath = mimeData->urls().at(0).toLocalFile();
         loadFile(filePath);
         contentFilename = filePath;

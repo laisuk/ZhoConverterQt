@@ -14,8 +14,7 @@
 
 
 void DragListWidget::dragEnterEvent(QDragEnterEvent *event) {
-    const QMimeData *mimeData = event->mimeData();
-    if (mimeData->hasUrls()) {
+    if (const QMimeData *mimeData = event->mimeData(); mimeData->hasUrls()) {
         event->acceptProposedAction();
     }
 }
