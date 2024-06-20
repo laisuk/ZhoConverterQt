@@ -8,9 +8,10 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if (WIN32)
     if (MSVC)
-        set(CMAKE_PREFIX_PATH "C:/QT/6.6.3/MSVC2019_64")
+        set(CMAKE_PREFIX_PATH "C:/QT/6.7.2/MSVC2019_64")
+        add_compile_options(/Zc:__cplusplus)  # Ensure __cplusplus is correctly set
     else ()
-        set(CMAKE_PREFIX_PATH "C:/Qt/6.7.1/mingw_64")
+        set(CMAKE_PREFIX_PATH "C:/Qt/6.7.2/mingw_64")
     endif ()
 
 elseif (APPLE)
