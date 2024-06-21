@@ -16,9 +16,11 @@ if (WIN32)
 
 elseif (APPLE)
     set(CMAKE_PREFIX_PATH "/Users/bryan/Qt/6.7.0/macos")
-
+    et(CMAKE_BUILD_RPATH "@loader_path")
 elseif (UNIX)
     set(CMAKE_PREFIX_PATH "/home/bryan/Qt/6.7.0/gcc_64")
+    set(CMAKE_BUILD_RPATH "$ORIGIN")
+
 endif ()
 
 set(QT_DIR "${CMAKE_PREFIX_PATH}/lib/cmake/Qt6")
