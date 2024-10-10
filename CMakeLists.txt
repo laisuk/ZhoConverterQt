@@ -8,19 +8,17 @@ set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
 if (WIN32)
     if (MSVC)
-        set(CMAKE_PREFIX_PATH "C:/QT/6.7.2/MSVC2019_64")
-        add_compile_options(/Zc:__cplusplus)  # Ensure __cplusplus is correctly set
+        set(CMAKE_PREFIX_PATH "C:/QT/6.8.0/MSVC2022_64")
+        # add_compile_options(/Zc:__cplusplus)  # Ensure __cplusplus is correctly set
     else ()
-        set(CMAKE_PREFIX_PATH "C:/Qt/6.7.2/mingw_64")
+        set(CMAKE_PREFIX_PATH "C:/Qt/6.8.0/mingw_64")
     endif ()
 
 elseif (APPLE)
-    set(CMAKE_PREFIX_PATH "/Users/bryan/Qt/6.7.0/macos")
-    et(CMAKE_BUILD_RPATH "@loader_path")
-elseif (UNIX)
-    set(CMAKE_PREFIX_PATH "/home/bryan/Qt/6.7.0/gcc_64")
-    set(CMAKE_BUILD_RPATH "$ORIGIN")
+    set(CMAKE_PREFIX_PATH "/Users/bryan/Qt/6.8.0/macos")
 
+elseif (UNIX)
+    set(CMAKE_PREFIX_PATH "/home/bryan/Qt/6.8.0/gcc_64")
 endif ()
 
 set(QT_DIR "${CMAKE_PREFIX_PATH}/lib/cmake/Qt6")

@@ -8,7 +8,7 @@
 
 int ZhoCheck(const std::string &test_text);
 
-size_t find_max_utf8_length(const std::string_view sv, size_t max_byte_count);
+size_t find_max_utf8_length(std::string_view sv, size_t max_byte_count);
 
 std::string convert_punctuation(std::string_view sv, std::string_view config);
 

@@ -4,11 +4,11 @@
 #include <QPlainTextEdit>
 #include <QDragEnterEvent>
 
-class [[maybe_unused]] TextEditWidget : public QPlainTextEdit {
+class TextEditWidget : public QPlainTextEdit {
 Q_OBJECT
 
 public:
-    [[maybe_unused]] explicit TextEditWidget(QWidget *parent = nullptr);
+    explicit TextEditWidget(QWidget *parent = nullptr);
 
     QString contentFilename;
 

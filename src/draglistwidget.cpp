@@ -2,7 +2,7 @@
 #include "draglistwidget.h"
 
 
-[[maybe_unused]] DragListWidget::DragListWidget(QWidget *parent) : QListWidget(parent) {
+DragListWidget::DragListWidget(QWidget *parent) : QListWidget(parent) {
     setSelectionMode(ExtendedSelection);
     setAcceptDrops(true);
     viewport()->setAcceptDrops(true);

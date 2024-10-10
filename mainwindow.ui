@@ -32,7 +32,7 @@
       <property name="bottomMargin">
        <number>0</number>
       </property>
-      <item alignment="Qt::AlignHCenter">
+      <item>
        <widget class="QRadioButton" name="rbS2t">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -59,7 +59,7 @@
         </attribute>
        </widget>
       </item>
-      <item alignment="Qt::AlignHCenter">
+      <item>
        <widget class="QRadioButton" name="rbT2s">
         <property name="sizePolicy">
          <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
@@ -222,6 +222,11 @@
         </property>
         <item>
          <widget class="QRadioButton" name="rbStd">
+          <property name="font">
+           <font>
+            <pointsize>10</pointsize>
+           </font>
+          </property>
           <property name="toolTip">
            <string>Standard conversion</string>
           </property>
@@ -238,6 +243,11 @@
         </item>
         <item>
          <widget class="QRadioButton" name="rbZHTW">
+          <property name="font">
+           <font>
+            <pointsize>10</pointsize>
+           </font>
+          </property>
           <property name="toolTip">
            <string>Mainland China / Taiwan conversion</string>
           </property>
@@ -254,6 +264,11 @@
         </item>
         <item>
          <widget class="QRadioButton" name="rbHK">
+          <property name="font">
+           <font>
+            <pointsize>10</pointsize>
+           </font>
+          </property>
           <property name="toolTip">
            <string>Hong Kong conversion</string>
           </property>
@@ -275,7 +290,7 @@
         <property name="bottomMargin">
          <number>5</number>
         </property>
-        <item alignment="Qt::AlignHCenter">
+        <item>
          <widget class="QCheckBox" name="cbTWCN">
           <property name="font">
            <font>
@@ -286,12 +301,17 @@
            <string>Additional Mainland China and Taiwan idioms conversion</string>
           </property>
           <property name="text">
-           <string>ZH / TW Idioms （内地 / 台湾惯用语）</string>
+           <string>ZH / TW Idioms （中台惯用语）</string>
           </property>
          </widget>
         </item>
-        <item alignment="Qt::AlignHCenter">
+        <item>
          <widget class="QCheckBox" name="cbPunctuation">
+          <property name="font">
+           <font>
+            <pointsize>10</pointsize>
+           </font>
+          </property>
           <property name="toolTip">
            <string>Convert punctutions by Simplified/Traditional Chinese standard</string>
           </property>
@@ -311,11 +331,11 @@
      <widget class="QTabWidget" name="tabWidget">
       <property name="font">
        <font>
-        <pointsize>11</pointsize>
+        <pointsize>10</pointsize>
        </font>
       </property>
       <property name="tabShape">
-       <enum>QTabWidget::Rounded</enum>
+       <enum>QTabWidget::TabShape::Rounded</enum>
       </property>
       <property name="currentIndex">
        <number>0</number>
@@ -349,18 +369,18 @@
            <widget class="TextEditWidget" name="tbSource">
             <property name="font">
              <font>
-              <family>Microsoft YaHei UI</family>
-              <pointsize>11</pointsize>
+              <family>仿宋</family>
+              <pointsize>13</pointsize>
              </font>
             </property>
             <property name="frameShape">
-             <enum>QFrame::Box</enum>
+             <enum>QFrame::Shape::Box</enum>
             </property>
             <property name="lineWidth">
              <number>2</number>
             </property>
             <property name="verticalScrollBarPolicy">
-             <enum>Qt::ScrollBarAlwaysOn</enum>
+             <enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOn</enum>
             </property>
            </widget>
           </item>
@@ -368,21 +388,21 @@
            <widget class="QPlainTextEdit" name="tbDestination">
             <property name="font">
              <font>
-              <family>Microsoft YaHei UI</family>
-              <pointsize>11</pointsize>
+              <family>仿宋</family>
+              <pointsize>13</pointsize>
              </font>
             </property>
             <property name="acceptDrops">
              <bool>false</bool>
             </property>
             <property name="frameShape">
-             <enum>QFrame::Box</enum>
+             <enum>QFrame::Shape::Box</enum>
             </property>
             <property name="lineWidth">
              <number>2</number>
             </property>
             <property name="verticalScrollBarPolicy">
-             <enum>Qt::ScrollBarAlwaysOn</enum>
+             <enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOn</enum>
             </property>
             <property name="undoRedoEnabled">
              <bool>false</bool>
@@ -405,12 +425,12 @@
           <item>
            <layout class="QHBoxLayout" name="horizontalLayout_Source">
             <property name="sizeConstraint">
-             <enum>QLayout::SetFixedSize</enum>
+             <enum>QLayout::SizeConstraint::SetFixedSize</enum>
             </property>
             <property name="rightMargin">
              <number>3</number>
             </property>
-            <item alignment="Qt::AlignTop">
+            <item>
              <widget class="QLabel" name="lblSource">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -430,10 +450,10 @@
                </font>
               </property>
               <property name="frameShape">
-               <enum>QFrame::Box</enum>
+               <enum>QFrame::Shape::Box</enum>
               </property>
               <property name="frameShadow">
-               <enum>QFrame::Plain</enum>
+               <enum>QFrame::Shadow::Plain</enum>
               </property>
               <property name="lineWidth">
                <number>1</number>
@@ -442,7 +462,7 @@
                <string>Source</string>
               </property>
               <property name="alignment">
-               <set>Qt::AlignCenter</set>
+               <set>Qt::AlignmentFlag::AlignCenter</set>
               </property>
               <property name="margin">
                <number>3</number>
@@ -466,7 +486,7 @@
                <string/>
               </property>
               <property name="alignment">
-               <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+               <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
               </property>
               <property name="margin">
                <number>1</number>
@@ -490,7 +510,7 @@
                <string/>
               </property>
               <property name="alignment">
-               <set>Qt::AlignRight|Qt::AlignTrailing|Qt::AlignVCenter</set>
+               <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
               </property>
               <property name="margin">
                <number>1</number>
@@ -576,7 +596,7 @@
             <property name="rightMargin">
              <number>3</number>
             </property>
-            <item alignment="Qt::AlignTop">
+            <item>
              <widget class="QLabel" name="lblDestination">
               <property name="sizePolicy">
                <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
@@ -590,10 +610,10 @@
                </font>
               </property>
               <property name="frameShape">
-               <enum>QFrame::Box</enum>
+               <enum>QFrame::Shape::Box</enum>
               </property>
               <property name="frameShadow">
-               <enum>QFrame::Plain</enum>
+               <enum>QFrame::Shadow::Plain</enum>
               </property>
               <property name="lineWidth">
                <number>1</number>
@@ -602,7 +622,7 @@
                <string>Destination</string>
               </property>
               <property name="alignment">
-               <set>Qt::AlignCenter</set>
+               <set>Qt::AlignmentFlag::AlignCenter</set>
               </property>
               <property name="margin">
                <number>3</number>
@@ -629,7 +649,7 @@
                <string/>
               </property>
               <property name="alignment">
-               <set>Qt::AlignLeading|Qt::AlignLeft|Qt::AlignVCenter</set>
+               <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
               </property>
               <property name="margin">
                <number>1</number>
@@ -702,7 +722,7 @@
              <bool>true</bool>
             </property>
             <property name="frameShape">
-             <enum>QFrame::Box</enum>
+             <enum>QFrame::Shape::Box</enum>
             </property>
             <property name="lineWidth">
              <number>2</number>
@@ -711,13 +731,13 @@
              <bool>true</bool>
             </property>
             <property name="dragDropMode">
-             <enum>QAbstractItemView::InternalMove</enum>
+             <enum>QAbstractItemView::DragDropMode::InternalMove</enum>
             </property>
             <property name="alternatingRowColors">
              <bool>true</bool>
             </property>
             <property name="selectionMode">
-             <enum>QAbstractItemView::ExtendedSelection</enum>
+             <enum>QAbstractItemView::SelectionMode::ExtendedSelection</enum>
             </property>
             <property name="sortingEnabled">
              <bool>true</bool>
@@ -736,7 +756,7 @@
              <bool>false</bool>
             </property>
             <property name="frameShape">
-             <enum>QFrame::Box</enum>
+             <enum>QFrame::Shape::Box</enum>
             </property>
             <property name="lineWidth">
              <number>2</number>
@@ -991,7 +1011,7 @@
         <item>
          <spacer name="horizontalSpacer">
           <property name="orientation">
-           <enum>Qt::Horizontal</enum>
+           <enum>Qt::Orientation::Horizontal</enum>
           </property>
           <property name="sizeHint" stdset="0">
            <size>
@@ -1105,7 +1125,7 @@
      <x>0</x>
      <y>0</y>
      <width>966</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -1153,7 +1173,7 @@
  </resources>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup_config"/>
   <buttongroup name="buttonGroup_region"/>
+  <buttongroup name="buttonGroup_config"/>
  </buttongroups>
 </ui>

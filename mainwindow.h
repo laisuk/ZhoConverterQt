@@ -17,11 +17,11 @@ public:
 
 private slots:
 
-    [[maybe_unused]] void on_btnExit_clicked();
+    void on_btnExit_clicked();
 
-    [[maybe_unused]] static void on_actionExit_triggered();
+    static void on_actionExit_triggered();
 
-    [[maybe_unused]] void on_actionAbout_triggered();
+    void on_actionAbout_triggered();
 
 	void on_tabWidget_currentChanged(int index) const;
 
@@ -69,8 +69,8 @@ private:
     Ui::MainWindowClass *ui;
 
 	void displayFileList(const QStringList& files) const;
-	[[nodiscard]] bool filePathExists(const QString& file_path) const;
+	bool filePathExists(const QString& file_path) const;
 	void update_tbSource_info(int text_code) const;
-	[[nodiscard]] QString getCurrentConfig() const;
+	QString getCurrentConfig() const;
 
 };

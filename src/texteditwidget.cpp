@@ -6,7 +6,7 @@
 #include "texteditwidget.h"
 
 
-[[maybe_unused]] TextEditWidget::TextEditWidget(QWidget *parent) : QPlainTextEdit(parent) {
+TextEditWidget::TextEditWidget(QWidget *parent) : QPlainTextEdit(parent) {
     setAcceptDrops(true);
 }
 

@@ -17,11 +17,11 @@ MainWindow::~MainWindow() {
     delete ui;
 }
 
-[[maybe_unused]] void MainWindow::on_btnExit_clicked() { this->close(); }
+void MainWindow::on_btnExit_clicked() { this->close(); }
 
-[[maybe_unused]] void MainWindow::on_actionExit_triggered() { QApplication::quit(); }
+void MainWindow::on_actionExit_triggered() { QApplication::quit(); }
 
-[[maybe_unused]] void MainWindow::on_actionAbout_triggered() {
+void MainWindow::on_actionAbout_triggered() {
     QMessageBox::about(this, "About",
                        "Zho Converter version 1.0.0 (c) 2024 Bryan Lai");
 }
@@ -203,6 +203,7 @@ void MainWindow::on_btnProcess_clicked() const {
             msg.setInformativeText("Output directory:\n" + out_dir + "\n not found.");
             // msg.setDetailedText("Please set the required output directory.");
             msg.exec();
+            ui->lineEditDir->setFocus();
             ui->statusBar->showMessage("Invalid output directory.");
             return;
         }
