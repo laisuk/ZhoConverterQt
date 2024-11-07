@@ -6,15 +6,15 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>966</width>
-    <height>699</height>
+    <width>1048</width>
+    <height>716</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>ZhoConverterQt</string>
   </property>
   <widget class="QWidget" name="centralWidget">
-   <layout class="QVBoxLayout" name="verticalLayout" stretch="0,0,1,0">
+   <layout class="QVBoxLayout" name="verticalLayout">
     <item>
      <layout class="QHBoxLayout" name="horizontalLayout_Config">
       <property name="spacing">
@@ -202,6 +202,18 @@
         </item>
        </widget>
       </item>
+      <item>
+       <widget class="QCheckBox" name="cbJieba">
+        <property name="font">
+         <font>
+          <pointsize>11</pointsize>
+         </font>
+        </property>
+        <property name="text">
+         <string>Jieba（结巴分词）</string>
+        </property>
+       </widget>
+      </item>
      </layout>
     </item>
     <item>
@@ -369,8 +381,8 @@
            <widget class="TextEditWidget" name="tbSource">
             <property name="font">
              <font>
-              <family>仿宋</family>
-              <pointsize>13</pointsize>
+              <family>Noto Sans SC</family>
+              <pointsize>12</pointsize>
              </font>
             </property>
             <property name="frameShape">
@@ -388,8 +400,8 @@
            <widget class="QPlainTextEdit" name="tbDestination">
             <property name="font">
              <font>
-              <family>仿宋</family>
-              <pointsize>13</pointsize>
+              <family>Noto Sans SC</family>
+              <pointsize>12</pointsize>
              </font>
             </property>
             <property name="acceptDrops">
@@ -1124,7 +1136,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>966</width>
+     <width>1048</width>
      <height>21</height>
     </rect>
    </property>
@@ -1173,7 +1185,7 @@
  </resources>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup_region"/>
   <buttongroup name="buttonGroup_config"/>
+  <buttongroup name="buttonGroup_region"/>
  </buttongroups>
 </ui>

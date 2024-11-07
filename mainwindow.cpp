@@ -182,7 +182,7 @@ void MainWindow::on_btnProcess_clicked() const {
         ui->tbDestination->document()->setPlainText(
             QString::fromStdString(output));
 
-        ui->statusBar->showMessage("Conversion process completed.");
+        ui->statusBar->showMessage("Conversion process completed. (" + config + ")");
         opencc_string_free(output); // delete char* output
     }
 
@@ -205,6 +205,7 @@ void MainWindow::on_btnProcess_clicked() const {
             msg.exec();
             ui->lineEditDir->setFocus();
             ui->statusBar->showMessage("Invalid output directory.");
+            opencc_free(converter);
             return;
         }
         ui->tbPreview->clear();
