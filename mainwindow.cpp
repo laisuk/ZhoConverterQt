@@ -216,8 +216,7 @@ void MainWindow::on_btnProcess_clicked() const {
             if (file_path == output_file_name) {
                 ui->tbPreview->appendPlainText(
                     QString("%1: %2 --> Skip: Output Path = Source Path.")
-                    .arg(index + 1)
-                    .arg(output_file_name));
+                    .arg(QString::number(index + 1), output_file_name));
                 continue;
             }
             if (QFile(file_path).exists()) {
@@ -241,24 +240,20 @@ void MainWindow::on_btnProcess_clicked() const {
                         out << QString::fromStdString(output_text);
                         output_file.close();
                         ui->tbPreview->appendPlainText(QString("%1: %2 --> Done.")
-                            .arg(index + 1)
-                            .arg(output_file_name));
+                            .arg(QString::number(index + 1), output_file_name));
                     } else {
                         ui->tbPreview->appendPlainText(
                             QString("%1: %2 --> Error writing to file.")
-                            .arg(index + 1)
-                            .arg(output_file_name));
+                            .arg(QString::number(index + 1), output_file_name));
                     }
                 } else {
                     ui->tbPreview->appendPlainText(
                         QString("%1: %2 --> Skip: Not text file.")
-                        .arg(index + 1)
-                        .arg(file_path));
+                        .arg(QString::number(index + 1), file_path));
                 }
             } else {
                 ui->tbPreview->appendPlainText(QString("%1: %2 --> File not found.")
-                    .arg(index + 1)
-                    .arg(file_path));
+                    .arg(QString::number(index + 1), file_path));
             }
         }
         ui->statusBar->showMessage("Process completed");
@@ -338,7 +333,8 @@ void MainWindow::on_btnRefresh_clicked() const {
 
 void MainWindow::on_tbSource_textChanged() const {
     ui->lblCharCount->setText(
-        QStringLiteral("[ %L1 chars ]").arg(ui->tbSource->document()->toPlainText().length()));
+        QStringLiteral("[ %L1 chars ]")
+        .arg(QString::number(ui->tbSource->document()->toPlainText().length())));
 }
 
 void MainWindow::on_btnAdd_clicked() {
@@ -360,10 +356,11 @@ void MainWindow::on_btnAdd_clicked() {
 
 void MainWindow::on_btnRemove_clicked() const {
     if (QList<QListWidgetItem *> selected_items = ui->listSource->selectedItems(); !selected_items.isEmpty()) {
-        for (const QListWidgetItem *selected_item: selected_items) {
-            const int row = ui->listSource->row(selected_item);
+        for (qsizetype i = selected_items.size() - 1; i >= 0; --i) {
+            QListWidgetItem *selected_item = selected_items[i];
+            int row = ui->listSource->row(selected_item);
             ui->listSource->takeItem(row);
-            delete selected_item; // Ensure to delete the item to free up memory
+            delete selected_item;
         }
         ui->statusBar->showMessage("File(s) removed.");
     }
