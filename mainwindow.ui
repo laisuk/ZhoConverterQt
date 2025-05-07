@@ -1,1191 +1,1210 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
- <class>MainWindowClass</class>
- <widget class="QMainWindow" name="MainWindowClass">
-  <property name="geometry">
-   <rect>
-    <x>0</x>
-    <y>0</y>
-    <width>1048</width>
-    <height>716</height>
-   </rect>
-  </property>
-  <property name="windowTitle">
-   <string>ZhoConverterQt</string>
-  </property>
-  <widget class="QWidget" name="centralWidget">
-   <layout class="QVBoxLayout" name="verticalLayout">
-    <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_Config">
-      <property name="spacing">
-       <number>6</number>
-      </property>
-      <property name="leftMargin">
-       <number>10</number>
-      </property>
-      <property name="topMargin">
-       <number>0</number>
-      </property>
-      <property name="rightMargin">
-       <number>10</number>
-      </property>
-      <property name="bottomMargin">
-       <number>0</number>
-      </property>
-      <item>
-       <widget class="QRadioButton" name="rbS2t">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
+    <class>MainWindowClass</class>
+    <widget class="QMainWindow" name="MainWindowClass">
+        <property name="geometry">
+            <rect>
+                <x>0</x>
+                <y>0</y>
+                <width>1048</width>
+                <height>716</height>
+            </rect>
         </property>
-        <property name="font">
-         <font>
-          <pointsize>12</pointsize>
-         </font>
+        <property name="windowTitle">
+            <string>ZhoConverterQt</string>
         </property>
-        <property name="toolTip">
-         <string>Convert from Simplified Chinese to Traditional Chinese</string>
-        </property>
-        <property name="text">
-         <string>zh-Hans （简体） to zh-Hant （繁体）</string>
-        </property>
-        <property name="checked">
-         <bool>true</bool>
-        </property>
-        <attribute name="buttonGroup">
-         <string notr="true">buttonGroup_config</string>
-        </attribute>
-       </widget>
-      </item>
-      <item>
-       <widget class="QRadioButton" name="rbT2s">
-        <property name="sizePolicy">
-         <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
-          <horstretch>0</horstretch>
-          <verstretch>0</verstretch>
-         </sizepolicy>
-        </property>
-        <property name="font">
-         <font>
-          <pointsize>12</pointsize>
-         </font>
-        </property>
-        <property name="toolTip">
-         <string>Convert from Traditional Chinese to Simplified Chinese</string>
-        </property>
-        <property name="text">
-         <string>zh-Hant （繁体） to zh-Hans （简体）</string>
-        </property>
-        <attribute name="buttonGroup">
-         <string notr="true">buttonGroup_config</string>
-        </attribute>
-       </widget>
-      </item>
-      <item>
-       <widget class="QRadioButton" name="rbManual">
-        <property name="maximumSize">
-         <size>
-          <width>150</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="font">
-         <font>
-          <pointsize>12</pointsize>
-         </font>
-        </property>
-        <property name="text">
-         <string>Manual (自定义) :</string>
-        </property>
-        <attribute name="buttonGroup">
-         <string notr="true">buttonGroup_config</string>
-        </attribute>
-       </widget>
-      </item>
-      <item>
-       <widget class="QComboBox" name="cbManual">
-        <property name="maximumSize">
-         <size>
-          <width>180</width>
-          <height>16777215</height>
-         </size>
-        </property>
-        <property name="font">
-         <font>
-          <pointsize>11</pointsize>
-         </font>
-        </property>
-        <property name="currentIndex">
-         <number>0</number>
-        </property>
-        <item>
-         <property name="text">
-          <string>s2t (简 -&gt; 繁)</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>s2tw (简 -&gt; 繁/台)</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>s2twp (简 -&gt; 繁/台/惯)</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>s2hk (简 -&gt; 繁/港)</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>t2s (繁 -&gt; 简)</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>t2tw (繁 -&gt; 繁/台)</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>t2twp (繁 -&gt; 繁/台/惯)</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>t2hk (繁 -&gt; 繁/港)</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>tw2s (繁/台 -&gt; 简)</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>tw2sp (繁/台 -&gt; 简/惯)</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>tw2t (繁/台 -&gt; 繁)</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>tw2tp (繁/台 -&gt; 繁/惯)</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>hk2s (繁/港 -&gt; 简)</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>hk2t (繁/港 -&gt; 繁)</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>jp2t (日/新 -&gt; 日/舊)</string>
-         </property>
-        </item>
-        <item>
-         <property name="text">
-          <string>t2jp (日/舊 -&gt; 日/新)</string>
-         </property>
-        </item>
-       </widget>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="cbJieba">
-        <property name="font">
-         <font>
-          <pointsize>11</pointsize>
-         </font>
-        </property>
-        <property name="text">
-         <string>Jieba（结巴分词）</string>
-        </property>
-       </widget>
-      </item>
-     </layout>
-    </item>
-    <item>
-     <layout class="QHBoxLayout" name="horizontalLayout_config_region" stretch="3,2">
-      <property name="leftMargin">
-       <number>10</number>
-      </property>
-      <property name="rightMargin">
-       <number>10</number>
-      </property>
-      <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_Region">
-        <property name="topMargin">
-         <number>5</number>
-        </property>
-        <property name="bottomMargin">
-         <number>5</number>
-        </property>
-        <item>
-         <widget class="QRadioButton" name="rbStd">
-          <property name="font">
-           <font>
-            <pointsize>10</pointsize>
-           </font>
-          </property>
-          <property name="toolTip">
-           <string>Standard conversion</string>
-          </property>
-          <property name="text">
-           <string>Standard （标准简繁）</string>
-          </property>
-          <property name="checked">
-           <bool>true</bool>
-          </property>
-          <attribute name="buttonGroup">
-           <string notr="true">buttonGroup_region</string>
-          </attribute>
-         </widget>
-        </item>
-        <item>
-         <widget class="QRadioButton" name="rbZHTW">
-          <property name="font">
-           <font>
-            <pointsize>10</pointsize>
-           </font>
-          </property>
-          <property name="toolTip">
-           <string>Mainland China / Taiwan conversion</string>
-          </property>
-          <property name="text">
-           <string>ZH / TW （中台简繁）</string>
-          </property>
-          <property name="checked">
-           <bool>false</bool>
-          </property>
-          <attribute name="buttonGroup">
-           <string notr="true">buttonGroup_region</string>
-          </attribute>
-         </widget>
-        </item>
-        <item>
-         <widget class="QRadioButton" name="rbHK">
-          <property name="font">
-           <font>
-            <pointsize>10</pointsize>
-           </font>
-          </property>
-          <property name="toolTip">
-           <string>Hong Kong conversion</string>
-          </property>
-          <property name="text">
-           <string>Hong Kong （香港简繁）</string>
-          </property>
-          <attribute name="buttonGroup">
-           <string notr="true">buttonGroup_region</string>
-          </attribute>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item>
-       <layout class="QHBoxLayout" name="horizontalLayout_Idioms">
-        <property name="topMargin">
-         <number>5</number>
-        </property>
-        <property name="bottomMargin">
-         <number>5</number>
-        </property>
-        <item>
-         <widget class="QCheckBox" name="cbTWCN">
-          <property name="font">
-           <font>
-            <pointsize>10</pointsize>
-           </font>
-          </property>
-          <property name="toolTip">
-           <string>Additional Mainland China and Taiwan idioms conversion</string>
-          </property>
-          <property name="text">
-           <string>ZH / TW Idioms （中台惯用语）</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QCheckBox" name="cbPunctuation">
-          <property name="font">
-           <font>
-            <pointsize>10</pointsize>
-           </font>
-          </property>
-          <property name="toolTip">
-           <string>Convert punctutions by Simplified/Traditional Chinese standard</string>
-          </property>
-          <property name="text">
-           <string>Punctuations （标点符号）</string>
-          </property>
-          <property name="checked">
-           <bool>true</bool>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-     </layout>
-    </item>
-    <item>
-     <widget class="QTabWidget" name="tabWidget">
-      <property name="font">
-       <font>
-        <pointsize>10</pointsize>
-       </font>
-      </property>
-      <property name="tabShape">
-       <enum>QTabWidget::TabShape::Rounded</enum>
-      </property>
-      <property name="currentIndex">
-       <number>0</number>
-      </property>
-      <property name="iconSize">
-       <size>
-        <width>20</width>
-        <height>20</height>
-       </size>
-      </property>
-      <widget class="QWidget" name="tabMain">
-       <property name="font">
-        <font>
-         <pointsize>10</pointsize>
-        </font>
-       </property>
-       <attribute name="icon">
-        <iconset resource="Resource.qrc">
-         <normaloff>:/resource/icons8-document-64.png</normaloff>:/resource/icons8-document-64.png</iconset>
-       </attribute>
-       <attribute name="title">
-        <string>Main Convert （单项）</string>
-       </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_3">
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_Contents" stretch="1,1">
-          <property name="topMargin">
-           <number>0</number>
-          </property>
-          <item>
-           <widget class="TextEditWidget" name="tbSource">
-            <property name="font">
-             <font>
-              <family>Noto Sans SC</family>
-              <pointsize>12</pointsize>
-             </font>
+        <widget class="QWidget" name="centralWidget">
+            <layout class="QVBoxLayout" name="verticalLayout">
+                <item>
+                    <layout class="QHBoxLayout" name="horizontalLayout_Config">
+                        <property name="spacing">
+                            <number>6</number>
+                        </property>
+                        <property name="leftMargin">
+                            <number>10</number>
+                        </property>
+                        <property name="topMargin">
+                            <number>0</number>
+                        </property>
+                        <property name="rightMargin">
+                            <number>10</number>
+                        </property>
+                        <property name="bottomMargin">
+                            <number>0</number>
+                        </property>
+                        <item>
+                            <widget class="QRadioButton" name="rbS2t">
+                                <property name="sizePolicy">
+                                    <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                                        <horstretch>0</horstretch>
+                                        <verstretch>0</verstretch>
+                                    </sizepolicy>
+                                </property>
+                                <property name="font">
+                                    <font>
+                                        <pointsize>12</pointsize>
+                                    </font>
+                                </property>
+                                <property name="toolTip">
+                                    <string>Convert from Simplified Chinese to Traditional Chinese</string>
+                                </property>
+                                <property name="text">
+                                    <string>zh-Hans （简体） to zh-Hant （繁体）</string>
+                                </property>
+                                <property name="checked">
+                                    <bool>true</bool>
+                                </property>
+                                <attribute name="buttonGroup">
+                                    <string notr="true">buttonGroup_config</string>
+                                </attribute>
+                            </widget>
+                        </item>
+                        <item>
+                            <widget class="QRadioButton" name="rbT2s">
+                                <property name="sizePolicy">
+                                    <sizepolicy hsizetype="Expanding" vsizetype="Fixed">
+                                        <horstretch>0</horstretch>
+                                        <verstretch>0</verstretch>
+                                    </sizepolicy>
+                                </property>
+                                <property name="font">
+                                    <font>
+                                        <pointsize>12</pointsize>
+                                    </font>
+                                </property>
+                                <property name="toolTip">
+                                    <string>Convert from Traditional Chinese to Simplified Chinese</string>
+                                </property>
+                                <property name="text">
+                                    <string>zh-Hant （繁体） to zh-Hans （简体）</string>
+                                </property>
+                                <attribute name="buttonGroup">
+                                    <string notr="true">buttonGroup_config</string>
+                                </attribute>
+                            </widget>
+                        </item>
+                        <item>
+                            <widget class="QRadioButton" name="rbManual">
+                                <property name="maximumSize">
+                                    <size>
+                                        <width>150</width>
+                                        <height>16777215</height>
+                                    </size>
+                                </property>
+                                <property name="font">
+                                    <font>
+                                        <pointsize>12</pointsize>
+                                    </font>
+                                </property>
+                                <property name="text">
+                                    <string>Manual (自定义) :</string>
+                                </property>
+                                <attribute name="buttonGroup">
+                                    <string notr="true">buttonGroup_config</string>
+                                </attribute>
+                            </widget>
+                        </item>
+                        <item>
+                            <widget class="QComboBox" name="cbManual">
+                                <property name="maximumSize">
+                                    <size>
+                                        <width>180</width>
+                                        <height>16777215</height>
+                                    </size>
+                                </property>
+                                <property name="font">
+                                    <font>
+                                        <pointsize>11</pointsize>
+                                    </font>
+                                </property>
+                                <property name="currentIndex">
+                                    <number>0</number>
+                                </property>
+                                <item>
+                                    <property name="text">
+                                        <string>s2t (简 -&gt; 繁)</string>
+                                    </property>
+                                </item>
+                                <item>
+                                    <property name="text">
+                                        <string>s2tw (简 -&gt; 繁/台)</string>
+                                    </property>
+                                </item>
+                                <item>
+                                    <property name="text">
+                                        <string>s2twp (简 -&gt; 繁/台/惯)</string>
+                                    </property>
+                                </item>
+                                <item>
+                                    <property name="text">
+                                        <string>s2hk (简 -&gt; 繁/港)</string>
+                                    </property>
+                                </item>
+                                <item>
+                                    <property name="text">
+                                        <string>t2s (繁 -&gt; 简)</string>
+                                    </property>
+                                </item>
+                                <item>
+                                    <property name="text">
+                                        <string>t2tw (繁 -&gt; 繁/台)</string>
+                                    </property>
+                                </item>
+                                <item>
+                                    <property name="text">
+                                        <string>t2twp (繁 -&gt; 繁/台/惯)</string>
+                                    </property>
+                                </item>
+                                <item>
+                                    <property name="text">
+                                        <string>t2hk (繁 -&gt; 繁/港)</string>
+                                    </property>
+                                </item>
+                                <item>
+                                    <property name="text">
+                                        <string>tw2s (繁/台 -&gt; 简)</string>
+                                    </property>
+                                </item>
+                                <item>
+                                    <property name="text">
+                                        <string>tw2sp (繁/台 -&gt; 简/惯)</string>
+                                    </property>
+                                </item>
+                                <item>
+                                    <property name="text">
+                                        <string>tw2t (繁/台 -&gt; 繁)</string>
+                                    </property>
+                                </item>
+                                <item>
+                                    <property name="text">
+                                        <string>tw2tp (繁/台 -&gt; 繁/惯)</string>
+                                    </property>
+                                </item>
+                                <item>
+                                    <property name="text">
+                                        <string>hk2s (繁/港 -&gt; 简)</string>
+                                    </property>
+                                </item>
+                                <item>
+                                    <property name="text">
+                                        <string>hk2t (繁/港 -&gt; 繁)</string>
+                                    </property>
+                                </item>
+                                <item>
+                                    <property name="text">
+                                        <string>jp2t (日/新 -&gt; 日/舊)</string>
+                                    </property>
+                                </item>
+                                <item>
+                                    <property name="text">
+                                        <string>t2jp (日/舊 -&gt; 日/新)</string>
+                                    </property>
+                                </item>
+                            </widget>
+                        </item>
+                        <item>
+                            <widget class="QCheckBox" name="cbJieba">
+                                <property name="font">
+                                    <font>
+                                        <pointsize>11</pointsize>
+                                    </font>
+                                </property>
+                                <property name="text">
+                                    <string>Jieba（结巴分词）</string>
+                                </property>
+                            </widget>
+                        </item>
+                    </layout>
+                </item>
+                <item>
+                    <layout class="QHBoxLayout" name="horizontalLayout_config_region" stretch="3,2">
+                        <property name="leftMargin">
+                            <number>10</number>
+                        </property>
+                        <property name="rightMargin">
+                            <number>10</number>
+                        </property>
+                        <item>
+                            <layout class="QHBoxLayout" name="horizontalLayout_Region">
+                                <property name="topMargin">
+                                    <number>5</number>
+                                </property>
+                                <property name="bottomMargin">
+                                    <number>5</number>
+                                </property>
+                                <item>
+                                    <widget class="QRadioButton" name="rbStd">
+                                        <property name="font">
+                                            <font>
+                                                <pointsize>10</pointsize>
+                                            </font>
+                                        </property>
+                                        <property name="toolTip">
+                                            <string>Standard conversion</string>
+                                        </property>
+                                        <property name="text">
+                                            <string>Standard （标准简繁）</string>
+                                        </property>
+                                        <property name="checked">
+                                            <bool>true</bool>
+                                        </property>
+                                        <attribute name="buttonGroup">
+                                            <string notr="true">buttonGroup_region</string>
+                                        </attribute>
+                                    </widget>
+                                </item>
+                                <item>
+                                    <widget class="QRadioButton" name="rbZHTW">
+                                        <property name="font">
+                                            <font>
+                                                <pointsize>10</pointsize>
+                                            </font>
+                                        </property>
+                                        <property name="toolTip">
+                                            <string>Mainland China / Taiwan conversion</string>
+                                        </property>
+                                        <property name="text">
+                                            <string>ZH / TW （中台简繁）</string>
+                                        </property>
+                                        <property name="checked">
+                                            <bool>false</bool>
+                                        </property>
+                                        <attribute name="buttonGroup">
+                                            <string notr="true">buttonGroup_region</string>
+                                        </attribute>
+                                    </widget>
+                                </item>
+                                <item>
+                                    <widget class="QRadioButton" name="rbHK">
+                                        <property name="font">
+                                            <font>
+                                                <pointsize>10</pointsize>
+                                            </font>
+                                        </property>
+                                        <property name="toolTip">
+                                            <string>Hong Kong conversion</string>
+                                        </property>
+                                        <property name="text">
+                                            <string>Hong Kong （香港简繁）</string>
+                                        </property>
+                                        <attribute name="buttonGroup">
+                                            <string notr="true">buttonGroup_region</string>
+                                        </attribute>
+                                    </widget>
+                                </item>
+                            </layout>
+                        </item>
+                        <item>
+                            <layout class="QHBoxLayout" name="horizontalLayout_Idioms">
+                                <property name="topMargin">
+                                    <number>5</number>
+                                </property>
+                                <property name="bottomMargin">
+                                    <number>5</number>
+                                </property>
+                                <item>
+                                    <widget class="QCheckBox" name="cbTWCN">
+                                        <property name="font">
+                                            <font>
+                                                <pointsize>10</pointsize>
+                                            </font>
+                                        </property>
+                                        <property name="toolTip">
+                                            <string>Additional Mainland China and Taiwan idioms conversion</string>
+                                        </property>
+                                        <property name="text">
+                                            <string>ZH / TW Idioms （中台惯用语）</string>
+                                        </property>
+                                    </widget>
+                                </item>
+                                <item>
+                                    <widget class="QCheckBox" name="cbPunctuation">
+                                        <property name="font">
+                                            <font>
+                                                <pointsize>10</pointsize>
+                                            </font>
+                                        </property>
+                                        <property name="toolTip">
+                                            <string>Convert punctutions by Simplified/Traditional Chinese standard
+                                            </string>
+                                        </property>
+                                        <property name="text">
+                                            <string>Punctuations （标点符号）</string>
+                                        </property>
+                                        <property name="checked">
+                                            <bool>true</bool>
+                                        </property>
+                                    </widget>
+                                </item>
+                            </layout>
+                        </item>
+                    </layout>
+                </item>
+                <item>
+                    <widget class="QTabWidget" name="tabWidget">
+                        <property name="font">
+                            <font>
+                                <pointsize>10</pointsize>
+                            </font>
+                        </property>
+                        <property name="tabShape">
+                            <enum>QTabWidget::TabShape::Rounded</enum>
+                        </property>
+                        <property name="currentIndex">
+                            <number>0</number>
+                        </property>
+                        <property name="iconSize">
+                            <size>
+                                <width>20</width>
+                                <height>20</height>
+                            </size>
+                        </property>
+                        <widget class="QWidget" name="tabMain">
+                            <property name="font">
+                                <font>
+                                    <pointsize>10</pointsize>
+                                </font>
+                            </property>
+                            <attribute name="icon">
+                                <iconset resource="Resource.qrc">
+                                    <normaloff>:/resource/icons8-document-64.png</normaloff>
+                                    :/resource/icons8-document-64.png
+                                </iconset>
+                            </attribute>
+                            <attribute name="title">
+                                <string>Main Convert （单项）</string>
+                            </attribute>
+                            <layout class="QVBoxLayout" name="verticalLayout_3">
+                                <item>
+                                    <layout class="QHBoxLayout" name="horizontalLayout_Contents" stretch="1,1">
+                                        <property name="topMargin">
+                                            <number>0</number>
+                                        </property>
+                                        <item>
+                                            <widget class="TextEditWidget" name="tbSource">
+                                                <property name="font">
+                                                    <font>
+                                                        <family>Noto Sans SC</family>
+                                                        <pointsize>12</pointsize>
+                                                    </font>
+                                                </property>
+                                                <property name="frameShape">
+                                                    <enum>QFrame::Shape::Box</enum>
+                                                </property>
+                                                <property name="lineWidth">
+                                                    <number>2</number>
+                                                </property>
+                                                <property name="verticalScrollBarPolicy">
+                                                    <enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOn</enum>
+                                                </property>
+                                            </widget>
+                                        </item>
+                                        <item>
+                                            <widget class="QPlainTextEdit" name="tbDestination">
+                                                <property name="font">
+                                                    <font>
+                                                        <family>Noto Sans SC</family>
+                                                        <pointsize>12</pointsize>
+                                                    </font>
+                                                </property>
+                                                <property name="acceptDrops">
+                                                    <bool>false</bool>
+                                                </property>
+                                                <property name="frameShape">
+                                                    <enum>QFrame::Shape::Box</enum>
+                                                </property>
+                                                <property name="lineWidth">
+                                                    <number>2</number>
+                                                </property>
+                                                <property name="verticalScrollBarPolicy">
+                                                    <enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOn</enum>
+                                                </property>
+                                                <property name="undoRedoEnabled">
+                                                    <bool>false</bool>
+                                                </property>
+                                                <property name="readOnly">
+                                                    <bool>true</bool>
+                                                </property>
+                                            </widget>
+                                        </item>
+                                    </layout>
+                                </item>
+                                <item>
+                                    <layout class="QHBoxLayout" name="horizontalLayout_content_action" stretch="1,1">
+                                        <property name="leftMargin">
+                                            <number>0</number>
+                                        </property>
+                                        <property name="rightMargin">
+                                            <number>0</number>
+                                        </property>
+                                        <item>
+                                            <layout class="QHBoxLayout" name="horizontalLayout_Source">
+                                                <property name="sizeConstraint">
+                                                    <enum>QLayout::SizeConstraint::SetFixedSize</enum>
+                                                </property>
+                                                <property name="rightMargin">
+                                                    <number>3</number>
+                                                </property>
+                                                <item>
+                                                    <widget class="QLabel" name="lblSource">
+                                                        <property name="sizePolicy">
+                                                            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                                                                <horstretch>0</horstretch>
+                                                                <verstretch>0</verstretch>
+                                                            </sizepolicy>
+                                                        </property>
+                                                        <property name="minimumSize">
+                                                            <size>
+                                                                <width>83</width>
+                                                                <height>0</height>
+                                                            </size>
+                                                        </property>
+                                                        <property name="font">
+                                                            <font>
+                                                                <pointsize>10</pointsize>
+                                                            </font>
+                                                        </property>
+                                                        <property name="frameShape">
+                                                            <enum>QFrame::Shape::Box</enum>
+                                                        </property>
+                                                        <property name="frameShadow">
+                                                            <enum>QFrame::Shadow::Plain</enum>
+                                                        </property>
+                                                        <property name="lineWidth">
+                                                            <number>1</number>
+                                                        </property>
+                                                        <property name="text">
+                                                            <string>Source</string>
+                                                        </property>
+                                                        <property name="alignment">
+                                                            <set>Qt::AlignmentFlag::AlignCenter</set>
+                                                        </property>
+                                                        <property name="margin">
+                                                            <number>3</number>
+                                                        </property>
+                                                    </widget>
+                                                </item>
+                                                <item>
+                                                    <widget class="QLabel" name="lblSourceCode">
+                                                        <property name="sizePolicy">
+                                                            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                                                                <horstretch>0</horstretch>
+                                                                <verstretch>0</verstretch>
+                                                            </sizepolicy>
+                                                        </property>
+                                                        <property name="font">
+                                                            <font>
+                                                                <pointsize>12</pointsize>
+                                                            </font>
+                                                        </property>
+                                                        <property name="text">
+                                                            <string/>
+                                                        </property>
+                                                        <property name="alignment">
+                                                            <set>
+                                                                Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter
+                                                            </set>
+                                                        </property>
+                                                        <property name="margin">
+                                                            <number>1</number>
+                                                        </property>
+                                                    </widget>
+                                                </item>
+                                                <item>
+                                                    <widget class="QLabel" name="lblCharCount">
+                                                        <property name="sizePolicy">
+                                                            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                                                                <horstretch>0</horstretch>
+                                                                <verstretch>0</verstretch>
+                                                            </sizepolicy>
+                                                        </property>
+                                                        <property name="font">
+                                                            <font>
+                                                                <pointsize>10</pointsize>
+                                                            </font>
+                                                        </property>
+                                                        <property name="text">
+                                                            <string/>
+                                                        </property>
+                                                        <property name="alignment">
+                                                            <set>
+                                                                Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter
+                                                            </set>
+                                                        </property>
+                                                        <property name="margin">
+                                                            <number>1</number>
+                                                        </property>
+                                                    </widget>
+                                                </item>
+                                                <item>
+                                                    <widget class="QPushButton" name="btnRefresh">
+                                                        <property name="sizePolicy">
+                                                            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                                                                <horstretch>0</horstretch>
+                                                                <verstretch>0</verstretch>
+                                                            </sizepolicy>
+                                                        </property>
+                                                        <property name="maximumSize">
+                                                            <size>
+                                                                <width>30</width>
+                                                                <height>16777215</height>
+                                                            </size>
+                                                        </property>
+                                                        <property name="toolTip">
+                                                            <string>Refresh source text box info</string>
+                                                        </property>
+                                                        <property name="text">
+                                                            <string/>
+                                                        </property>
+                                                        <property name="icon">
+                                                            <iconset resource="Resource.qrc">
+                                                                <normaloff>:/resource/icons8-refresh-48.png</normaloff>
+                                                                :/resource/icons8-refresh-48.png
+                                                            </iconset>
+                                                        </property>
+                                                    </widget>
+                                                </item>
+                                                <item>
+                                                    <widget class="QPushButton" name="btnClearTbSource">
+                                                        <property name="maximumSize">
+                                                            <size>
+                                                                <width>30</width>
+                                                                <height>16777215</height>
+                                                            </size>
+                                                        </property>
+                                                        <property name="font">
+                                                            <font>
+                                                                <pointsize>10</pointsize>
+                                                                <bold>true</bold>
+                                                            </font>
+                                                        </property>
+                                                        <property name="toolTip">
+                                                            <string>Clear Source Contents</string>
+                                                        </property>
+                                                        <property name="text">
+                                                            <string>AC</string>
+                                                        </property>
+                                                    </widget>
+                                                </item>
+                                                <item>
+                                                    <widget class="QPushButton" name="btnPaste">
+                                                        <property name="sizePolicy">
+                                                            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                                                                <horstretch>0</horstretch>
+                                                                <verstretch>0</verstretch>
+                                                            </sizepolicy>
+                                                        </property>
+                                                        <property name="font">
+                                                            <font>
+                                                                <pointsize>10</pointsize>
+                                                            </font>
+                                                        </property>
+                                                        <property name="toolTip">
+                                                            <string>Paste clipboard contents to Source box</string>
+                                                        </property>
+                                                        <property name="whatsThis">
+                                                            <string/>
+                                                        </property>
+                                                        <property name="text">
+                                                            <string>Paste</string>
+                                                        </property>
+                                                    </widget>
+                                                </item>
+                                            </layout>
+                                        </item>
+                                        <item>
+                                            <layout class="QHBoxLayout" name="horizontalLayout_Destination"
+                                                    stretch="0,1,0,0">
+                                                <property name="rightMargin">
+                                                    <number>3</number>
+                                                </property>
+                                                <item>
+                                                    <widget class="QLabel" name="lblDestination">
+                                                        <property name="sizePolicy">
+                                                            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                                                                <horstretch>0</horstretch>
+                                                                <verstretch>0</verstretch>
+                                                            </sizepolicy>
+                                                        </property>
+                                                        <property name="font">
+                                                            <font>
+                                                                <pointsize>10</pointsize>
+                                                            </font>
+                                                        </property>
+                                                        <property name="frameShape">
+                                                            <enum>QFrame::Shape::Box</enum>
+                                                        </property>
+                                                        <property name="frameShadow">
+                                                            <enum>QFrame::Shadow::Plain</enum>
+                                                        </property>
+                                                        <property name="lineWidth">
+                                                            <number>1</number>
+                                                        </property>
+                                                        <property name="text">
+                                                            <string>Destination</string>
+                                                        </property>
+                                                        <property name="alignment">
+                                                            <set>Qt::AlignmentFlag::AlignCenter</set>
+                                                        </property>
+                                                        <property name="margin">
+                                                            <number>3</number>
+                                                        </property>
+                                                        <property name="indent">
+                                                            <number>-1</number>
+                                                        </property>
+                                                    </widget>
+                                                </item>
+                                                <item>
+                                                    <widget class="QLabel" name="lblDestinationCode">
+                                                        <property name="sizePolicy">
+                                                            <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
+                                                                <horstretch>0</horstretch>
+                                                                <verstretch>0</verstretch>
+                                                            </sizepolicy>
+                                                        </property>
+                                                        <property name="font">
+                                                            <font>
+                                                                <pointsize>12</pointsize>
+                                                            </font>
+                                                        </property>
+                                                        <property name="text">
+                                                            <string/>
+                                                        </property>
+                                                        <property name="alignment">
+                                                            <set>
+                                                                Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter
+                                                            </set>
+                                                        </property>
+                                                        <property name="margin">
+                                                            <number>1</number>
+                                                        </property>
+                                                    </widget>
+                                                </item>
+                                                <item>
+                                                    <widget class="QPushButton" name="btnClearTbDestination">
+                                                        <property name="maximumSize">
+                                                            <size>
+                                                                <width>30</width>
+                                                                <height>16777215</height>
+                                                            </size>
+                                                        </property>
+                                                        <property name="font">
+                                                            <font>
+                                                                <pointsize>10</pointsize>
+                                                                <bold>true</bold>
+                                                            </font>
+                                                        </property>
+                                                        <property name="toolTip">
+                                                            <string>Clear Destination Contents</string>
+                                                        </property>
+                                                        <property name="text">
+                                                            <string>AC</string>
+                                                        </property>
+                                                    </widget>
+                                                </item>
+                                                <item>
+                                                    <widget class="QPushButton" name="btnCopy">
+                                                        <property name="sizePolicy">
+                                                            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                                                                <horstretch>0</horstretch>
+                                                                <verstretch>0</verstretch>
+                                                            </sizepolicy>
+                                                        </property>
+                                                        <property name="font">
+                                                            <font>
+                                                                <pointsize>10</pointsize>
+                                                            </font>
+                                                        </property>
+                                                        <property name="toolTip">
+                                                            <string>Copy Destination contents to clipboard</string>
+                                                        </property>
+                                                        <property name="text">
+                                                            <string>Copy</string>
+                                                        </property>
+                                                    </widget>
+                                                </item>
+                                            </layout>
+                                        </item>
+                                    </layout>
+                                </item>
+                            </layout>
+                        </widget>
+                        <widget class="QWidget" name="tabBatch">
+                            <attribute name="icon">
+                                <iconset resource="Resource.qrc">
+                                    <normaloff>:/resource/icons8-documents-64.png</normaloff>
+                                    :/resource/icons8-documents-64.png
+                                </iconset>
+                            </attribute>
+                            <attribute name="title">
+                                <string>Batch Convert （批量）</string>
+                            </attribute>
+                            <layout class="QVBoxLayout" name="verticalLayout_2">
+                                <item>
+                                    <layout class="QHBoxLayout" name="horizontalLayout_listbox">
+                                        <item>
+                                            <widget class="DragListWidget" name="listSource">
+                                                <property name="acceptDrops">
+                                                    <bool>true</bool>
+                                                </property>
+                                                <property name="frameShape">
+                                                    <enum>QFrame::Shape::Box</enum>
+                                                </property>
+                                                <property name="lineWidth">
+                                                    <number>2</number>
+                                                </property>
+                                                <property name="dragEnabled">
+                                                    <bool>true</bool>
+                                                </property>
+                                                <property name="dragDropMode">
+                                                    <enum>QAbstractItemView::DragDropMode::InternalMove</enum>
+                                                </property>
+                                                <property name="alternatingRowColors">
+                                                    <bool>true</bool>
+                                                </property>
+                                                <property name="selectionMode">
+                                                    <enum>QAbstractItemView::SelectionMode::ExtendedSelection</enum>
+                                                </property>
+                                                <property name="sortingEnabled">
+                                                    <bool>true</bool>
+                                                </property>
+                                            </widget>
+                                        </item>
+                                        <item>
+                                            <widget class="QPlainTextEdit" name="tbPreview">
+                                                <property name="font">
+                                                    <font>
+                                                        <family>Microsoft YaHei UI</family>
+                                                        <pointsize>11</pointsize>
+                                                    </font>
+                                                </property>
+                                                <property name="acceptDrops">
+                                                    <bool>false</bool>
+                                                </property>
+                                                <property name="frameShape">
+                                                    <enum>QFrame::Shape::Box</enum>
+                                                </property>
+                                                <property name="lineWidth">
+                                                    <number>2</number>
+                                                </property>
+                                                <property name="undoRedoEnabled">
+                                                    <bool>false</bool>
+                                                </property>
+                                                <property name="readOnly">
+                                                    <bool>true</bool>
+                                                </property>
+                                            </widget>
+                                        </item>
+                                    </layout>
+                                </item>
+                                <item>
+                                    <layout class="QHBoxLayout" name="horizontalLayout_listbox_action" stretch="1,1">
+                                        <item>
+                                            <layout class="QHBoxLayout" name="horizontalLayout_listbox_buttons">
+                                                <item>
+                                                    <widget class="QPushButton" name="btnAdd">
+                                                        <property name="font">
+                                                            <font>
+                                                                <pointsize>9</pointsize>
+                                                            </font>
+                                                        </property>
+                                                        <property name="toolTip">
+                                                            <string>Add file(s) to list box</string>
+                                                        </property>
+                                                        <property name="text">
+                                                            <string>➕</string>
+                                                        </property>
+                                                    </widget>
+                                                </item>
+                                                <item>
+                                                    <widget class="QPushButton" name="btnRemove">
+                                                        <property name="font">
+                                                            <font>
+                                                                <pointsize>9</pointsize>
+                                                                <bold>true</bold>
+                                                            </font>
+                                                        </property>
+                                                        <property name="toolTip">
+                                                            <string>Remove selected list entry(s)</string>
+                                                        </property>
+                                                        <property name="text">
+                                                            <string>➖</string>
+                                                        </property>
+                                                    </widget>
+                                                </item>
+                                                <item>
+                                                    <widget class="QPushButton" name="btnListClear">
+                                                        <property name="font">
+                                                            <font>
+                                                                <pointsize>10</pointsize>
+                                                                <bold>true</bold>
+                                                            </font>
+                                                        </property>
+                                                        <property name="toolTip">
+                                                            <string>Clear list box</string>
+                                                        </property>
+                                                        <property name="text">
+                                                            <string>AC</string>
+                                                        </property>
+                                                    </widget>
+                                                </item>
+                                                <item>
+                                                    <widget class="QPushButton" name="btnPreview">
+                                                        <property name="font">
+                                                            <font>
+                                                                <pointsize>10</pointsize>
+                                                                <bold>true</bold>
+                                                            </font>
+                                                        </property>
+                                                        <property name="toolTip">
+                                                            <string>Preview selected file entry</string>
+                                                        </property>
+                                                        <property name="text">
+                                                            <string>Preview</string>
+                                                        </property>
+                                                        <property name="iconSize">
+                                                            <size>
+                                                                <width>16</width>
+                                                                <height>16</height>
+                                                            </size>
+                                                        </property>
+                                                    </widget>
+                                                </item>
+                                            </layout>
+                                        </item>
+                                        <item>
+                                            <layout class="QHBoxLayout" name="horizontalLayout_preview"
+                                                    stretch="0,1,0,0">
+                                                <item>
+                                                    <widget class="QLabel" name="label">
+                                                        <property name="sizePolicy">
+                                                            <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
+                                                                <horstretch>0</horstretch>
+                                                                <verstretch>0</verstretch>
+                                                            </sizepolicy>
+                                                        </property>
+                                                        <property name="font">
+                                                            <font>
+                                                                <pointsize>10</pointsize>
+                                                            </font>
+                                                        </property>
+                                                        <property name="text">
+                                                            <string>Output</string>
+                                                        </property>
+                                                    </widget>
+                                                </item>
+                                                <item>
+                                                    <widget class="QLineEdit" name="lineEditDir">
+                                                        <property name="toolTip">
+                                                            <string>Output path</string>
+                                                        </property>
+                                                        <property name="text">
+                                                            <string>./output</string>
+                                                        </property>
+                                                    </widget>
+                                                </item>
+                                                <item>
+                                                    <widget class="QPushButton" name="btnOutDir">
+                                                        <property name="sizePolicy">
+                                                            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                                                                <horstretch>0</horstretch>
+                                                                <verstretch>0</verstretch>
+                                                            </sizepolicy>
+                                                        </property>
+                                                        <property name="maximumSize">
+                                                            <size>
+                                                                <width>30</width>
+                                                                <height>16777215</height>
+                                                            </size>
+                                                        </property>
+                                                        <property name="font">
+                                                            <font>
+                                                                <pointsize>10</pointsize>
+                                                                <bold>true</bold>
+                                                            </font>
+                                                        </property>
+                                                        <property name="toolTip">
+                                                            <string>Select output directory</string>
+                                                        </property>
+                                                        <property name="text">
+                                                            <string/>
+                                                        </property>
+                                                        <property name="icon">
+                                                            <iconset resource="Resource.qrc">
+                                                                <normaloff>:/resource/icons8-folder-32.png</normaloff>
+                                                                :/resource/icons8-folder-32.png
+                                                            </iconset>
+                                                        </property>
+                                                        <property name="iconSize">
+                                                            <size>
+                                                                <width>20</width>
+                                                                <height>20</height>
+                                                            </size>
+                                                        </property>
+                                                    </widget>
+                                                </item>
+                                                <item>
+                                                    <widget class="QPushButton" name="btnPreviewClear">
+                                                        <property name="sizePolicy">
+                                                            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                                                                <horstretch>0</horstretch>
+                                                                <verstretch>0</verstretch>
+                                                            </sizepolicy>
+                                                        </property>
+                                                        <property name="font">
+                                                            <font>
+                                                                <pointsize>10</pointsize>
+                                                                <bold>true</bold>
+                                                            </font>
+                                                        </property>
+                                                        <property name="toolTip">
+                                                            <string>Clear preview</string>
+                                                        </property>
+                                                        <property name="text">
+                                                            <string>AC</string>
+                                                        </property>
+                                                    </widget>
+                                                </item>
+                                            </layout>
+                                        </item>
+                                    </layout>
+                                </item>
+                            </layout>
+                        </widget>
+                    </widget>
+                </item>
+                <item>
+                    <layout class="QGridLayout" name="gridLayout_Action" columnstretch="1,1,1">
+                        <property name="leftMargin">
+                            <number>10</number>
+                        </property>
+                        <property name="topMargin">
+                            <number>0</number>
+                        </property>
+                        <property name="rightMargin">
+                            <number>10</number>
+                        </property>
+                        <property name="bottomMargin">
+                            <number>0</number>
+                        </property>
+                        <item row="0" column="1">
+                            <layout class="QHBoxLayout" name="horizontalLayout_Action2" stretch="0">
+                                <item>
+                                    <widget class="QPushButton" name="btnProcess">
+                                        <property name="sizePolicy">
+                                            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                                                <horstretch>0</horstretch>
+                                                <verstretch>0</verstretch>
+                                            </sizepolicy>
+                                        </property>
+                                        <property name="minimumSize">
+                                            <size>
+                                                <width>100</width>
+                                                <height>0</height>
+                                            </size>
+                                        </property>
+                                        <property name="font">
+                                            <font>
+                                                <pointsize>14</pointsize>
+                                                <bold>true</bold>
+                                            </font>
+                                        </property>
+                                        <property name="toolTip">
+                                            <string>Start conversion process</string>
+                                        </property>
+                                        <property name="text">
+                                            <string>Process</string>
+                                        </property>
+                                        <property name="icon">
+                                            <iconset resource="Resource.qrc">
+                                                <normaloff>:/resource/icons8-start-48.png</normaloff>
+                                                :/resource/icons8-start-48.png
+                                            </iconset>
+                                        </property>
+                                        <property name="iconSize">
+                                            <size>
+                                                <width>28</width>
+                                                <height>28</height>
+                                            </size>
+                                        </property>
+                                    </widget>
+                                </item>
+                            </layout>
+                        </item>
+                        <item row="0" column="2">
+                            <layout class="QHBoxLayout" name="horizontalLayout_Action3" stretch="1,0,0">
+                                <property name="spacing">
+                                    <number>10</number>
+                                </property>
+                                <property name="rightMargin">
+                                    <number>3</number>
+                                </property>
+                                <item>
+                                    <spacer name="horizontalSpacer">
+                                        <property name="orientation">
+                                            <enum>Qt::Orientation::Horizontal</enum>
+                                        </property>
+                                        <property name="sizeHint" stdset="0">
+                                            <size>
+                                                <width>40</width>
+                                                <height>20</height>
+                                            </size>
+                                        </property>
+                                    </spacer>
+                                </item>
+                                <item>
+                                    <widget class="QPushButton" name="btnSaveAs">
+                                        <property name="sizePolicy">
+                                            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                                                <horstretch>0</horstretch>
+                                                <verstretch>0</verstretch>
+                                            </sizepolicy>
+                                        </property>
+                                        <property name="font">
+                                            <font>
+                                                <pointsize>10</pointsize>
+                                            </font>
+                                        </property>
+                                        <property name="toolTip">
+                                            <string>Save Destination contents to file</string>
+                                        </property>
+                                        <property name="text">
+                                            <string>Sava As</string>
+                                        </property>
+                                    </widget>
+                                </item>
+                                <item>
+                                    <widget class="QPushButton" name="btnExit">
+                                        <property name="sizePolicy">
+                                            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                                                <horstretch>0</horstretch>
+                                                <verstretch>0</verstretch>
+                                            </sizepolicy>
+                                        </property>
+                                        <property name="font">
+                                            <font>
+                                                <pointsize>10</pointsize>
+                                                <bold>false</bold>
+                                            </font>
+                                        </property>
+                                        <property name="toolTip">
+                                            <string>Exit Application</string>
+                                        </property>
+                                        <property name="text">
+                                            <string>Exit</string>
+                                        </property>
+                                    </widget>
+                                </item>
+                            </layout>
+                        </item>
+                        <item row="0" column="0">
+                            <layout class="QHBoxLayout" name="horizontalLayout_Action1" stretch="0,1">
+                                <property name="spacing">
+                                    <number>5</number>
+                                </property>
+                                <item>
+                                    <widget class="QPushButton" name="btnOpenFile">
+                                        <property name="sizePolicy">
+                                            <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
+                                                <horstretch>0</horstretch>
+                                                <verstretch>0</verstretch>
+                                            </sizepolicy>
+                                        </property>
+                                        <property name="font">
+                                            <font>
+                                                <pointsize>10</pointsize>
+                                            </font>
+                                        </property>
+                                        <property name="toolTip">
+                                            <string>Open text file to Source content box</string>
+                                        </property>
+                                        <property name="text">
+                                            <string>Open File</string>
+                                        </property>
+                                    </widget>
+                                </item>
+                                <item>
+                                    <widget class="QLabel" name="lblFileName">
+                                        <property name="sizePolicy">
+                                            <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+                                                <horstretch>0</horstretch>
+                                                <verstretch>0</verstretch>
+                                            </sizepolicy>
+                                        </property>
+                                        <property name="font">
+                                            <font>
+                                                <pointsize>10</pointsize>
+                                            </font>
+                                        </property>
+                                        <property name="text">
+                                            <string/>
+                                        </property>
+                                        <property name="margin">
+                                            <number>1</number>
+                                        </property>
+                                    </widget>
+                                </item>
+                            </layout>
+                        </item>
+                    </layout>
+                </item>
+            </layout>
+        </widget>
+        <widget class="QMenuBar" name="menuBar">
+            <property name="geometry">
+                <rect>
+                    <x>0</x>
+                    <y>0</y>
+                    <width>1048</width>
+                    <height>21</height>
+                </rect>
             </property>
-            <property name="frameShape">
-             <enum>QFrame::Shape::Box</enum>
+            <widget class="QMenu" name="menuFile">
+                <property name="title">
+                    <string>File</string>
+                </property>
+                <addaction name="actionExit"/>
+            </widget>
+            <widget class="QMenu" name="menuHelp">
+                <property name="title">
+                    <string>Help</string>
+                </property>
+                <addaction name="actionAbout"/>
+            </widget>
+            <addaction name="menuFile"/>
+            <addaction name="menuHelp"/>
+        </widget>
+        <widget class="QStatusBar" name="statusBar"/>
+        <action name="actionExit">
+            <property name="text">
+                <string>Exit</string>
             </property>
-            <property name="lineWidth">
-             <number>2</number>
+        </action>
+        <action name="actionAbout">
+            <property name="text">
+                <string>About</string>
             </property>
-            <property name="verticalScrollBarPolicy">
-             <enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOn</enum>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPlainTextEdit" name="tbDestination">
-            <property name="font">
-             <font>
-              <family>Noto Sans SC</family>
-              <pointsize>12</pointsize>
-             </font>
-            </property>
-            <property name="acceptDrops">
-             <bool>false</bool>
-            </property>
-            <property name="frameShape">
-             <enum>QFrame::Shape::Box</enum>
-            </property>
-            <property name="lineWidth">
-             <number>2</number>
-            </property>
-            <property name="verticalScrollBarPolicy">
-             <enum>Qt::ScrollBarPolicy::ScrollBarAlwaysOn</enum>
-            </property>
-            <property name="undoRedoEnabled">
-             <bool>false</bool>
-            </property>
-            <property name="readOnly">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_content_action" stretch="1,1">
-          <property name="leftMargin">
-           <number>0</number>
-          </property>
-          <property name="rightMargin">
-           <number>0</number>
-          </property>
-          <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_Source">
-            <property name="sizeConstraint">
-             <enum>QLayout::SizeConstraint::SetFixedSize</enum>
-            </property>
-            <property name="rightMargin">
-             <number>3</number>
-            </property>
-            <item>
-             <widget class="QLabel" name="lblSource">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="minimumSize">
-               <size>
-                <width>83</width>
-                <height>0</height>
-               </size>
-              </property>
-              <property name="font">
-               <font>
-                <pointsize>10</pointsize>
-               </font>
-              </property>
-              <property name="frameShape">
-               <enum>QFrame::Shape::Box</enum>
-              </property>
-              <property name="frameShadow">
-               <enum>QFrame::Shadow::Plain</enum>
-              </property>
-              <property name="lineWidth">
-               <number>1</number>
-              </property>
-              <property name="text">
-               <string>Source</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignmentFlag::AlignCenter</set>
-              </property>
-              <property name="margin">
-               <number>3</number>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLabel" name="lblSourceCode">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="font">
-               <font>
-                <pointsize>12</pointsize>
-               </font>
-              </property>
-              <property name="text">
-               <string/>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
-              </property>
-              <property name="margin">
-               <number>1</number>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLabel" name="lblCharCount">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="font">
-               <font>
-                <pointsize>10</pointsize>
-               </font>
-              </property>
-              <property name="text">
-               <string/>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
-              </property>
-              <property name="margin">
-               <number>1</number>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="btnRefresh">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>30</width>
-                <height>16777215</height>
-               </size>
-              </property>
-              <property name="toolTip">
-               <string>Refresh source text box info</string>
-              </property>
-              <property name="text">
-               <string/>
-              </property>
-              <property name="icon">
-               <iconset resource="Resource.qrc">
-                <normaloff>:/resource/icons8-refresh-48.png</normaloff>:/resource/icons8-refresh-48.png</iconset>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="btnClearTbSource">
-              <property name="maximumSize">
-               <size>
-                <width>30</width>
-                <height>16777215</height>
-               </size>
-              </property>
-              <property name="font">
-               <font>
-                <pointsize>10</pointsize>
-                <bold>true</bold>
-               </font>
-              </property>
-              <property name="toolTip">
-               <string>Clear Source Contents</string>
-              </property>
-              <property name="text">
-               <string>AC</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="btnPaste">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="font">
-               <font>
-                <pointsize>10</pointsize>
-               </font>
-              </property>
-              <property name="toolTip">
-               <string>Paste clipboard contents to Source box</string>
-              </property>
-              <property name="whatsThis">
-               <string/>
-              </property>
-              <property name="text">
-               <string>Paste</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_Destination" stretch="0,1,0,0">
-            <property name="rightMargin">
-             <number>3</number>
-            </property>
-            <item>
-             <widget class="QLabel" name="lblDestination">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="font">
-               <font>
-                <pointsize>10</pointsize>
-               </font>
-              </property>
-              <property name="frameShape">
-               <enum>QFrame::Shape::Box</enum>
-              </property>
-              <property name="frameShadow">
-               <enum>QFrame::Shadow::Plain</enum>
-              </property>
-              <property name="lineWidth">
-               <number>1</number>
-              </property>
-              <property name="text">
-               <string>Destination</string>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignmentFlag::AlignCenter</set>
-              </property>
-              <property name="margin">
-               <number>3</number>
-              </property>
-              <property name="indent">
-               <number>-1</number>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLabel" name="lblDestinationCode">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Preferred" vsizetype="Preferred">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="font">
-               <font>
-                <pointsize>12</pointsize>
-               </font>
-              </property>
-              <property name="text">
-               <string/>
-              </property>
-              <property name="alignment">
-               <set>Qt::AlignmentFlag::AlignLeading|Qt::AlignmentFlag::AlignLeft|Qt::AlignmentFlag::AlignVCenter</set>
-              </property>
-              <property name="margin">
-               <number>1</number>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="btnClearTbDestination">
-              <property name="maximumSize">
-               <size>
-                <width>30</width>
-                <height>16777215</height>
-               </size>
-              </property>
-              <property name="font">
-               <font>
-                <pointsize>10</pointsize>
-                <bold>true</bold>
-               </font>
-              </property>
-              <property name="toolTip">
-               <string>Clear Destination Contents</string>
-              </property>
-              <property name="text">
-               <string>AC</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="btnCopy">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="font">
-               <font>
-                <pointsize>10</pointsize>
-               </font>
-              </property>
-              <property name="toolTip">
-               <string>Copy Destination contents to clipboard</string>
-              </property>
-              <property name="text">
-               <string>Copy</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-         </layout>
-        </item>
-       </layout>
-      </widget>
-      <widget class="QWidget" name="tabBatch">
-       <attribute name="icon">
-        <iconset resource="Resource.qrc">
-         <normaloff>:/resource/icons8-documents-64.png</normaloff>:/resource/icons8-documents-64.png</iconset>
-       </attribute>
-       <attribute name="title">
-        <string>Batch Convert （批量）</string>
-       </attribute>
-       <layout class="QVBoxLayout" name="verticalLayout_2">
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_listbox">
-          <item>
-           <widget class="DragListWidget" name="listSource">
-            <property name="acceptDrops">
-             <bool>true</bool>
-            </property>
-            <property name="frameShape">
-             <enum>QFrame::Shape::Box</enum>
-            </property>
-            <property name="lineWidth">
-             <number>2</number>
-            </property>
-            <property name="dragEnabled">
-             <bool>true</bool>
-            </property>
-            <property name="dragDropMode">
-             <enum>QAbstractItemView::DragDropMode::InternalMove</enum>
-            </property>
-            <property name="alternatingRowColors">
-             <bool>true</bool>
-            </property>
-            <property name="selectionMode">
-             <enum>QAbstractItemView::SelectionMode::ExtendedSelection</enum>
-            </property>
-            <property name="sortingEnabled">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-          <item>
-           <widget class="QPlainTextEdit" name="tbPreview">
-            <property name="font">
-             <font>
-              <family>Microsoft YaHei UI</family>
-              <pointsize>11</pointsize>
-             </font>
-            </property>
-            <property name="acceptDrops">
-             <bool>false</bool>
-            </property>
-            <property name="frameShape">
-             <enum>QFrame::Shape::Box</enum>
-            </property>
-            <property name="lineWidth">
-             <number>2</number>
-            </property>
-            <property name="undoRedoEnabled">
-             <bool>false</bool>
-            </property>
-            <property name="readOnly">
-             <bool>true</bool>
-            </property>
-           </widget>
-          </item>
-         </layout>
-        </item>
-        <item>
-         <layout class="QHBoxLayout" name="horizontalLayout_listbox_action" stretch="1,1">
-          <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_listbox_buttons">
-            <item>
-             <widget class="QPushButton" name="btnAdd">
-              <property name="font">
-               <font>
-                <pointsize>9</pointsize>
-               </font>
-              </property>
-              <property name="toolTip">
-               <string>Add file(s) to list box</string>
-              </property>
-              <property name="text">
-               <string>➕</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="btnRemove">
-              <property name="font">
-               <font>
-                <pointsize>9</pointsize>
-                <bold>true</bold>
-               </font>
-              </property>
-              <property name="toolTip">
-               <string>Remove selected list entry(s)</string>
-              </property>
-              <property name="text">
-               <string>➖</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="btnListClear">
-              <property name="font">
-               <font>
-                <pointsize>10</pointsize>
-                <bold>true</bold>
-               </font>
-              </property>
-              <property name="toolTip">
-               <string>Clear list box</string>
-              </property>
-              <property name="text">
-               <string>AC</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="btnPreview">
-              <property name="font">
-               <font>
-                <pointsize>10</pointsize>
-                <bold>true</bold>
-               </font>
-              </property>
-              <property name="toolTip">
-               <string>Preview selected file entry</string>
-              </property>
-              <property name="text">
-               <string>Preview</string>
-              </property>
-              <property name="iconSize">
-               <size>
-                <width>16</width>
-                <height>16</height>
-               </size>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-          <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_preview" stretch="0,1,0,0">
-            <item>
-             <widget class="QLabel" name="label">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Fixed" vsizetype="Preferred">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="font">
-               <font>
-                <pointsize>10</pointsize>
-               </font>
-              </property>
-              <property name="text">
-               <string>Output</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QLineEdit" name="lineEditDir">
-              <property name="toolTip">
-               <string>Output path</string>
-              </property>
-              <property name="text">
-               <string>./output</string>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="btnOutDir">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>30</width>
-                <height>16777215</height>
-               </size>
-              </property>
-              <property name="font">
-               <font>
-                <pointsize>10</pointsize>
-                <bold>true</bold>
-               </font>
-              </property>
-              <property name="toolTip">
-               <string>Select output directory</string>
-              </property>
-              <property name="text">
-               <string/>
-              </property>
-              <property name="icon">
-               <iconset resource="Resource.qrc">
-                <normaloff>:/resource/icons8-folder-32.png</normaloff>:/resource/icons8-folder-32.png</iconset>
-              </property>
-              <property name="iconSize">
-               <size>
-                <width>20</width>
-                <height>20</height>
-               </size>
-              </property>
-             </widget>
-            </item>
-            <item>
-             <widget class="QPushButton" name="btnPreviewClear">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="font">
-               <font>
-                <pointsize>10</pointsize>
-                <bold>true</bold>
-               </font>
-              </property>
-              <property name="toolTip">
-               <string>Clear preview</string>
-              </property>
-              <property name="text">
-               <string>AC</string>
-              </property>
-             </widget>
-            </item>
-           </layout>
-          </item>
-         </layout>
-        </item>
-       </layout>
-      </widget>
-     </widget>
-    </item>
-    <item>
-     <layout class="QGridLayout" name="gridLayout_Action" columnstretch="1,1,1">
-      <property name="leftMargin">
-       <number>10</number>
-      </property>
-      <property name="topMargin">
-       <number>0</number>
-      </property>
-      <property name="rightMargin">
-       <number>10</number>
-      </property>
-      <property name="bottomMargin">
-       <number>0</number>
-      </property>
-      <item row="0" column="1">
-       <layout class="QHBoxLayout" name="horizontalLayout_Action2" stretch="0">
-        <item>
-         <widget class="QPushButton" name="btnProcess">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="minimumSize">
-           <size>
-            <width>100</width>
-            <height>0</height>
-           </size>
-          </property>
-          <property name="font">
-           <font>
-            <pointsize>14</pointsize>
-            <bold>true</bold>
-           </font>
-          </property>
-          <property name="toolTip">
-           <string>Start conversion process</string>
-          </property>
-          <property name="text">
-           <string>Process </string>
-          </property>
-          <property name="icon">
-           <iconset resource="Resource.qrc">
-            <normaloff>:/resource/icons8-start-48.png</normaloff>:/resource/icons8-start-48.png</iconset>
-          </property>
-          <property name="iconSize">
-           <size>
-            <width>28</width>
-            <height>28</height>
-           </size>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item row="0" column="2">
-       <layout class="QHBoxLayout" name="horizontalLayout_Action3" stretch="1,0,0">
-        <property name="spacing">
-         <number>10</number>
-        </property>
-        <property name="rightMargin">
-         <number>3</number>
-        </property>
-        <item>
-         <spacer name="horizontalSpacer">
-          <property name="orientation">
-           <enum>Qt::Orientation::Horizontal</enum>
-          </property>
-          <property name="sizeHint" stdset="0">
-           <size>
-            <width>40</width>
-            <height>20</height>
-           </size>
-          </property>
-         </spacer>
-        </item>
-        <item>
-         <widget class="QPushButton" name="btnSaveAs">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="font">
-           <font>
-            <pointsize>10</pointsize>
-           </font>
-          </property>
-          <property name="toolTip">
-           <string>Save Destination contents to file</string>
-          </property>
-          <property name="text">
-           <string>Sava As</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QPushButton" name="btnExit">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="font">
-           <font>
-            <pointsize>10</pointsize>
-            <bold>false</bold>
-           </font>
-          </property>
-          <property name="toolTip">
-           <string>Exit Application</string>
-          </property>
-          <property name="text">
-           <string>Exit</string>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-      <item row="0" column="0">
-       <layout class="QHBoxLayout" name="horizontalLayout_Action1" stretch="0,1">
-        <property name="spacing">
-         <number>5</number>
-        </property>
-        <item>
-         <widget class="QPushButton" name="btnOpenFile">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="font">
-           <font>
-            <pointsize>10</pointsize>
-           </font>
-          </property>
-          <property name="toolTip">
-           <string>Open text file to Source content box</string>
-          </property>
-          <property name="text">
-           <string>Open File</string>
-          </property>
-         </widget>
-        </item>
-        <item>
-         <widget class="QLabel" name="lblFileName">
-          <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
-            <horstretch>0</horstretch>
-            <verstretch>0</verstretch>
-           </sizepolicy>
-          </property>
-          <property name="font">
-           <font>
-            <pointsize>10</pointsize>
-           </font>
-          </property>
-          <property name="text">
-           <string/>
-          </property>
-          <property name="margin">
-           <number>1</number>
-          </property>
-         </widget>
-        </item>
-       </layout>
-      </item>
-     </layout>
-    </item>
-   </layout>
-  </widget>
-  <widget class="QMenuBar" name="menuBar">
-   <property name="geometry">
-    <rect>
-     <x>0</x>
-     <y>0</y>
-     <width>1048</width>
-     <height>21</height>
-    </rect>
-   </property>
-   <widget class="QMenu" name="menuFile">
-    <property name="title">
-     <string>File</string>
-    </property>
-    <addaction name="actionExit"/>
-   </widget>
-   <widget class="QMenu" name="menuHelp">
-    <property name="title">
-     <string>Help</string>
-    </property>
-    <addaction name="actionAbout"/>
-   </widget>
-   <addaction name="menuFile"/>
-   <addaction name="menuHelp"/>
-  </widget>
-  <widget class="QStatusBar" name="statusBar"/>
-  <action name="actionExit">
-   <property name="text">
-    <string>Exit</string>
-   </property>
-  </action>
-  <action name="actionAbout">
-   <property name="text">
-    <string>About</string>
-   </property>
-  </action>
- </widget>
- <layoutdefault spacing="6" margin="11"/>
- <customwidgets>
-  <customwidget>
-   <class>DragListWidget</class>
-   <extends>QListWidget</extends>
-   <header location="global">draglistwidget.h</header>
-  </customwidget>
-  <customwidget>
-   <class>TextEditWidget</class>
-   <extends>QTextEdit</extends>
-   <header location="global">texteditwidget.h</header>
-  </customwidget>
- </customwidgets>
- <resources>
-  <include location="Resource.qrc"/>
- </resources>
- <connections/>
- <buttongroups>
-  <buttongroup name="buttonGroup_config"/>
-  <buttongroup name="buttonGroup_region"/>
- </buttongroups>
+        </action>
+    </widget>
+    <layoutdefault spacing="6" margin="11"/>
+    <customwidgets>
+        <customwidget>
+            <class>DragListWidget</class>
+            <extends>QListWidget</extends>
+            <header location="global">draglistwidget.h</header>
+        </customwidget>
+        <customwidget>
+            <class>TextEditWidget</class>
+            <extends>QTextEdit</extends>
+            <header location="global">texteditwidget.h</header>
+        </customwidget>
+    </customwidgets>
+    <resources>
+        <include location="Resource.qrc"/>
+    </resources>
+    <connections/>
+    <buttongroups>
+        <buttongroup name="buttonGroup_config"/>
+        <buttongroup name="buttonGroup_region"/>
+    </buttongroups>
 </ui>

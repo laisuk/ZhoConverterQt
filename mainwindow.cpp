@@ -332,9 +332,11 @@ void MainWindow::on_btnRefresh_clicked() const {
 }
 
 void MainWindow::on_tbSource_textChanged() const {
+    // const QLocale locale;
     ui->lblCharCount->setText(
         QStringLiteral("[ %L1 chars ]")
-        .arg(QString::number(ui->tbSource->document()->toPlainText().length())));
+        // .arg(locale.toString(ui->tbSource->document()->toPlainText().length())));
+        .arg(ui->tbSource->document()->toPlainText().length()));
 }
 
 void MainWindow::on_btnAdd_clicked() {

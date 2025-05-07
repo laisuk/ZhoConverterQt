@@ -5,6 +5,7 @@ include(qt.cmake)
 
 set(CMAKE_CXX_STANDARD 17)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
+set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "Install path" FORCE)
 
 if (WIN32)
     if (MSVC)
@@ -74,4 +75,48 @@ elseif (APPLE)
     target_link_libraries(ZhoConverterQt PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/opencc-fmmseg/libopencc_fmmseg_capi.dylib")
 elseif (UNIX)
     target_link_libraries(ZhoConverterQt PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/opencc-fmmseg/libopencc_fmmseg_capi.so")
+endif ()
+
+# Install the application binary
+install(TARGETS ZhoConverterQt
+        RUNTIME DESTINATION bin
+        BUNDLE DESTINATION "."  # Only meaningful on macOS
+)
+
+# Install external dependency DLLs or shared libraries
+if (WIN32)
+    install(FILES
+            "${CMAKE_CURRENT_SOURCE_DIR}/opencc-fmmseg/opencc_fmmseg_capi.dll"
+            DESTINATION bin
+    )
+elseif (APPLE)
+    install(FILES
+            "${CMAKE_CURRENT_SOURCE_DIR}/opencc-fmmseg/libopencc_fmmseg_capi.dylib"
+            DESTINATION "."
+    )
+elseif (UNIX)
+    install(FILES
+            "${CMAKE_CURRENT_SOURCE_DIR}/opencc-fmmseg/libopencc_fmmseg_capi.so"
+            DESTINATION bin
+    )
+endif ()
+
+# Option to deploy Qt DLLs with windeployqt
+option(DEPLOY_WITH_WINDEPLOYQT "Run windeployqt after install" ON)
+
+if (WIN32 AND NOT CMAKE_CROSSCOMPILING AND DEPLOY_WITH_WINDEPLOYQT)
+    install(CODE "
+        execute_process(
+            COMMAND \"${WINDEPLOYQT_EXECUTABLE}\"
+                --no-translations
+                --no-quick-import
+                --compiler-runtime
+                --dir \"${CMAKE_INSTALL_PREFIX}/bin\"
+                \"${CMAKE_INSTALL_PREFIX}/bin/$<TARGET_FILE_NAME:ZhoConverterQt>\"
+            RESULT_VARIABLE result
+        )
+        if (NOT result EQUAL 0)
+            message(FATAL_ERROR \"windeployqt failed with exit code \${result}\")
+        endif()
+    ")
 endif ()
