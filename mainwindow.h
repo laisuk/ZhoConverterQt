@@ -72,5 +72,6 @@ private:
 	bool filePathExists(const QString& file_path) const;
 	void update_tbSource_info(int text_code) const;
 	QString getCurrentConfig() const;
+	void *openccInstance =nullptr;
 
 };

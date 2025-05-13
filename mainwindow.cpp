@@ -11,9 +11,14 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindowClass()) {
     ui->setupUi(this);
     ui->tabWidget->setCurrentIndex(0);
+    openccInstance = opencc_new();
 }
 
 MainWindow::~MainWindow() {
+    if (openccInstance != nullptr) {
+        opencc_free(openccInstance);
+        openccInstance = nullptr;
+    }
     delete ui;
 }
 
@@ -142,17 +147,15 @@ void MainWindow::on_btnPaste_clicked() const {
         ui->statusBar->showMessage("Clipboard error.");
         return;
     }
-    const auto opencc = opencc_new();
-    const int text_code = opencc_zho_check(opencc, text.toUtf8());
+    const int text_code = opencc_zho_check(openccInstance, text.toUtf8());
     update_tbSource_info(text_code);
-    opencc_free(opencc);
 }
 
 void MainWindow::on_btnProcess_clicked() const {
     const QString config = getCurrentConfig();
     const bool is_punctuation = ui->cbPunctuation->isChecked();
 
-    const auto converter = opencc_new(); // Create converter
+    // const auto converter = opencc_new(); // Create converter
 
     // Main Conversion
     if (ui->tabWidget->currentIndex() == 0) {
@@ -160,7 +163,7 @@ void MainWindow::on_btnProcess_clicked() const {
 
         if (input.isEmpty()) {
             ui->statusBar->showMessage("Source content is empty");
-            opencc_free(converter); // Close converter
+            // opencc_free(converter); // Close converter
             return;
         }
 
@@ -176,7 +179,7 @@ void MainWindow::on_btnProcess_clicked() const {
         }
 
 
-        const auto output = opencc_convert(converter, input.toUtf8(), config.toUtf8(), is_punctuation);
+        const auto output = opencc_convert(openccInstance, input.toUtf8(), config.toUtf8(), is_punctuation);
 
         ui->tbDestination->document()->clear();
         ui->tbDestination->document()->setPlainText(
@@ -190,7 +193,7 @@ void MainWindow::on_btnProcess_clicked() const {
     if (ui->tabWidget->currentIndex() == 1) {
         if (ui->listSource->count() == 0) {
             ui->statusBar->showMessage("Nothing to convert: Empty file list.");
-            opencc_free(converter); // Close converter
+            // opencc_free(converter); // Close converter
             return;
         }
 
@@ -205,7 +208,7 @@ void MainWindow::on_btnProcess_clicked() const {
             msg.exec();
             ui->lineEditDir->setFocus();
             ui->statusBar->showMessage("Invalid output directory.");
-            opencc_free(converter);
+            // opencc_free(converter);
             return;
         }
         ui->tbPreview->clear();
@@ -227,7 +230,7 @@ void MainWindow::on_btnProcess_clicked() const {
                     input_file.close();
 
                     const auto converted_text =
-                            opencc_convert(converter, input_text.toUtf8(), config.toUtf8(),
+                            opencc_convert(openccInstance, input_text.toUtf8(), config.toUtf8(),
                                            is_punctuation);
 
                     std::string output_text = converted_text;
@@ -258,7 +261,7 @@ void MainWindow::on_btnProcess_clicked() const {
         }
         ui->statusBar->showMessage("Process completed");
     }
-    opencc_free(converter); // Close converter
+    // opencc_free(converter); // Close converter
 } // on_btnProcess_clicked
 
 void MainWindow::on_btnCopy_clicked() const {
