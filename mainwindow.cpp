@@ -16,7 +16,7 @@ MainWindow::MainWindow(QWidget *parent)
 
 MainWindow::~MainWindow() {
     if (openccInstance != nullptr) {
-        opencc_free(openccInstance);
+        opencc_delete(openccInstance);
         openccInstance = nullptr;
     }
     delete ui;
@@ -163,7 +163,7 @@ void MainWindow::on_btnProcess_clicked() const {
 
         if (input.isEmpty()) {
             ui->statusBar->showMessage("Source content is empty");
-            // opencc_free(converter); // Close converter
+            // opencc_delete(converter); // Close converter
             return;
         }
 
@@ -193,7 +193,7 @@ void MainWindow::on_btnProcess_clicked() const {
     if (ui->tabWidget->currentIndex() == 1) {
         if (ui->listSource->count() == 0) {
             ui->statusBar->showMessage("Nothing to convert: Empty file list.");
-            // opencc_free(converter); // Close converter
+            // opencc_delete(converter); // Close converter
             return;
         }
 
@@ -208,7 +208,7 @@ void MainWindow::on_btnProcess_clicked() const {
             msg.exec();
             ui->lineEditDir->setFocus();
             ui->statusBar->showMessage("Invalid output directory.");
-            // opencc_free(converter);
+            // opencc_delete(converter);
             return;
         }
         ui->tbPreview->clear();
@@ -261,7 +261,7 @@ void MainWindow::on_btnProcess_clicked() const {
         }
         ui->statusBar->showMessage("Process completed");
     }
-    // opencc_free(converter); // Close converter
+    // opencc_delete(converter); // Close converter
 } // on_btnProcess_clicked
 
 void MainWindow::on_btnCopy_clicked() const {

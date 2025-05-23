@@ -35,6 +35,8 @@ qt_standard_project_setup()
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/opencc-fmmseg)
+# Include for Boost C Library
+include_directories("D:/codes/lib")
 
 set(PROJECT_SOURCES
         main.cpp
