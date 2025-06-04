@@ -9,10 +9,10 @@ set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "Install path"
 
 if (WIN32)
     if (MSVC)
-        set(CMAKE_PREFIX_PATH "C:/QT/6.9.0/MSVC2022_64")
+        set(CMAKE_PREFIX_PATH "C:/QT/6.9.1/MSVC2022_64")
         # add_compile_options(/Zc:__cplusplus)  # Ensure __cplusplus is correctly set
     else ()
-        set(CMAKE_PREFIX_PATH "C:/Qt/6.9.0/mingw_64")
+        set(CMAKE_PREFIX_PATH "C:/Qt/6.9.1/mingw_64")
     endif ()
 
 elseif (APPLE)
