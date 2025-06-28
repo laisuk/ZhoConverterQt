@@ -6,6 +6,7 @@
 #include "opencc_fmmseg_capi.h"
 #include "zhoutilities.h"
 #include "draglistwidget.h"
+#include "OfficeDocConverter.hpp"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindowClass()) {
@@ -212,13 +213,40 @@ void MainWindow::on_btnProcess_clicked() const {
             return;
         }
         ui->tbPreview->clear();
+
+        const QSet<QString> OFFICE_EXTENSIONS = {
+            "docx", "xlsx", "pptx", "odt", "ods", "odp", "epub"
+        };
+
+        OpenccFmmsegHelper openccHelper;
+
         for (int index = 0; index < ui->listSource->count(); index++) {
             QString file_path = ui->listSource->item(index)->text();
+            QString file_basename = QFileInfo(file_path).baseName();
+            QString file_extension = QFileInfo(file_path).suffix();
             QString output_file_name =
-                    out_dir + "/" + QFileInfo(file_path).fileName();
+                    out_dir + "/" + file_basename + "_" + config + "." + file_extension;
+
+            if (OFFICE_EXTENSIONS.contains(file_extension.toLower())) {
+                // Handle Office files using OfficeDocConverter
+                auto [success, message] = OfficeDocConverter::Convert(
+                    file_path.toStdString(),
+                    output_file_name.toStdString(),
+                    file_extension.toLower().toStdString(),
+                    openccHelper, // your OpenccFmmsegHelper instance
+                    config.toStdString(),
+                    is_punctuation,
+                    true // keepFont enabled
+                );
+
+                ui->tbPreview->appendPlainText(QString("%1: %2 -> %3")
+                    .arg(QString::number(index + 1), output_file_name,
+                         QString::fromStdString(message)));
+                continue; // skip the rest of the text file logic
+            }
             if (file_path == output_file_name) {
                 ui->tbPreview->appendPlainText(
-                    QString("%1: %2 --> Skip: Output Path = Source Path.")
+                    QString("%1: %2 -> Skip: Output Path = Source Path.")
                     .arg(QString::number(index + 1), output_file_name));
                 continue;
             }
@@ -242,20 +270,20 @@ void MainWindow::on_btnProcess_clicked() const {
                         QTextStream out(&output_file);
                         out << QString::fromStdString(output_text);
                         output_file.close();
-                        ui->tbPreview->appendPlainText(QString("%1: %2 --> Done.")
+                        ui->tbPreview->appendPlainText(QString("%1: %2 -> Done.")
                             .arg(QString::number(index + 1), output_file_name));
                     } else {
                         ui->tbPreview->appendPlainText(
-                            QString("%1: %2 --> Error writing to file.")
+                            QString("%1: %2 -> Error writing to file.")
                             .arg(QString::number(index + 1), output_file_name));
                     }
                 } else {
                     ui->tbPreview->appendPlainText(
-                        QString("%1: %2 --> Skip: Not text file.")
+                        QString("%1: %2 -> Skip: Not text file.")
                         .arg(QString::number(index + 1), file_path));
                 }
             } else {
-                ui->tbPreview->appendPlainText(QString("%1: %2 --> File not found.")
+                ui->tbPreview->appendPlainText(QString("%1: %2 -> File not found.")
                     .arg(QString::number(index + 1), file_path));
             }
         }

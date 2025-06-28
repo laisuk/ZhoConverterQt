@@ -33,10 +33,14 @@ find_package(Qt${QT_VERSION_MAJOR}
 )
 qt_standard_project_setup()
 
+set(libzip_DIR "D:/codes/lib/vcpkg/vcpkg/packages/libzip_x64-windows/share/libzip")
+find_package(libzip CONFIG REQUIRED)
+
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/opencc-fmmseg)
 # Include for Boost C Library
-include_directories("D:/codes/lib")
+include_directories("D:/lib/boost_1_88_0")
+#include_directories("D:/codes/lib/vcpkg/vcpkg/packages/libzip_x64-windows/include")
 
 set(PROJECT_SOURCES
         main.cpp
@@ -51,7 +55,8 @@ set(PROJECT_SOURCES
         src/zhoutilities.cpp
 )
 
-set(APP_ICON_RESOURCE_WINDOWS "${CMAKE_CURRENT_SOURCE_DIR}/zhoconverterqt.rc")
+set(APP_ICON_RESOURCE_WINDOWS "${CMAKE_CURRENT_SOURCE_DIR}/zhoconverterqt.rc"
+        src/OfficeDocConverter.hpp)
 qt_add_resources(SOURCES Resource.qrc)
 qt_add_executable(ZhoConverterQt
         ${PROJECT_SOURCES}
@@ -70,9 +75,11 @@ target_link_libraries(ZhoConverterQt
         Qt::Gui
         Qt::Widgets
 )
+target_link_libraries(ZhoConverterQt PRIVATE libzip::zip)
 # Conditionally link the appropriate DLL file based on the operating system
 if (WIN32)
     target_link_libraries(ZhoConverterQt PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/opencc-fmmseg/opencc_fmmseg_capi.dll.lib")
+    #    target_link_libraries(ZhoConverterQt PUBLIC "D:/codes/lib/vcpkg/vcpkg/packages/libzip_x64-windows/lib/zip.lib")
 elseif (APPLE)
     target_link_libraries(ZhoConverterQt PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/opencc-fmmseg/libopencc_fmmseg_capi.dylib")
 elseif (UNIX)
