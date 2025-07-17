@@ -6,7 +6,8 @@
 #include "opencc_fmmseg_capi.h"
 #include "zhoutilities.h"
 #include "draglistwidget.h"
-#include "OfficeDocConverter.hpp"
+#include "OfficeConverter.hpp"
+#include "OfficeConverterMinizip.hpp"
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindowClass()) {
@@ -74,7 +75,7 @@ QString MainWindow::getCurrentConfig() const {
                     : (ui->rbStd->isChecked()
                            ? "t2s"
                            : (ui->rbHK->isChecked()
-                                  ? "t2hk"
+                                  ? "hk2s"
                                   : (ui->cbTWCN->isChecked()
                                          ? "tw2sp"
                                          : "tw2s")));
@@ -229,7 +230,7 @@ void MainWindow::on_btnProcess_clicked() const {
 
             if (OFFICE_EXTENSIONS.contains(file_extension.toLower())) {
                 // Handle Office files using OfficeDocConverter
-                auto [success, message] = OfficeDocConverter::Convert(
+                auto [success, message] = OfficeConverter::Convert(
                     file_path.toStdString(),
                     output_file_name.toStdString(),
                     file_extension.toLower().toStdString(),

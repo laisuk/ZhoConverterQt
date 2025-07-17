@@ -10,12 +10,13 @@
 #include <string>
 #include <vector>
 #include <sstream>
-#include <ctime>
+// #include <ctime>
 #include <algorithm>
+#include <random>
 
 namespace fs = std::filesystem;
 
-class OfficeDocConverter {
+class OfficeConverter {
 public:
     struct Result {
         bool success;
@@ -29,7 +30,7 @@ public:
                           const std::string &config,
                           bool punctuation,
                           bool keepFont = false) {
-        fs::path tempDir = fs::temp_directory_path() / ("office_tmp_" + std::to_string(std::rand()));
+        fs::path tempDir = fs::temp_directory_path() / ("office_tmp_" + std::to_string(std::random_device{}()));
         fs::create_directories(tempDir);
 
         std::ostringstream debugStream;
@@ -41,8 +42,7 @@ public:
         zip_int64_t num_entries = zip_get_num_entries(archive, 0);
         for (zip_uint64_t i = 0; i < num_entries; ++i) {
             const char *name = zip_get_name(archive, i, 0);
-            zip_file_t *file = zip_fopen_index(archive, i, 0);
-            if (file) {
+            if (zip_file_t *file = zip_fopen_index(archive, i, 0)) {
                 fs::path filePath = tempDir / fs::path(name);
                 fs::create_directories(filePath.parent_path());
                 std::ofstream out(filePath, std::ios::binary);
@@ -58,10 +58,15 @@ public:
         zip_close(archive);
 
         std::vector<fs::path> targetXmls = getTargetXmlPaths(format, tempDir);
+        size_t convertedCount = 0;
 
         for (auto &file: targetXmls) {
-            if (!fs::exists(file)) continue;
+            if (!fs::exists(file)) {
+                debugStream << "⚠️ File does not exist: " << file << "\n";
+                continue;
+            }
 
+            debugStream << "🔄 Converting file: " << file << "\n";
             std::ifstream in(file);
             std::string xml((std::istreambuf_iterator<char>(in)), std::istreambuf_iterator<char>());
             in.close();
@@ -69,6 +74,7 @@ public:
             std::map<std::string, std::string> fontMap;
             if (keepFont) {
                 maskFont(xml, format, fontMap);
+                debugStream << "🎨 Font masked with " << fontMap.size() << " markers.\n";
             }
 
             std::string converted = helper.convert(xml, config, punctuation);
@@ -85,6 +91,14 @@ public:
             std::ofstream out(file);
             out << converted;
             out.close();
+
+            ++convertedCount;
+        }
+
+        if (convertedCount == 0) {
+            debugStream << "❌ No fragments were converted. Nothing changed.\n";
+            fs::remove_all(tempDir);
+            return {false, debugStream.str()};
         }
 
         if (fs::exists(outputPath)) fs::remove(outputPath);
@@ -124,7 +138,8 @@ public:
         zip_close(zipOut);
         fs::remove_all(tempDir);
 
-        return {true, "✅ Conversion completed."};
+        // debugStream << "✅ Converted " << convertedCount << " fragment(s).\n";
+        return {true, "✅ Conversion completed.\n✅ Converted " + std::to_string(convertedCount) + " fragment(s).\n"};
     }
 
 private:
@@ -145,8 +160,8 @@ private:
             result.push_back(baseDir / "content.xml");
         } else if (format == "epub") {
             for (auto &p: fs::recursive_directory_iterator(baseDir)) {
-                std::string ext = p.path().extension().string();
-                if (ext == ".xhtml" || ext == ".opf" || ext == ".ncx") {
+                if (std::string ext = p.path().extension().string();
+                    ext == ".xhtml" || ext == ".opf" || ext == ".ncx") {
                     result.push_back(p.path());
                 }
             }
@@ -166,7 +181,7 @@ private:
             pattern = std::regex(
                 R"(((?:style:font-name(?:-asian|-complex)?|svg:font-family|style:name)=[\'\"])([^\'\"]+)([\'\"]))");
         else if (format == "epub")
-            pattern = std::regex(R"((font-family\s*:\s*)([^;"']+))");
+            pattern = std::regex(R"((font-family\s*:\s*)([^;]+)(;?))");
         else
             return;
 
@@ -174,7 +189,7 @@ private:
         size_t counter = 0;
         std::string result;
         auto begin = xml.cbegin();
-        auto end = xml.cend();
+        const auto end = xml.cend();
         while (std::regex_search(begin, end, match, pattern)) {
             std::string marker = "__F_O_N_T_" + std::to_string(counter++) + "__";
             fontMap[marker] = match[2];

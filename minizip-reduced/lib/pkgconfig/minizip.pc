@@ -1,0 +1,14 @@
+prefix=
+exec_prefix=
+libdir=/lib
+sharedlibdir=/lib
+includedir=/include/minizip
+
+Name: minizip
+Description: Zip manipulation library
+Version: 4.0.10
+
+Requires.private: 
+Libs: -L${libdir} -L${sharedlibdir} -lminizip
+Libs.private:
+Cflags: -I${includedir}
