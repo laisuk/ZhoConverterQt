@@ -167,7 +167,7 @@ private:
         } else if (format == "epub") {
             for (auto &p: fs::recursive_directory_iterator(baseDir)) {
                 if (std::string ext = p.path().extension().string();
-                    ext == ".xhtml" || ext == ".opf" || ext == ".ncx") {
+                    ext == ".xhtml" || ext == ".html" || ext == ".opf" || ext == ".ncx") {
                     result.push_back(p.path());
                 }
             }
