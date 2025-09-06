@@ -382,6 +382,8 @@ void MainWindow::on_btnAdd_clicked() {
                                           "Text Files (*.txt);;"
                                           "Subtitle Files (*.srt *.vtt *.ass *.ttml2 *.xml));;"
                                           "XML Files (*.xml *.ttml2);;"
+                                          "Office Files (*.docx *.xlsx *.pptx *.odt *.ods *.odp));;"
+                                          "Epub Files (*.epub);;"
                                           "All Files (*.*)"); !files.isEmpty()) {
         displayFileList(files);
         ui->statusBar->showMessage("File(s) added.");
@@ -391,8 +393,8 @@ void MainWindow::on_btnAdd_clicked() {
 void MainWindow::on_btnRemove_clicked() const {
     if (QList<QListWidgetItem *> selected_items = ui->listSource->selectedItems(); !selected_items.isEmpty()) {
         for (qsizetype i = selected_items.size() - 1; i >= 0; --i) {
-            QListWidgetItem *selected_item = selected_items[i];
-            int row = ui->listSource->row(selected_item);
+            const QListWidgetItem *selected_item = selected_items[i];
+            const int row = ui->listSource->row(selected_item);
             ui->listSource->takeItem(row);
             delete selected_item;
         }
