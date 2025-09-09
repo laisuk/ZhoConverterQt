@@ -42,6 +42,12 @@ public:
         return opencc_zho_check(opencc_, input.c_str());
     }
 
+    void set_parallel(bool parallel) const {
+        if (parallel) {
+            opencc_set_parallel(opencc_, parallel);
+        }
+    }
+
     static std::string lastError()
     {
         char* err = opencc_last_error();

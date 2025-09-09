@@ -14,6 +14,7 @@ MainWindow::MainWindow(QWidget *parent)
     ui->setupUi(this);
     ui->tabWidget->setCurrentIndex(0);
     openccInstance = opencc_new();
+    // opencc_set_parallel(openccInstance, false);
 }
 
 MainWindow::~MainWindow() {
@@ -165,30 +166,55 @@ void MainWindow::on_btnProcess_clicked() const {
 
         if (input.isEmpty()) {
             ui->statusBar->showMessage("Source content is empty");
-            // opencc_delete(converter); // Close converter
+            // opencc_delete(openccInstance); // if you intend to close here
             return;
         }
 
-        if (ui->rbManual->isChecked())
+        if (ui->rbManual->isChecked()) {
             ui->lblDestinationCode->setText(ui->cbManual->currentText());
-        else if (!ui->lblSourceCode->text().contains("non")) {
+        } else if (!ui->lblSourceCode->text().contains("non")) {
             ui->lblDestinationCode->setText(
                 ui->rbS2t->isChecked()
                     ? u8"zh-Hant (繁体)"
-                    : u8"zh-hans (简体)");
+                    : u8"zh-Hans (简体)"
+            );
         } else {
             ui->lblDestinationCode->setText(u8"non-zho （其它）");
         }
 
+        // Avoid temporaries: cache UTF-8 inputs for the C API
+        const QByteArray inUtf8 = input.toUtf8();
+        const QByteArray cfgUtf8 = config.toUtf8();
 
-        const auto output = opencc_convert(openccInstance, input.toUtf8(), config.toUtf8(), is_punctuation);
+        // ---- Timer start (punctuation is handled inside the Rust API) ----
+        QElapsedTimer timer;
+        timer.start();
+
+        char *output = opencc_convert(
+            openccInstance,
+            inUtf8.constData(),
+            cfgUtf8.constData(),
+            is_punctuation // punctuation is inclusive in this API
+        );
+
+        const qint64 elapsedMs = timer.elapsed();
+        // ---- Timer stop ----
 
         ui->tbDestination->document()->clear();
-        ui->tbDestination->document()->setPlainText(
-            QString::fromStdString(output));
 
-        ui->statusBar->showMessage("Conversion process completed. (" + config + ")");
-        opencc_string_free(output); // delete char* output
+        if (!output) {
+            ui->statusBar->showMessage(
+                QString("Conversion failed in %1 ms. (%2)").arg(elapsedMs).arg(config)
+            );
+            return;
+        }
+
+        ui->tbDestination->document()->setPlainText(QString::fromUtf8(output));
+        ui->statusBar->showMessage(
+            QString("Conversion completed in %1 ms. (%2)").arg(elapsedMs).arg(config)
+        );
+
+        opencc_string_free(output); // free char* from C API
     }
 
     // Batch Conversion
