@@ -124,6 +124,22 @@ public:
             fileBuffers.push_back(std::move(buffer));
         }
 
+        // after collecting filenames + fileBuffers
+        if (format == "epub") {
+            for (size_t i = 0; i < filenames.size(); ++i) {
+                // normalize to exactly "mimetype"
+                if (filenames[i] == "mimetype" || filenames[i] == "./mimetype" || filenames[i] == "/mimetype") {
+                    if (i != 0) {
+                        std::swap(filenames[0], filenames[i]);
+                        std::swap(fileBuffers[0], fileBuffers[i]);
+                    }
+                    // also normalize the name to exactly "mimetype"
+                    filenames[0] = "mimetype";
+                    break;
+                }
+            }
+        }
+
         for (size_t i = 0; i < filenames.size(); ++i) {
             zip_source_t *source = zip_source_buffer(zipOut, fileBuffers[i].data(), fileBuffers[i].size(), 0);
             if (!source || zip_file_add(zipOut, filenames[i].c_str(), source, ZIP_FL_ENC_UTF_8 | ZIP_FL_OVERWRITE) <
