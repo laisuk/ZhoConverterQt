@@ -42,7 +42,7 @@ public:
         return opencc_zho_check(opencc_, input.c_str());
     }
 
-    void set_parallel(bool parallel) const {
+    void set_parallel(const bool parallel) const {
         if (parallel) {
             opencc_set_parallel(opencc_, parallel);
         }
@@ -79,7 +79,7 @@ private:
     [[nodiscard]] std::string convertBy(const std::string& input, const std::string& config,
                                         const bool punctuation) const
     {
-        char* output = opencc_convert(opencc_, input.c_str(), config.c_str(), punctuation);
+        const char* output = opencc_convert(opencc_, input.c_str(), config.c_str(), punctuation);
         if (!output) return "";
         std::string result = ptrToStringUtf8(output);
         opencc_string_free(output);
