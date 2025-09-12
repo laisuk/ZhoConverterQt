@@ -20,24 +20,6 @@
     },
     {
       "hidden": true,
-      "name": "6.6.3_msvc2019_64",
-      "inherits": "Qt",
-      "environment": {
-        "QTDIR": "C:/QT/6.6.3/MSVC2019_64"
-      },
-      "architecture": {
-        "strategy": "external",
-        "value": "x64"
-      },
-      "generator": "Ninja",
-      "vendor": {
-        "qt-project.org/Version": {
-          "checksum": "EOuHyyT0K8W/GxFrDGasY7WTw9Y="
-        }
-      }
-    },
-    {
-      "hidden": true,
       "name": "6.7.1_msvc2019_64",
       "inherits": "Qt",
       "environment": {
@@ -121,7 +103,7 @@
   ],
   "vendor": {
     "qt-project.org/Presets": {
-      "checksum": "6ewSlsgfMQIC/Wu54pMPwOU7AfI="
+      "checksum": "ne/DJKBrKJILUm/lZ0Ot78ugV/o="
     }
   }
 }

@@ -256,7 +256,7 @@ void MainWindow::on_btnProcess_clicked() const {
 
             if (OFFICE_EXTENSIONS.contains(file_extension.toLower())) {
                 // Handle Office files using OfficeDocConverter
-                auto [success, message] = OfficeConverter::Convert(
+                auto [success, message] = OfficeConverterMinizip::Convert(
                     file_path.toStdString(),
                     output_file_name.toStdString(),
                     file_extension.toLower().toStdString(),

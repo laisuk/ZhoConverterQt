@@ -1,5 +1,6 @@
 cmake_minimum_required(VERSION 3.16)
-#set(CMAKE_TOOLCHAIN_FILE D:/lib/vcpkg/scripts/buildsystems/vcpkg.cmake)
+#set(CMAKE_TOOLCHAIN_FILE "D:/codes/lib/vcpkg/vcpkg/scripts/buildsystems/vcpkg.cmake")
+#set(VCPKG_TARGET_TRIPLET "x64-mingw-dynamic")
 project(ZhoConverterQt LANGUAGES CXX)
 
 include(qt.cmake)
@@ -10,7 +11,10 @@ set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "Install path"
 
 if (WIN32)
     if (MSVC)
-        set(CMAKE_PREFIX_PATH "C:/QT/6.9.2/MSVC2022_64")
+        set(CMAKE_PREFIX_PATH "C:/QT/6.8.3/MSVC2022_64")
+		link_directories("D:/lib/boost_1_88_0/stage/lib")
+		include_directories("D:/lib/vcpkg/installed/x64-windows-static-md/include")
+		list(APPEND CMAKE_PREFIX_PATH "D:/lib/vcpkg/installed/x64-windows-static-md")
         # add_compile_options(/Zc:__cplusplus)  # Ensure __cplusplus is correctly set
     else ()
         set(CMAKE_PREFIX_PATH "C:/Qt/6.9.2/mingw_64")
@@ -34,16 +38,21 @@ find_package(Qt${QT_VERSION_MAJOR}
 )
 qt_standard_project_setup()
 #find_package(ZLIB REQUIRED)
+#set(libzip_DIR "D:/codes/lib/vcpkg/vcpkg/packages/libzip_x64-mingw-dynamic/share/libzip")
+#set(libzip_DIR "D:/lib/vcpkg/packages/libzip_x64-windows-static/share/libzip")
+#list(APPEND CMAKE_PREFIX_PATH "D:/codes/lib/vcpkg/vcpkg/installed/x64-mingw-dynamic")
 
-set(libzip_DIR "D:/lib/vcpkg/packages/libzip_x64-windows/share/libzip")
 find_package(libzip CONFIG REQUIRED)
+find_package(ZLIB REQUIRED)
+find_package(minizip-ng CONFIG REQUIRED)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/opencc-fmmseg)
 # Include for Boost C Library
 include_directories("D:/lib/boost_1_88_0")
 # Tell CMake where to find minizip headers
-include_directories(${CMAKE_SOURCE_DIR}/minizip-reduced/include)
+#include_directories(${CMAKE_SOURCE_DIR}/minizip-reduced/include)
+
 
 set(PROJECT_SOURCES
         main.cpp
@@ -58,14 +67,17 @@ set(PROJECT_SOURCES
         src/zhoutilities.cpp
 )
 
-set(APP_ICON_RESOURCE_WINDOWS "${CMAKE_CURRENT_SOURCE_DIR}/zhoconverterqt.rc"
-        src/OfficeConverter.hpp
-        src/OfficeConverterMinizip.hpp)
+set(APP_ICON_RESOURCE_WINDOWS "${CMAKE_CURRENT_SOURCE_DIR}/zhoconverterqt.rc")
+set(HEADERS 
+	src/OfficeConverter.hpp
+    src/OfficeConverterMinizip.hpp
+)
 qt_add_resources(SOURCES Resource.qrc)
 qt_add_executable(ZhoConverterQt
         ${PROJECT_SOURCES}
         ${APP_ICON_RESOURCE_WINDOWS}
         ${SOURCES}
+		${HEADERS}
 )
 
 set_target_properties(ZhoConverterQt
@@ -79,13 +91,21 @@ target_link_libraries(ZhoConverterQt
         Qt::Gui
         Qt::Widgets
 )
-target_link_libraries(ZhoConverterQt PRIVATE libzip::zip)
-# Link static libraries manually
-target_link_libraries(ZhoConverterQt
-        PRIVATE
-        ${CMAKE_SOURCE_DIR}/minizip-reduced/lib/libminizip.dll.a
+if (MSVC)	
+#	target_link_directories(ZhoConverterQt PRIVATE "D:/lib/vcpkg/installed/x64-windows-static/lib")
+#	target_link_libraries(ZhoConverterQt PRIVATE zip zlib)
+	target_link_libraries(ZhoConverterQt PRIVATE libzip::zip)
+	target_link_libraries(ZhoConverterQt PRIVATE MINIZIP::minizip-ng)
+else ()
+	target_link_libraries(ZhoConverterQt PRIVATE libzip::zip)
+	#target_link_libraries(ZhoConverterQt
+       # PRIVATE
+       # ${CMAKE_SOURCE_DIR}/minizip-reduced/lib/libminizip.dll.a
         #        ${CMAKE_SOURCE_DIR}/minizip-reduced/lib/libzlib.dll.a
-)
+#)
+endif ()
+# Link static libraries manually
+
 
 # (Optional) Copy DLL to build dir post-build
 add_custom_command(TARGET ZhoConverterQt POST_BUILD
@@ -150,3 +170,7 @@ if (WIN32 AND NOT CMAKE_CROSSCOMPILING AND DEPLOY_WITH_WINDEPLOYQT)
         endif()
     ")
 endif ()
+
+#message(STATUS "CMAKE_PREFIX_PATH = ${CMAKE_PREFIX_PATH}")
+#message(STATUS "CMAKE_TOOLCHAIN_FILE = ${CMAKE_TOOLCHAIN_FILE}")
+#message(STATUS "VCPKG_TARGET_TRIPLET = ${VCPKG_TARGET_TRIPLET}")
