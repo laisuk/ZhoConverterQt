@@ -1,6 +1,7 @@
 #pragma once
 
 #include "OpenccFmmsegHelper.hpp"
+#include "ZipPathUtils.hpp"
 // #include "mz_strm.h"
 #include <minizip-ng/mz.h>
 #include <minizip-ng/mz_zip.h>
@@ -19,30 +20,6 @@
 #include <random>
 
 namespace fs = std::filesystem;
-
-// Return an absolute, stable version of a path without throwing.
-// static inline fs::path stable_abs(const fs::path p) {
-//     std::error_code ec;
-//     fs::path abs = fs::weakly_canonical(p, ec);
-//     if (ec) { ec.clear(); abs = fs::absolute(p, ec); }
-//     return abs;
-// }
-
-// Produce a stable ZIP entry name from an absolute file path and absolute base dir:
-// - never throws (uses error_code overloads)
-// - falls back to lexical_relative when roots differ (e.g. R:\temp vs C:\...)
-// - guarantees forward slashes + UTF-8
-// static inline std::string make_zip_entry(const fs::path& full, const fs::path& baseAbs) {
-//     std::error_code ec;
-//     fs::path rel = fs::relative(full, baseAbs, ec);
-//     if (ec || rel.empty() || rel.is_absolute()) {
-//         ec.clear();
-//         fs::path lex = full.lexically_relative(baseAbs);
-//         if (!lex.empty()) rel = std::move(lex);
-//         else              rel = full.filename(); // last resort
-//     }
-//     return rel.generic_u8string(); // UTF-8 + '/'
-// }
 
 class OfficeConverterMinizip
 {
@@ -64,7 +41,7 @@ public:
         // fs::path tempDir = fs::temp_directory_path() / ("office_tmp_" + std::to_string(std::random_device{}()));
         fs::path tempDir = fs::temp_directory_path() / ("office_tmp_" + std::to_string(std::random_device{}()));
         // Normalize base to a stable absolute path (handles \\?\ prefixes, other drives, junctions)
-        tempDir = stable_abs(tempDir);
+        tempDir = office::zip::stable_abs(tempDir);
 
         fs::create_directories(tempDir);
         // RAII: always remove temp dir on any return path (no overhead beyond a destructor call)
@@ -215,23 +192,6 @@ public:
             }
         }
 
-        // for (const auto &p: fs::recursive_directory_iterator(tempDir)) {
-        //     if (!fs::is_regular_file(p) || p.path().filename() == "mimetype") continue;
-        //
-        //     std::string relative = fs::relative(p.path(), tempDir).string();
-        //     std::replace(relative.begin(), relative.end(), '\\', '/');
-        //
-        //     std::ifstream in(p.path(), std::ios::binary);
-        //     std::vector<char> buf((std::istreambuf_iterator<char>(in)), {});
-        //
-        //     mz_zip_file file_info = {};
-        //     file_info.filename = relative.c_str();
-        //     file_info.compression_method = MZ_COMPRESS_METHOD_DEFLATE;
-        //
-        //     // Set compression level to 6
-        //     mz_zip_writer_set_compress_level(writer, MZ_COMPRESS_LEVEL_DEFAULT);
-        //     mz_zip_writer_add_buffer(writer, buf.data(), static_cast<int32_t>(buf.size()), &file_info);
-        // }
         {
             std::error_code ec;
             fs::recursive_directory_iterator it(
@@ -252,7 +212,7 @@ public:
                 }
 
                 // Robust, portable ZIP entry path (UTF-8 + '/'), works across drives
-                const std::string entry = make_zip_entry(full, tempDir);
+                const std::string entry = office::zip::make_zip_entry(full, tempDir);
 
                 std::ifstream in(full, std::ios::binary);
                 if (!in) { continue; }

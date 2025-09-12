@@ -71,6 +71,7 @@ set(APP_ICON_RESOURCE_WINDOWS "${CMAKE_CURRENT_SOURCE_DIR}/zhoconverterqt.rc")
 set(HEADERS 
 	src/OfficeConverter.hpp
     src/OfficeConverterMinizip.hpp
+    src/ZipPathUtils.hpp
 )
 qt_add_resources(SOURCES Resource.qrc)
 qt_add_executable(ZhoConverterQt
