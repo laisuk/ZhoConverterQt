@@ -6,7 +6,7 @@
 #include "opencc_fmmseg_capi.h"
 #include "zhoutilities.h"
 #include "draglistwidget.h"
-#include "OfficeConverter.hpp"
+// #include "OfficeConverter.hpp"
 #include "OfficeConverterMinizip.hpp"
 
 MainWindow::MainWindow(QWidget *parent)
@@ -406,10 +406,8 @@ void MainWindow::on_btnAdd_clicked() {
                                           "Open Files",
                                           "",
                                           "Text Files (*.txt);;"
-                                          "Subtitle Files (*.srt *.vtt *.ass *.ttml2 *.xml));;"
-                                          "XML Files (*.xml *.ttml2);;"
-                                          "Office Files (*.docx *.xlsx *.pptx *.odt *.ods *.odp));;"
-                                          "Epub Files (*.epub);;"
+                                          "Subtitle Files (*.srt *.vtt *.ass *.ttml2 *.xml);;"
+                                          "Office Files (*.docx *.xlsx *.pptx *.odt *.ods *.odp *.epub);;"
                                           "All Files (*.*)"); !files.isEmpty()) {
         displayFileList(files);
         ui->statusBar->showMessage("File(s) added.");
