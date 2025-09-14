@@ -21,6 +21,10 @@ namespace fs = std::filesystem;
 class OfficeConverter
 {
 public:
+    static inline const std::unordered_set<std::string> OFFICE_EXTENSIONS = {
+        "docx", "xlsx", "pptx", "odt", "ods", "odp", "epub"
+    };
+
     struct Result
     {
         bool success;
@@ -191,8 +195,8 @@ public:
 
         for (size_t i = 0; i < filenames.size(); ++i)
         {
-            zip_source_t* source = zip_source_buffer(zipOut, fileBuffers[i].data(), fileBuffers[i].size(), 0);
-            if (!source || zip_file_add(zipOut, filenames[i].c_str(), source, ZIP_FL_ENC_UTF_8 | ZIP_FL_OVERWRITE) <
+            if (zip_source_t* source = zip_source_buffer(zipOut, fileBuffers[i].data(), fileBuffers[i].size(), 0);
+                !source || zip_file_add(zipOut, filenames[i].c_str(), source, ZIP_FL_ENC_UTF_8 | ZIP_FL_OVERWRITE) <
                 0)
             {
                 if (source) zip_source_free(source);

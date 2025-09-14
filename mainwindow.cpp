@@ -185,186 +185,191 @@ void MainWindow::on_btnProcess_clicked()
 {
     const QString config = getCurrentConfig();
     openccFmmsegHelper.setConfig(config.toStdString());
+
     const bool is_punctuation = ui->cbPunctuation->isChecked();
     openccFmmsegHelper.setPunctuation(is_punctuation);
 
-    // Main Conversion
-    if (ui->tabWidget->currentIndex() == 0)
+    if (const int tab = ui->tabWidget->currentIndex(); tab == 0)
     {
-        const QString input = ui->tbSource->toPlainText();
+        main_process(config, is_punctuation);
+    }
+    else if (tab == 1)
+    {
+        batch_process(config, is_punctuation);
+    }
+} // on_btnProcess_clicked
 
-        if (input.isEmpty())
-        {
-            ui->statusBar->showMessage("Source content is empty");
-            return;
-        }
+// ----- single text conversion -----
+void MainWindow::main_process(const QString& config, const bool is_punctuation) const
+{
+    const QString input = ui->tbSource->toPlainText();
+    if (input.isEmpty())
+    {
+        ui->statusBar->showMessage("Source content is empty");
+        return;
+    }
 
-        if (ui->rbManual->isChecked())
+    if (ui->rbManual->isChecked())
+    {
+        ui->lblDestinationCode->setText(ui->cbManual->currentText());
+    }
+    else if (!ui->lblSourceCode->text().contains("non"))
+    {
+        ui->lblDestinationCode->setText(
+            ui->rbS2t->isChecked() ? u8"zh-Hant (繁体)" : u8"zh-Hans (简体)"
+        );
+    }
+    else
+    {
+        ui->lblDestinationCode->setText(u8"non-zho （其它）");
+    }
+
+    const QByteArray inUtf8 = input.toUtf8();
+    const QByteArray cfgUtf8 = config.toUtf8();
+
+    QElapsedTimer timer;
+    timer.start();
+
+    const auto output = openccFmmsegHelper.convert(
+        inUtf8.constData(),
+        cfgUtf8.constData(),
+        is_punctuation
+    );
+
+    const qint64 elapsedMs = timer.elapsed();
+
+    ui->tbDestination->document()->clear();
+
+    if (!output.data())
+    {
+        ui->statusBar->showMessage(
+            QString("Conversion failed in %1 ms. (%2)").arg(elapsedMs).arg(config)
+        );
+        return;
+    }
+
+    ui->tbDestination->document()->setPlainText(QString::fromUtf8(output));
+    ui->statusBar->showMessage(
+        QString("Conversion completed in %1 ms. (%2)").arg(elapsedMs).arg(config)
+    );
+}
+
+// ----- batch files conversion -----
+void MainWindow::batch_process(const QString& config, const bool is_punctuation)
+{
+    if (ui->listSource->count() == 0)
+    {
+        ui->statusBar->showMessage("Nothing to convert: Empty file list.");
+        return;
+    }
+
+    const QString out_dir = ui->lineEditDir->text();
+    if (!QDir(out_dir).exists())
+    {
+        QMessageBox msg;
+        msg.setWindowTitle("Attention");
+        msg.setIcon(QMessageBox::Information);
+        msg.setText("Invalid output directory.");
+        msg.setInformativeText("Output directory:\n" + out_dir + "\n not found.");
+        msg.exec();
+        ui->lineEditDir->setFocus();
+        ui->statusBar->showMessage("Invalid output directory.");
+        return;
+    }
+
+    ui->tbPreview->clear();
+
+    const QSet<QString> OFFICE_EXTENSIONS{
+        "docx", "xlsx", "pptx", "odt", "ods", "odp", "epub"
+    };
+
+    for (int index = 0; index < ui->listSource->count(); ++index)
+    {
+        QString file_path = ui->listSource->item(index)->text();
+        QString file_basename = QFileInfo(file_path).baseName();
+        QString file_extension = QFileInfo(file_path).suffix();
+
+        if (ui->actionConvertFilename->isChecked())
         {
-            ui->lblDestinationCode->setText(ui->cbManual->currentText());
-        }
-        else if (!ui->lblSourceCode->text().contains("non"))
-        {
-            ui->lblDestinationCode->setText(
-                ui->rbS2t->isChecked()
-                    ? u8"zh-Hant (繁体)"
-                    : u8"zh-Hans (简体)"
+            file_basename = QString::fromStdString(
+                openccFmmsegHelper.convert(file_basename.toStdString())
             );
+        }
+
+        const QString output_file_name =
+            out_dir + "/" + file_basename + "_" + config + "." + file_extension;
+
+        if (OFFICE_EXTENSIONS.contains(file_extension.toLower()))
+        {
+            auto [success, message] = OfficeConverterMinizip::Convert(
+                file_path.toStdString(),
+                output_file_name.toStdString(),
+                file_extension.toLower().toStdString(),
+                openccFmmsegHelper,
+                config.toStdString(),
+                is_punctuation,
+                /*keepFont=*/true
+            );
+
+            ui->tbPreview->appendPlainText(QString("%1: %2 -> %3")
+                .arg(QString::number(index + 1),
+                     output_file_name,
+                     QString::fromStdString(message)));
+            continue;
+        }
+
+        if (file_path == output_file_name)
+        {
+            ui->tbPreview->appendPlainText(
+                QString("%1: %2 -> Skip: Output Path = Source Path.")
+                .arg(QString::number(index + 1), output_file_name));
+            continue;
+        }
+
+        if (!QFile(file_path).exists())
+        {
+            ui->tbPreview->appendPlainText(QString("%1: %2 -> File not found.")
+                .arg(QString::number(index + 1), file_path));
+            continue;
+        }
+
+        QFile input_file(file_path);
+        if (!input_file.open(QIODevice::ReadOnly | QIODevice::Text))
+        {
+            ui->tbPreview->appendPlainText(
+                QString("%1: %2 -> Skip: Not text file.")
+                .arg(QString::number(index + 1), file_path));
+            continue;
+        }
+
+        const QString input_text = QTextStream(&input_file).readAll();
+        input_file.close();
+
+        const auto converted_text =
+            openccFmmsegHelper.convert(input_text.toStdString(),
+                                       config.toStdString(),
+                                       is_punctuation);
+
+        QFile output_file(output_file_name);
+        if (output_file.open(QIODevice::WriteOnly | QIODevice::Text))
+        {
+            QTextStream out(&output_file);
+            out << QString::fromStdString(converted_text);
+            output_file.close();
+            ui->tbPreview->appendPlainText(
+                QString("%1: %2 -> Done.")
+                .arg(QString::number(index + 1), output_file_name));
         }
         else
         {
-            ui->lblDestinationCode->setText(u8"non-zho （其它）");
+            ui->tbPreview->appendPlainText(
+                QString("%1: %2 -> Error writing to file.")
+                .arg(QString::number(index + 1), output_file_name));
         }
-
-        // Avoid temporaries: cache UTF-8 inputs for the C API
-        const QByteArray inUtf8 = input.toUtf8();
-        const QByteArray cfgUtf8 = config.toUtf8();
-
-        // ---- Timer start (punctuation is handled inside the Rust API) ----
-        QElapsedTimer timer;
-        timer.start();
-
-        auto output = openccFmmsegHelper.convert(
-            inUtf8.constData(),
-            cfgUtf8.constData(),
-            is_punctuation // punctuation is inclusive in this API
-        );
-
-        const qint64 elapsedMs = timer.elapsed();
-        // ---- Timer stop ----
-
-        ui->tbDestination->document()->clear();
-
-        if (!output.data())
-        {
-            ui->statusBar->showMessage(
-                QString("Conversion failed in %1 ms. (%2)").arg(elapsedMs).arg(config)
-            );
-            return;
-        }
-
-        ui->tbDestination->document()->setPlainText(QString::fromUtf8(output));
-        ui->statusBar->showMessage(
-            QString("Conversion completed in %1 ms. (%2)").arg(elapsedMs).arg(config)
-        );
     }
 
-    // Batch Conversion
-    if (ui->tabWidget->currentIndex() == 1)
-    {
-        if (ui->listSource->count() == 0)
-        {
-            ui->statusBar->showMessage("Nothing to convert: Empty file list.");
-            // opencc_delete(converter); // Close converter
-            return;
-        }
-
-        const QString out_dir = ui->lineEditDir->text();
-        if (!QDir(out_dir).exists())
-        {
-            QMessageBox msg;
-            msg.setWindowTitle("Attention");
-            msg.setIcon(QMessageBox::Information);
-            msg.setText("Invalid output directory.");
-            msg.setInformativeText("Output directory:\n" + out_dir + "\n not found.");
-            // msg.setDetailedText("Please set the required output directory.");
-            msg.exec();
-            ui->lineEditDir->setFocus();
-            ui->statusBar->showMessage("Invalid output directory.");
-            // opencc_delete(converter);
-            return;
-        }
-        ui->tbPreview->clear();
-
-        const QSet<QString> OFFICE_EXTENSIONS = {
-            "docx", "xlsx", "pptx", "odt", "ods", "odp", "epub"
-        };
-
-        for (int index = 0; index < ui->listSource->count(); index++)
-        {
-            QString file_path = ui->listSource->item(index)->text();
-            QString file_basename = QFileInfo(file_path).baseName();
-            QString file_extension = QFileInfo(file_path).suffix();
-            if (ui->actionConvertFilename->isChecked())
-            {
-                file_basename = QString::fromStdString(openccFmmsegHelper.convert(file_basename.toStdString()));
-            }
-            QString output_file_name =
-                out_dir + "/" + file_basename + "_" + config + "." + file_extension;
-
-            if (OFFICE_EXTENSIONS.contains(file_extension.toLower()))
-            {
-                // Handle Office files using OfficeDocConverter
-                auto [success, message] = OfficeConverterMinizip::Convert(
-                    file_path.toStdString(),
-                    output_file_name.toStdString(),
-                    file_extension.toLower().toStdString(),
-                    openccFmmsegHelper, // your OpenccFmmsegHelper instance
-                    config.toStdString(),
-                    is_punctuation,
-                    true // keepFont enabled
-                );
-
-                ui->tbPreview->appendPlainText(QString("%1: %2 -> %3")
-                    .arg(QString::number(index + 1), output_file_name,
-                         QString::fromStdString(message)));
-                continue; // skip the rest of the text file logic
-            }
-            if (file_path == output_file_name)
-            {
-                ui->tbPreview->appendPlainText(
-                    QString("%1: %2 -> Skip: Output Path = Source Path.")
-                    .arg(QString::number(index + 1), output_file_name));
-                continue;
-            }
-            if (QFile(file_path).exists())
-            {
-                QFile input_file(file_path);
-                if (input_file.open(QIODevice::ReadOnly | QIODevice::Text))
-                {
-                    QTextStream in(&input_file);
-                    QString input_text = in.readAll();
-                    input_file.close();
-
-                    const auto converted_text =
-                        openccFmmsegHelper.convert(input_text.toStdString(), config.toStdString(),
-                                                   is_punctuation);
-
-                    const std::string& output_text = converted_text;
-
-                    QFile output_file(output_file_name);
-                    if (output_file.open(QIODevice::WriteOnly | QIODevice::Text))
-                    {
-                        QTextStream out(&output_file);
-                        out << QString::fromStdString(output_text);
-                        output_file.close();
-                        ui->tbPreview->appendPlainText(QString("%1: %2 -> Done.")
-                            .arg(QString::number(index + 1), output_file_name));
-                    }
-                    else
-                    {
-                        ui->tbPreview->appendPlainText(
-                            QString("%1: %2 -> Error writing to file.")
-                            .arg(QString::number(index + 1), output_file_name));
-                    }
-                }
-                else
-                {
-                    ui->tbPreview->appendPlainText(
-                        QString("%1: %2 -> Skip: Not text file.")
-                        .arg(QString::number(index + 1), file_path));
-                }
-            }
-            else
-            {
-                ui->tbPreview->appendPlainText(QString("%1: %2 -> File not found.")
-                    .arg(QString::number(index + 1), file_path));
-            }
-        }
-        ui->statusBar->showMessage("Process completed");
-    }
-    // opencc_delete(converter); // Close converter
-} // on_btnProcess_clicked
+    ui->statusBar->showMessage("Process completed");
+}
 
 void MainWindow::on_btnCopy_clicked() const
 {

@@ -72,6 +72,8 @@ private:
 	void displayFileList(const QStringList& files) const;
 	[[nodiscard]] bool filePathExists(const QString& file_path) const;
 	void update_tbSource_info(int text_code) const;
+	void main_process(const QString& config, bool is_punctuation) const;
+	void batch_process(const QString& config, bool is_punctuation);
 	[[nodiscard]] QString getCurrentConfig() const;
 	// void *openccInstance = nullptr;
 	OpenccFmmsegHelper openccFmmsegHelper;

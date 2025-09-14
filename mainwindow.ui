@@ -345,7 +345,6 @@
       <property name="font">
        <font>
         <pointsize>10</pointsize>
-        <bold>true</bold>
        </font>
       </property>
       <property name="tabShape">
@@ -364,7 +363,7 @@
        <property name="font">
         <font>
          <pointsize>10</pointsize>
-         <bold>true</bold>
+         <bold>false</bold>
         </font>
        </property>
        <attribute name="icon">
@@ -386,7 +385,7 @@
              <font>
               <family>Noto Sans SC</family>
               <pointsize>13</pointsize>
-              <bold>true</bold>
+              <bold>false</bold>
              </font>
             </property>
             <property name="frameShape">
@@ -406,7 +405,7 @@
              <font>
               <family>Noto Sans SC</family>
               <pointsize>13</pointsize>
-              <bold>true</bold>
+              <bold>false</bold>
              </font>
             </property>
             <property name="acceptDrops">
@@ -498,7 +497,7 @@
               <property name="font">
                <font>
                 <pointsize>12</pointsize>
-                <bold>true</bold>
+                <bold>false</bold>
                </font>
               </property>
               <property name="text">
@@ -520,11 +519,14 @@
               <property name="font">
                <font>
                 <pointsize>10</pointsize>
-                <bold>true</bold>
+                <bold>false</bold>
                </font>
               </property>
               <property name="text">
                <string/>
+              </property>
+              <property name="alignment">
+               <set>Qt::AlignmentFlag::AlignRight|Qt::AlignmentFlag::AlignTrailing|Qt::AlignmentFlag::AlignVCenter</set>
               </property>
               <property name="margin">
                <number>1</number>
@@ -590,7 +592,7 @@
               <property name="font">
                <font>
                 <pointsize>10</pointsize>
-                <bold>true</bold>
+                <bold>false</bold>
                </font>
               </property>
               <property name="toolTip">
@@ -659,7 +661,7 @@
               <property name="font">
                <font>
                 <pointsize>12</pointsize>
-                <bold>true</bold>
+                <bold>false</bold>
                </font>
               </property>
               <property name="text">
@@ -703,7 +705,7 @@
               <property name="font">
                <font>
                 <pointsize>10</pointsize>
-                <bold>true</bold>
+                <bold>false</bold>
                </font>
               </property>
               <property name="toolTip">
@@ -765,7 +767,7 @@
              <font>
               <family>Microsoft YaHei UI</family>
               <pointsize>11</pointsize>
-              <bold>true</bold>
+              <bold>false</bold>
              </font>
             </property>
             <property name="acceptDrops">
@@ -796,7 +798,7 @@
               <property name="font">
                <font>
                 <pointsize>9</pointsize>
-                <bold>true</bold>
+                <bold>false</bold>
                </font>
               </property>
               <property name="toolTip">
@@ -876,7 +878,7 @@
               <property name="font">
                <font>
                 <pointsize>10</pointsize>
-                <bold>true</bold>
+                <bold>false</bold>
                </font>
               </property>
               <property name="text">

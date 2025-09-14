@@ -24,6 +24,10 @@ namespace fs = std::filesystem;
 class OfficeConverterMinizip
 {
 public:
+    static inline const std::unordered_set<std::string> OFFICE_EXTENSIONS = {
+        "docx", "xlsx", "pptx", "odt", "ods", "odp", "epub"
+    };
+
     struct Result
     {
         bool success;

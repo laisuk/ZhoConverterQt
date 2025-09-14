@@ -6,7 +6,7 @@
 #include <string>
 #include <string_view>
 #include <unordered_set>
-#include <memory>
+// #include <memory>
 #include <utility>   // std::exchange
 
 class OpenccFmmsegHelper
