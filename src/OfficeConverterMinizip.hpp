@@ -38,7 +38,6 @@ public:
                           bool punctuation,
                           bool keepFont = false)
     {
-        // fs::path tempDir = fs::temp_directory_path() / ("office_tmp_" + std::to_string(std::random_device{}()));
         fs::path tempDir = fs::temp_directory_path() / ("office_tmp_" + std::to_string(std::random_device{}()));
         // Normalize base to a stable absolute path (handles \\?\ prefixes, other drives, junctions)
         tempDir = office::zip::stable_abs(tempDir);
@@ -93,10 +92,6 @@ public:
 
         std::vector<fs::path> targetXmls = getTargetXmlPaths(format, tempDir);
 
-        // debugStream << "📂 Extracted files in temp dir:\n";
-        // for (const auto &p: fs::recursive_directory_iterator(tempDir)) {
-        //     debugStream << "  -> " << p.path() << "\n";
-        // }
         debugStream << "📂 Extracted files in temp dir:\n";
         {
             std::error_code ec;
@@ -119,8 +114,6 @@ public:
         {
             if (!fs::exists(file)) continue;
 
-            // std::ifstream in(file);
-            // std::string xml((std::istreambuf_iterator<char>(in)), {});
             std::ifstream in(file);
             std::string xml{
                 std::istreambuf_iterator<char>(in),
@@ -153,7 +146,6 @@ public:
         }
 
         void* writer = mz_zip_writer_create();
-        // mz_zip_writer_open_file(writer, outputPath.c_str(), 0, 0);
         {
             if (int rc = mz_zip_writer_open_file(writer, outputPath.c_str(), 0, 0); rc != MZ_OK)
             {
@@ -167,7 +159,6 @@ public:
             if (fs::path mimetypePath = tempDir / "mimetype"; fs::exists(mimetypePath))
             {
                 std::ifstream in(mimetypePath, std::ios::binary);
-                // std::vector<char> buf((std::istreambuf_iterator<char>(in)), {});
                 std::vector<char> buf{
                     std::istreambuf_iterator<char>(in),
                     std::istreambuf_iterator<char>()
@@ -179,7 +170,6 @@ public:
                 // Store: ensure no compression (level 0)
                 mz_zip_writer_set_compress_level(writer, 0);
 
-                // mz_zip_writer_add_buffer(writer, buf.data(), static_cast<int32_t>(buf.size()), &file_info);
                 {
                     int rc = mz_zip_writer_add_buffer(writer, buf.data(),
                                                       static_cast<int32_t>(buf.size()), &file_info);
@@ -226,7 +216,6 @@ public:
                 file_info.compression_method = MZ_COMPRESS_METHOD_DEFLATE;
 
                 mz_zip_writer_set_compress_level(writer, MZ_COMPRESS_LEVEL_DEFAULT);
-                // mz_zip_writer_add_buffer(writer, buf.data(), static_cast<int32_t>(buf.size()), &file_info);
                 {
                     int rc = mz_zip_writer_add_buffer(writer, buf.data(),
                                                       static_cast<int32_t>(buf.size()), &file_info);
@@ -242,7 +231,6 @@ public:
             }
         }
 
-        // mz_zip_writer_close(writer);
         {
             if (int rc = mz_zip_writer_close(writer); rc != MZ_OK)
             {
@@ -251,7 +239,6 @@ public:
             }
         }
         mz_zip_writer_delete(&writer);
-        // fs::remove_all(tempDir);
 
         if (convertedCount == 0)
             return {false, debugStream.str()};

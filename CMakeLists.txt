@@ -47,7 +47,6 @@ find_package(Qt${QT_VERSION_MAJOR}
 )
 qt_standard_project_setup()
 #set(libzip_DIR "D:/lib/vcpkg/packages/libzip_x64-windows-static/share/libzip")
-#list(APPEND CMAKE_PREFIX_PATH "D:/codes/lib/vcpkg/vcpkg/installed/x64-mingw-dynamic")
 
 find_package(libzip CONFIG REQUIRED)
 find_package(minizip-ng CONFIG REQUIRED)
@@ -58,7 +57,7 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/opencc-fmmseg)
 # Include for Boost C Library
 include_directories("D:/lib/boost_1_88_0")
 # Tell CMake where to find minizip headers
-#include_directories(${CMAKE_SOURCE_DIR}/minizip-reduced/include)
+# include_directories(${CMAKE_SOURCE_DIR}/minizip-reduced/include)
 
 set(PROJECT_SOURCES
         main.cpp

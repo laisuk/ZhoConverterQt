@@ -70,9 +70,9 @@ private:
     Ui::MainWindowClass *ui;
 
 	void displayFileList(const QStringList& files) const;
-	bool filePathExists(const QString& file_path) const;
+	[[nodiscard]] bool filePathExists(const QString& file_path) const;
 	void update_tbSource_info(int text_code) const;
-	QString getCurrentConfig() const;
+	[[nodiscard]] QString getCurrentConfig() const;
 	// void *openccInstance = nullptr;
 	OpenccFmmsegHelper openccFmmsegHelper;
 
