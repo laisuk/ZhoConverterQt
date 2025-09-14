@@ -243,7 +243,7 @@
            <string>Standard conversion</string>
           </property>
           <property name="text">
-           <string>Standard （标准简繁）</string>
+           <string>General （通用简繁）</string>
           </property>
           <property name="checked">
            <bool>true</bool>
@@ -285,7 +285,7 @@
            <string>Hong Kong conversion</string>
           </property>
           <property name="text">
-           <string>Hong Kong （香港简繁）</string>
+           <string>Hong Kong （中港简繁）</string>
           </property>
           <attribute name="buttonGroup">
            <string notr="true">buttonGroup_region</string>
@@ -329,7 +329,7 @@
                                             </string>
           </property>
           <property name="text">
-           <string>Punctuations （标点符号）</string>
+           <string>Punctuations （标点）</string>
           </property>
           <property name="checked">
            <bool>true</bool>
@@ -345,6 +345,7 @@
       <property name="font">
        <font>
         <pointsize>10</pointsize>
+        <bold>true</bold>
        </font>
       </property>
       <property name="tabShape">
@@ -363,6 +364,7 @@
        <property name="font">
         <font>
          <pointsize>10</pointsize>
+         <bold>true</bold>
         </font>
        </property>
        <attribute name="icon">
@@ -384,6 +386,7 @@
              <font>
               <family>Noto Sans SC</family>
               <pointsize>13</pointsize>
+              <bold>true</bold>
              </font>
             </property>
             <property name="frameShape">
@@ -403,6 +406,7 @@
              <font>
               <family>Noto Sans SC</family>
               <pointsize>13</pointsize>
+              <bold>true</bold>
              </font>
             </property>
             <property name="acceptDrops">
@@ -460,6 +464,7 @@
               <property name="font">
                <font>
                 <pointsize>10</pointsize>
+                <bold>false</bold>
                </font>
               </property>
               <property name="frameShape">
@@ -493,6 +498,7 @@
               <property name="font">
                <font>
                 <pointsize>12</pointsize>
+                <bold>true</bold>
                </font>
               </property>
               <property name="text">
@@ -514,6 +520,7 @@
               <property name="font">
                <font>
                 <pointsize>10</pointsize>
+                <bold>true</bold>
                </font>
               </property>
               <property name="text">
@@ -583,6 +590,7 @@
               <property name="font">
                <font>
                 <pointsize>10</pointsize>
+                <bold>true</bold>
                </font>
               </property>
               <property name="toolTip">
@@ -614,6 +622,7 @@
               <property name="font">
                <font>
                 <pointsize>10</pointsize>
+                <bold>false</bold>
                </font>
               </property>
               <property name="frameShape">
@@ -650,6 +659,7 @@
               <property name="font">
                <font>
                 <pointsize>12</pointsize>
+                <bold>true</bold>
                </font>
               </property>
               <property name="text">
@@ -693,6 +703,7 @@
               <property name="font">
                <font>
                 <pointsize>10</pointsize>
+                <bold>true</bold>
                </font>
               </property>
               <property name="toolTip">
@@ -754,6 +765,7 @@
              <font>
               <family>Microsoft YaHei UI</family>
               <pointsize>11</pointsize>
+              <bold>true</bold>
              </font>
             </property>
             <property name="acceptDrops">
@@ -784,6 +796,7 @@
               <property name="font">
                <font>
                 <pointsize>9</pointsize>
+                <bold>true</bold>
                </font>
               </property>
               <property name="toolTip">
@@ -863,6 +876,7 @@
               <property name="font">
                <font>
                 <pointsize>10</pointsize>
+                <bold>true</bold>
                </font>
               </property>
               <property name="text">
@@ -1063,6 +1077,9 @@
           <property name="toolTip">
            <string>Exit Application</string>
           </property>
+          <property name="styleSheet">
+           <string notr="true"/>
+          </property>
           <property name="text">
            <string>Exit</string>
           </property>
@@ -1136,6 +1153,8 @@
     <property name="title">
      <string>File</string>
     </property>
+    <addaction name="actionConvertFilename"/>
+    <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
@@ -1156,6 +1175,14 @@
   <action name="actionAbout">
    <property name="text">
     <string>About</string>
+   </property>
+  </action>
+  <action name="actionConvertFilename">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Convert Filename （转换文件名）</string>
    </property>
   </action>
  </widget>

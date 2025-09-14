@@ -35,7 +35,7 @@ void MainWindow::on_actionExit_triggered() { QApplication::quit(); }
 void MainWindow::on_actionAbout_triggered()
 {
     QMessageBox::about(this, "About",
-                       "Zho Converter version 1.0.0 (c) 2024 Bryan Lai");
+                       "ZhoConverter version 1.0.0 (c) 2025 Laisuk Lai");
 }
 
 void MainWindow::update_tbSource_info(const int text_code) const
@@ -285,6 +285,10 @@ void MainWindow::on_btnProcess_clicked()
             QString file_path = ui->listSource->item(index)->text();
             QString file_basename = QFileInfo(file_path).baseName();
             QString file_extension = QFileInfo(file_path).suffix();
+            if (ui->actionConvertFilename->isChecked())
+            {
+                file_basename = QString::fromStdString(openccFmmsegHelper.convert(file_basename.toStdString()));
+            }
             QString output_file_name =
                 out_dir + "/" + file_basename + "_" + config + "." + file_extension;
 
