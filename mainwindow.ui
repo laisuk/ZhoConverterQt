@@ -1073,14 +1073,15 @@
           <property name="font">
            <font>
             <pointsize>10</pointsize>
-            <bold>false</bold>
+            <bold>true</bold>
            </font>
           </property>
           <property name="toolTip">
            <string>Exit Application</string>
           </property>
           <property name="styleSheet">
-           <string notr="true"/>
+           <string notr="true">color: red;        /* text color */
+font-weight: bold; /* optional: make it stand out */</string>
           </property>
           <property name="text">
            <string>Exit</string>
@@ -1148,7 +1149,7 @@
      <x>0</x>
      <y>0</y>
      <width>1048</width>
-     <height>22</height>
+     <height>21</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -1206,7 +1207,7 @@
  </resources>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup_config"/>
   <buttongroup name="buttonGroup_region"/>
+  <buttongroup name="buttonGroup_config"/>
  </buttongroups>
 </ui>
