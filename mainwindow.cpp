@@ -3,25 +3,28 @@
 #include "QFileDialog"
 #include "QMessageBox"
 #include <string>
-#include "opencc_fmmseg_capi.h"
+// #include "opencc_fmmseg_capi.h"
 #include "zhoutilities.h"
 #include "draglistwidget.h"
 // #include "OfficeConverter.hpp"
 #include "OfficeConverterMinizip.hpp"
 
-MainWindow::MainWindow(QWidget *parent)
-    : QMainWindow(parent), ui(new Ui::MainWindowClass()) {
+MainWindow::MainWindow(QWidget* parent)
+    : QMainWindow(parent), ui(new Ui::MainWindowClass())
+{
     ui->setupUi(this);
     ui->tabWidget->setCurrentIndex(0);
-    openccInstance = opencc_new();
+    // openccInstance = opencc_new();
     // opencc_set_parallel(openccInstance, false);
 }
 
-MainWindow::~MainWindow() {
-    if (openccInstance != nullptr) {
-        opencc_delete(openccInstance);
-        openccInstance = nullptr;
-    }
+MainWindow::~MainWindow()
+{
+    // if (openccInstance != nullptr)
+    // {
+    //     opencc_delete(openccInstance);
+    //     openccInstance = nullptr;
+    // }
     delete ui;
 }
 
@@ -29,96 +32,113 @@ void MainWindow::on_btnExit_clicked() { this->close(); }
 
 void MainWindow::on_actionExit_triggered() { QApplication::quit(); }
 
-void MainWindow::on_actionAbout_triggered() {
+void MainWindow::on_actionAbout_triggered()
+{
     QMessageBox::about(this, "About",
                        "Zho Converter version 1.0.0 (c) 2024 Bryan Lai");
 }
 
-void MainWindow::update_tbSource_info(const int text_code) const {
-    switch (text_code) {
-        case 2:
-            ui->rbS2t->setChecked(true);
-            ui->lblSourceCode->setText(u8"zh-Hans (简体)");
-            break;
-        case 1:
-            ui->rbT2s->setChecked(true);
-            ui->lblSourceCode->setText(u8"zh-Hant (繁体)");
-            break;
-        case -1:
-            ui->lblSourceCode->setText(u8"unknown (未知)");
-            break;
-        default:
-            ui->lblSourceCode->setText(u8"non-zho （其它）");
-            break;
+void MainWindow::update_tbSource_info(const int text_code) const
+{
+    switch (text_code)
+    {
+    case 2:
+        ui->rbS2t->setChecked(true);
+        ui->lblSourceCode->setText(u8"zh-Hans (简体)");
+        break;
+    case 1:
+        ui->rbT2s->setChecked(true);
+        ui->lblSourceCode->setText(u8"zh-Hant (繁体)");
+        break;
+    case -1:
+        ui->lblSourceCode->setText(u8"unknown (未知)");
+        break;
+    default:
+        ui->lblSourceCode->setText(u8"non-zho （其它）");
+        break;
     }
     ui->lblFileName->setText(
         ui->tbSource->contentFilename.section("/", -1, -1));
 
-    if (!ui->tbSource->contentFilename.isEmpty()) {
+    if (!ui->tbSource->contentFilename.isEmpty())
+    {
         ui->statusBar->showMessage("File: " + ui->tbSource->contentFilename);
     }
 }
 
-QString MainWindow::getCurrentConfig() const {
+QString MainWindow::getCurrentConfig() const
+{
     QString config;
-    if (ui->rbManual->isChecked()) {
+    if (ui->rbManual->isChecked())
+    {
         config = ui->cbManual->currentText().split(' ').first();
-    } else {
+    }
+    else
+    {
         config =
-                ui->rbS2t->isChecked()
-                    ? (ui->rbStd->isChecked()
-                           ? "s2t"
-                           : (ui->rbHK->isChecked()
-                                  ? "s2hk"
-                                  : (ui->cbTWCN->isChecked()
-                                         ? "s2twp"
-                                         : "s2tw")))
-                    : (ui->rbStd->isChecked()
-                           ? "t2s"
-                           : (ui->rbHK->isChecked()
-                                  ? "hk2s"
-                                  : (ui->cbTWCN->isChecked()
-                                         ? "tw2sp"
-                                         : "tw2s")));
+            ui->rbS2t->isChecked()
+                ? (ui->rbStd->isChecked()
+                       ? "s2t"
+                       : (ui->rbHK->isChecked()
+                              ? "s2hk"
+                              : (ui->cbTWCN->isChecked()
+                                     ? "s2twp"
+                                     : "s2tw")))
+                : (ui->rbStd->isChecked()
+                       ? "t2s"
+                       : (ui->rbHK->isChecked()
+                              ? "hk2s"
+                              : (ui->cbTWCN->isChecked()
+                                     ? "tw2sp"
+                                     : "tw2s")));
     }
     return config;
 }
 
-void MainWindow::displayFileList(const QStringList &files) const {
-    for (const QString &file: files) {
+void MainWindow::displayFileList(const QStringList& files) const
+{
+    for (const QString& file : files)
+    {
         // Check if the file path is not already in the list box
-        if (!filePathExists(file)) {
+        if (!filePathExists(file))
+        {
             ui->listSource->addItem(file);
         }
     }
 }
 
-bool MainWindow::filePathExists(const QString &file_path) const {
+bool MainWindow::filePathExists(const QString& file_path) const
+{
     // Check if the file path is already in the list box
-    for (int index = 0; index < ui->listSource->count(); ++index) {
-        if (const QListWidgetItem *item = ui->listSource->item(index); item && item->text() == file_path) {
+    for (int index = 0; index < ui->listSource->count(); ++index)
+    {
+        if (const QListWidgetItem* item = ui->listSource->item(index); item && item->text() == file_path)
+        {
             return true;
         }
     }
     return false;
 }
 
-void MainWindow::on_tabWidget_currentChanged(const int index) const {
-    switch (index) {
-        case 0:
-            ui->btnOpenFile->setEnabled(true);
-            ui->btnSaveAs->setEnabled(true);
-            break;
-        case 1:
-            ui->btnOpenFile->setEnabled(false);
-            ui->btnSaveAs->setEnabled(false);
-            break;
-        default:
-            break;
+void MainWindow::on_tabWidget_currentChanged(const int index) const
+{
+    switch (index)
+    {
+    case 0:
+        ui->btnOpenFile->setEnabled(true);
+        ui->btnSaveAs->setEnabled(true);
+        break;
+    case 1:
+        ui->btnOpenFile->setEnabled(false);
+        ui->btnSaveAs->setEnabled(false);
+        break;
+    default:
+        break;
     }
 }
 
-void MainWindow::on_rbStd_clicked() const {
+void MainWindow::on_rbStd_clicked() const
+{
     ui->cbTWCN->setCheckState(Qt::Unchecked);
 }
 
@@ -126,59 +146,73 @@ void MainWindow::on_rbHK_clicked() const { ui->cbTWCN->setCheckState(Qt::Uncheck
 
 void MainWindow::on_rbZHTW_clicked() const { ui->cbTWCN->setCheckState(Qt::Checked); }
 
-void MainWindow::on_cbTWCN_stateChanged(const int state) const {
-    if (state) {
+void MainWindow::on_cbTWCN_stateChanged(const int state) const
+{
+    if (state)
+    {
         ui->rbZHTW->setChecked(true);
     }
 }
 
-void MainWindow::on_btnPaste_clicked() const {
+void MainWindow::on_btnPaste_clicked() const
+{
     if (QGuiApplication::clipboard()->text().isEmpty() ||
-        QGuiApplication::clipboard()->text().isNull()) {
+        QGuiApplication::clipboard()->text().isNull())
+    {
         ui->statusBar->showMessage("Clipboard empty");
         return;
     }
 
     QString text;
 
-    try {
+    try
+    {
         text = QGuiApplication::clipboard()->text();
         ui->tbSource->document()->setPlainText(text);
         ui->tbSource->contentFilename = "";
         ui->statusBar->showMessage("Clipboard contents pasted.");
-    } catch (...) {
+    }
+    catch (...)
+    {
         ui->statusBar->showMessage("Clipboard error.");
         return;
     }
-    const int text_code = opencc_zho_check(openccInstance, text.toUtf8());
+    const int text_code = openccFmmsegHelper.zhoCheck(text.toStdString());
     update_tbSource_info(text_code);
 }
 
-void MainWindow::on_btnProcess_clicked() const {
+void MainWindow::on_btnProcess_clicked()
+{
     const QString config = getCurrentConfig();
+    openccFmmsegHelper.setConfig(config.toStdString());
     const bool is_punctuation = ui->cbPunctuation->isChecked();
-
-    // const auto converter = opencc_new(); // Create converter
+    openccFmmsegHelper.setPunctuation(is_punctuation);
 
     // Main Conversion
-    if (ui->tabWidget->currentIndex() == 0) {
+    if (ui->tabWidget->currentIndex() == 0)
+    {
         const QString input = ui->tbSource->toPlainText();
 
-        if (input.isEmpty()) {
+        if (input.isEmpty())
+        {
             ui->statusBar->showMessage("Source content is empty");
-            // opencc_delete(openccInstance); // if you intend to close here
             return;
         }
 
-        if (ui->rbManual->isChecked()) {
+        if (ui->rbManual->isChecked())
+        {
             ui->lblDestinationCode->setText(ui->cbManual->currentText());
-        } else if (!ui->lblSourceCode->text().contains("non")) {
+        }
+        else if (!ui->lblSourceCode->text().contains("non"))
+        {
             ui->lblDestinationCode->setText(
                 ui->rbS2t->isChecked()
                     ? u8"zh-Hant (繁体)"
                     : u8"zh-Hans (简体)"
             );
-        } else {
+        }
+        else
+        {
             ui->lblDestinationCode->setText(u8"non-zho （其它）");
         }
 
@@ -190,8 +224,7 @@ void MainWindow::on_btnProcess_clicked() const {
         QElapsedTimer timer;
         timer.start();
 
-        char *output = opencc_convert(
-            openccInstance,
+        auto output = openccFmmsegHelper.convert(
             inUtf8.constData(),
             cfgUtf8.constData(),
             is_punctuation // punctuation is inclusive in this API
@@ -202,7 +235,8 @@ void MainWindow::on_btnProcess_clicked() const {
 
         ui->tbDestination->document()->clear();
 
-        if (!output) {
+        if (!output.data())
+        {
             ui->statusBar->showMessage(
                 QString("Conversion failed in %1 ms. (%2)").arg(elapsedMs).arg(config)
             );
@@ -213,20 +247,21 @@ void MainWindow::on_btnProcess_clicked() const {
         ui->statusBar->showMessage(
             QString("Conversion completed in %1 ms. (%2)").arg(elapsedMs).arg(config)
         );
-
-        opencc_string_free(output); // free char* from C API
     }
 
     // Batch Conversion
-    if (ui->tabWidget->currentIndex() == 1) {
-        if (ui->listSource->count() == 0) {
+    if (ui->tabWidget->currentIndex() == 1)
+    {
+        if (ui->listSource->count() == 0)
+        {
             ui->statusBar->showMessage("Nothing to convert: Empty file list.");
             // opencc_delete(converter); // Close converter
             return;
         }
 
         const QString out_dir = ui->lineEditDir->text();
-        if (!QDir(out_dir).exists()) {
+        if (!QDir(out_dir).exists())
+        {
             QMessageBox msg;
             msg.setWindowTitle("Attention");
             msg.setIcon(QMessageBox::Information);
@@ -245,22 +280,22 @@ void MainWindow::on_btnProcess_clicked() const {
             "docx", "xlsx", "pptx", "odt", "ods", "odp", "epub"
         };
 
-        OpenccFmmsegHelper openccHelper;
-
-        for (int index = 0; index < ui->listSource->count(); index++) {
+        for (int index = 0; index < ui->listSource->count(); index++)
+        {
             QString file_path = ui->listSource->item(index)->text();
             QString file_basename = QFileInfo(file_path).baseName();
             QString file_extension = QFileInfo(file_path).suffix();
             QString output_file_name =
-                    out_dir + "/" + file_basename + "_" + config + "." + file_extension;
+                out_dir + "/" + file_basename + "_" + config + "." + file_extension;
 
-            if (OFFICE_EXTENSIONS.contains(file_extension.toLower())) {
+            if (OFFICE_EXTENSIONS.contains(file_extension.toLower()))
+            {
                 // Handle Office files using OfficeDocConverter
                 auto [success, message] = OfficeConverterMinizip::Convert(
                     file_path.toStdString(),
                     output_file_name.toStdString(),
                     file_extension.toLower().toStdString(),
-                    openccHelper, // your OpenccFmmsegHelper instance
+                    openccFmmsegHelper, // your OpenccFmmsegHelper instance
                     config.toStdString(),
                     is_punctuation,
                     true // keepFont enabled
@@ -271,45 +306,53 @@ void MainWindow::on_btnProcess_clicked() const {
                          QString::fromStdString(message)));
                 continue; // skip the rest of the text file logic
             }
-            if (file_path == output_file_name) {
+            if (file_path == output_file_name)
+            {
                 ui->tbPreview->appendPlainText(
                     QString("%1: %2 -> Skip: Output Path = Source Path.")
                     .arg(QString::number(index + 1), output_file_name));
                 continue;
             }
-            if (QFile(file_path).exists()) {
+            if (QFile(file_path).exists())
+            {
                 QFile input_file(file_path);
-                if (input_file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+                if (input_file.open(QIODevice::ReadOnly | QIODevice::Text))
+                {
                     QTextStream in(&input_file);
                     QString input_text = in.readAll();
                     input_file.close();
 
                     const auto converted_text =
-                            opencc_convert(openccInstance, input_text.toUtf8(), config.toUtf8(),
-                                           is_punctuation);
+                        openccFmmsegHelper.convert(input_text.toStdString(), config.toStdString(),
+                                                   is_punctuation);
 
-                    std::string output_text = converted_text;
-
-                    opencc_string_free(converted_text); // Free up char* convertedText in loop
+                    const std::string& output_text = converted_text;
 
                     QFile output_file(output_file_name);
-                    if (output_file.open(QIODevice::WriteOnly | QIODevice::Text)) {
+                    if (output_file.open(QIODevice::WriteOnly | QIODevice::Text))
+                    {
                         QTextStream out(&output_file);
                         out << QString::fromStdString(output_text);
                         output_file.close();
                         ui->tbPreview->appendPlainText(QString("%1: %2 -> Done.")
                             .arg(QString::number(index + 1), output_file_name));
-                    } else {
+                    }
+                    else
+                    {
                         ui->tbPreview->appendPlainText(
                             QString("%1: %2 -> Error writing to file.")
                             .arg(QString::number(index + 1), output_file_name));
                     }
-                } else {
+                }
+                else
+                {
                     ui->tbPreview->appendPlainText(
                         QString("%1: %2 -> Skip: Not text file.")
                         .arg(QString::number(index + 1), file_path));
                 }
-            } else {
+            }
+            else
+            {
                 ui->tbPreview->appendPlainText(QString("%1: %2 -> File not found.")
                     .arg(QString::number(index + 1), file_path));
             }
@@ -319,23 +362,29 @@ void MainWindow::on_btnProcess_clicked() const {
     // opencc_delete(converter); // Close converter
 } // on_btnProcess_clicked
 
-void MainWindow::on_btnCopy_clicked() const {
-    if (ui->tbDestination->document()->isEmpty()) {
+void MainWindow::on_btnCopy_clicked() const
+{
+    if (ui->tbDestination->document()->isEmpty())
+    {
         ui->statusBar->showMessage("Destination content empty.");
         return;
     }
 
-    try {
+    try
+    {
         QGuiApplication::clipboard()->setText(
             ui->tbDestination->document()->toPlainText());
-    } catch (...) {
+    }
+    catch (...)
+    {
         ui->statusBar->showMessage("Clipboard error.");
         return;
     }
     ui->statusBar->showMessage("Destination contents copied to clipboard");
 }
 
-void MainWindow::on_btnOpenFile_clicked() {
+void MainWindow::on_btnOpenFile_clicked()
+{
     const QString file_name = QFileDialog::getOpenFileName(
         this, tr("Open Text File"), ".",
         tr("Text Files (*.txt);;"
@@ -361,10 +410,11 @@ void MainWindow::on_btnOpenFile_clicked() {
     update_tbSource_info(text_code);
 }
 
-void MainWindow::on_btnSaveAs_clicked() {
+void MainWindow::on_btnSaveAs_clicked()
+{
     const auto filename =
-            QFileDialog::getSaveFileName(this, tr("Save Text File"), "./File.txt",
-                                         tr("Text File (*.txt);;All Files (*.*)"));
+        QFileDialog::getSaveFileName(this, tr("Save Text File"), "./File.txt",
+                                     tr("Text File (*.txt);;All Files (*.*)"));
     if (filename.isEmpty())
         return;
 
@@ -381,15 +431,18 @@ void MainWindow::on_btnSaveAs_clicked() {
     file.close();
 }
 
-void MainWindow::on_btnRefresh_clicked() const {
-    if (ui->tbSource->toPlainText().isEmpty()) {
+void MainWindow::on_btnRefresh_clicked() const
+{
+    if (ui->tbSource->toPlainText().isEmpty())
+    {
         return;
     }
     const int text_code = ZhoCheck(ui->tbSource->toPlainText().toStdString());
     update_tbSource_info(text_code);
 }
 
-void MainWindow::on_tbSource_textChanged() const {
+void MainWindow::on_tbSource_textChanged() const
+{
     // const QLocale locale;
     ui->lblCharCount->setText(
         QStringLiteral("[ %L1 chars ]")
@@ -397,27 +450,32 @@ void MainWindow::on_tbSource_textChanged() const {
         .arg(ui->tbSource->document()->toPlainText().length()));
 }
 
-void MainWindow::on_btnAdd_clicked() {
+void MainWindow::on_btnAdd_clicked()
+{
     QFileDialog file_dialog(this);
     file_dialog.setFileMode(QFileDialog::ExistingFiles);
 
     if (const QStringList files =
-            QFileDialog::getOpenFileNames(this,
-                                          "Open Files",
-                                          "",
-                                          "Text Files (*.txt);;"
-                                          "Subtitle Files (*.srt *.vtt *.ass *.ttml2 *.xml);;"
-                                          "Office Files (*.docx *.xlsx *.pptx *.odt *.ods *.odp *.epub);;"
-                                          "All Files (*.*)"); !files.isEmpty()) {
+        QFileDialog::getOpenFileNames(this,
+                                      "Open Files",
+                                      "",
+                                      "Text Files (*.txt);;"
+                                      "Subtitle Files (*.srt *.vtt *.ass *.ttml2 *.xml);;"
+                                      "Office Files (*.docx *.xlsx *.pptx *.odt *.ods *.odp *.epub);;"
+                                      "All Files (*.*)"); !files.isEmpty())
+    {
         displayFileList(files);
         ui->statusBar->showMessage("File(s) added.");
     }
 }
 
-void MainWindow::on_btnRemove_clicked() const {
-    if (QList<QListWidgetItem *> selected_items = ui->listSource->selectedItems(); !selected_items.isEmpty()) {
-        for (qsizetype i = selected_items.size() - 1; i >= 0; --i) {
-            const QListWidgetItem *selected_item = selected_items[i];
+void MainWindow::on_btnRemove_clicked() const
+{
+    if (QList<QListWidgetItem*> selected_items = ui->listSource->selectedItems(); !selected_items.isEmpty())
+    {
+        for (qsizetype i = selected_items.size() - 1; i >= 0; --i)
+        {
+            const QListWidgetItem* selected_item = selected_items[i];
             const int row = ui->listSource->row(selected_item);
             ui->listSource->takeItem(row);
             delete selected_item;
@@ -426,58 +484,70 @@ void MainWindow::on_btnRemove_clicked() const {
     }
 }
 
-void MainWindow::on_btnListClear_clicked() const {
+void MainWindow::on_btnListClear_clicked() const
+{
     ui->listSource->clear();
     ui->statusBar->showMessage("All entries cleared.");
 }
 
-void MainWindow::on_btnPreview_clicked() const {
-    if (QList<QListWidgetItem *> selected_items = ui->listSource->selectedItems(); !selected_items.isEmpty()) {
-        const QListWidgetItem *selected_item = selected_items[0];
+void MainWindow::on_btnPreview_clicked() const
+{
+    if (QList<QListWidgetItem*> selected_items = ui->listSource->selectedItems(); !selected_items.isEmpty())
+    {
+        const QListWidgetItem* selected_item = selected_items[0];
         const QString file_path = selected_item->text();
 
         QFile file(file_path);
-        if (file.open(QIODevice::ReadOnly | QIODevice::Text)) {
+        if (file.open(QIODevice::ReadOnly | QIODevice::Text))
+        {
             QTextStream in(&file);
             const QString contents = in.readAll();
             file.close();
             ui->tbPreview->setPlainText(contents);
             ui->statusBar->showMessage("Preview: " + file_path);
-        } else {
+        }
+        else
+        {
             ui->tbPreview->clear();
             ui->statusBar->showMessage(file_path + ": Not a valid text file.");
         }
     }
 }
 
-void MainWindow::on_btnOutDir_clicked() {
+void MainWindow::on_btnOutDir_clicked()
+{
     QFileDialog file_dialog(this);
     file_dialog.setFileMode(QFileDialog::Directory);
 
-    if (const QString directory = QFileDialog::getExistingDirectory(this, ""); !directory.isEmpty()) {
+    if (const QString directory = QFileDialog::getExistingDirectory(this, ""); !directory.isEmpty())
+    {
         ui->lineEditDir->setText(directory);
         ui->statusBar->showMessage("Output directory set: " + directory);
     }
 }
 
-void MainWindow::on_btnPreviewClear_clicked() const {
+void MainWindow::on_btnPreviewClear_clicked() const
+{
     ui->tbPreview->clear();
     ui->statusBar->showMessage("Preview contents cleared");
 }
 
-void MainWindow::on_btnClearTbSource_clicked() const {
+void MainWindow::on_btnClearTbSource_clicked() const
+{
     ui->tbSource->clear();
     ui->lblSourceCode->setText("");
     ui->lblFileName->setText("");
     ui->statusBar->showMessage("Source contents cleared");
 }
 
-void MainWindow::on_btnClearTbDestination_clicked() const {
+void MainWindow::on_btnClearTbDestination_clicked() const
+{
     ui->tbDestination->clear();
     ui->lblDestinationCode->setText("");
     ui->statusBar->showMessage("Destination contents cleared");
 }
 
-void MainWindow::on_cbManual_activated() const {
+void MainWindow::on_cbManual_activated() const
+{
     ui->rbManual->setChecked(true);
 }

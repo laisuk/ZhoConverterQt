@@ -2,6 +2,7 @@
 
 #include <QtWidgets/QMainWindow>
 #include "ui_mainwindow.h"
+#include "OpenccFmmsegHelper.hpp"
 
 QT_BEGIN_NAMESPACE
 namespace Ui { class MainWindowClass; };
@@ -35,7 +36,7 @@ private slots:
 
 	void on_btnPaste_clicked() const;
 
-	void on_btnProcess_clicked() const;
+	void on_btnProcess_clicked();
 
 	void on_btnCopy_clicked() const;
 
@@ -72,6 +73,7 @@ private:
 	bool filePathExists(const QString& file_path) const;
 	void update_tbSource_info(int text_code) const;
 	QString getCurrentConfig() const;
-	void *openccInstance = nullptr;
+	// void *openccInstance = nullptr;
+	OpenccFmmsegHelper openccFmmsegHelper;
 
 };
