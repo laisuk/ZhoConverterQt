@@ -18,6 +18,7 @@
 #include <sstream>
 #include <algorithm>
 #include <random>
+#include <unordered_set>
 
 namespace fs = std::filesystem;
 
