@@ -94,8 +94,7 @@ public:
                 fs::create_directories(outPath.parent_path());
 
                 // One-shot save (no need to keep entry open yourself)
-                int rc = mz_zip_reader_entry_save_file(reader, outPath.string().c_str());
-                if (rc != MZ_OK)
+                if (int rc = mz_zip_reader_entry_save_file(reader, outPath.string().c_str()); rc != MZ_OK)
                 {
                     // As a fallback, try opening/closing explicitly once
                     if (mz_zip_reader_entry_open(reader) == MZ_OK)
@@ -158,8 +157,7 @@ public:
             fs::remove(outputPath, ec);
         }
 
-        int rc_open = mz_zip_writer_open_file(writer, outputPath.c_str(), 0, 0);
-        if (rc_open != MZ_OK)
+        if (int rc_open = mz_zip_writer_open_file(writer, outputPath.c_str(), 0, 0); rc_open != MZ_OK)
         {
             ok = false;
             debugStream << "minizip: open_file failed rc=" << rc_open << "\n";
@@ -173,8 +171,7 @@ public:
             // EPUB: write mimetype first, stored (no compression)
             if (format == "epub")
             {
-                fs::path mimetypePath = tempDir / "mimetype";
-                if (fs::exists(mimetypePath))
+                if (fs::path mimetypePath = tempDir / "mimetype"; fs::exists(mimetypePath))
                 {
                     std::ifstream in(mimetypePath, std::ios::binary);
                     std::vector<char> buf{std::istreambuf_iterator<char>(in), std::istreambuf_iterator<char>()};
@@ -187,8 +184,8 @@ public:
                     mz_zip_writer_set_compress_method(writer, MZ_COMPRESS_METHOD_STORE);
                     mz_zip_writer_set_compress_level(writer, 0);
 
-                    int rc = mz_zip_writer_add_buffer(writer, buf.data(), static_cast<int32_t>(buf.size()), &file_info);
-                    if (rc != MZ_OK)
+                    if (int rc = mz_zip_writer_add_buffer(writer, buf.data(), static_cast<int32_t>(buf.size()),
+                                                          &file_info); rc != MZ_OK)
                     {
                         ok = false;
                         debugStream << "minizip: add_buffer(mimetype) failed rc=" << rc << "\n";
@@ -236,8 +233,8 @@ public:
                     mz_zip_writer_set_compress_method(writer, MZ_COMPRESS_METHOD_DEFLATE);
                     mz_zip_writer_set_compress_level(writer, MZ_COMPRESS_LEVEL_DEFAULT);
 
-                    int rc = mz_zip_writer_add_buffer(writer, buf.data(), static_cast<int32_t>(buf.size()), &file_info);
-                    if (rc != MZ_OK)
+                    if (int rc = mz_zip_writer_add_buffer(writer, buf.data(), static_cast<int32_t>(buf.size()),
+                                                          &file_info); rc != MZ_OK)
                     {
                         ok = false;
                         debugStream << "minizip: add_buffer(" << entry << ") failed rc=" << rc << "\n";
