@@ -6,7 +6,7 @@
 // #include "opencc_fmmseg_capi.h"
 #include "zhoutilities.h"
 #include "draglistwidget.h"
-// #include "OfficeConverter.hpp"
+#include "OfficeConverter.hpp"
 #include "OfficeConverterMinizip.hpp"
 
 MainWindow::MainWindow(QWidget* parent)
@@ -289,7 +289,7 @@ void MainWindow::batch_process(const QString& config, const bool is_punctuation)
     ui->tbPreview->clear();
 
     const QSet<QString> OFFICE_EXTENSIONS{
-        "docx", "xlsx", "pptx", "odt", "ods", "odp", "epub"
+        "docx", "xlsx", "pptx", "odt", "ods", "odp", "epub", "zip"
     };
 
     for (int index = 0; index < ui->listSource->count(); ++index)

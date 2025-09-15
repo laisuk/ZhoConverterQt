@@ -1,12 +1,19 @@
 cmake_minimum_required(VERSION 3.16)
-set(CMAKE_TOOLCHAIN_FILE "D:/lib/vcpkg/scripts/buildsystems/vcpkg.cmake")
-if (MSVC)
-    set(VCPKG_TARGET_TRIPLET "x64-windows-static-md" CACHE STRING "" FORCE)
-    set(VCPKG_HOST_TRIPLET "x64-windows-static-md" CACHE STRING "" FORCE)
-else ()
-    set(VCPKG_TARGET_TRIPLET "x64-mingw-static" CACHE STRING "" FORCE)
-    set(VCPKG_HOST_TRIPLET "x64-mingw-static" CACHE STRING "" FORCE)
+if (WIN32)
+    set(CMAKE_TOOLCHAIN_FILE "D:/lib/vcpkg/scripts/buildsystems/vcpkg.cmake")
+    if (MSVC)
+        set(VCPKG_TARGET_TRIPLET "x64-windows-static-md" CACHE STRING "" FORCE)
+        set(VCPKG_HOST_TRIPLET "x64-windows-static-md" CACHE STRING "" FORCE)
+    else ()
+        set(VCPKG_TARGET_TRIPLET "x64-mingw-static" CACHE STRING "" FORCE)
+        set(VCPKG_HOST_TRIPLET "x64-mingw-static" CACHE STRING "" FORCE)
+    endif ()
+elseif (UNIX)
+    set(CMAKE_TOOLCHAIN_FILE "/home/bryan/lib/vcpkg/scripts/buildsystems/vcpkg.cmake")
+    set(VCPKG_TARGET_TRIPLET "x64-linux" CACHE STRING "" FORCE)
+    set(VCPKG_HOST_TRIPLET "x64-linux" CACHE STRING "" FORCE)
 endif ()
+
 
 project(ZhoConverterQt LANGUAGES CXX)
 
@@ -28,12 +35,18 @@ if (WIN32)
         include_directories("D:/lib/vcpkg/installed/x64-mingw-static/include")
         list(APPEND CMAKE_PREFIX_PATH "D:/lib/vcpkg/installed/x64-mingw-static")
     endif ()
+    # Include for Boost C Library
+    include_directories("D:/lib/boost_1_88_0")
 
 elseif (APPLE)
     set(CMAKE_PREFIX_PATH "/Users/bryan/Qt/6.8.3/macos")
 
 elseif (UNIX)
-    set(CMAKE_PREFIX_PATH "/home/bryan/Qt/6.8.3/gcc_64")
+    set(CMAKE_PREFIX_PATH "/opt/Qt/6.8.3/gcc_64")
+    list(APPEND CMAKE_PREFIX_PATH "/home/bryan/lib/vcpkg/installed/x64-linux")
+    include_directories("/home/bryan/lib/vcpkg/installed/x64-linux/include")
+    include_directories("/home/bryan/lib")
+    set(CMAKE_BUILD_RPATH "$ORIGIN")
 endif ()
 
 set(QT_DIR "${CMAKE_PREFIX_PATH}/lib/cmake/Qt6")
@@ -54,8 +67,7 @@ find_package(ZLIB REQUIRED)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/opencc-fmmseg)
-# Include for Boost C Library
-include_directories("D:/lib/boost_1_88_0")
+
 # Tell CMake where to find minizip headers
 # include_directories(${CMAKE_SOURCE_DIR}/minizip-reduced/include)
 
@@ -113,14 +125,14 @@ endif ()
 # Link static libraries manually
 
 # (Optional) Copy DLL to build dir post-build
-add_custom_command(TARGET ZhoConverterQt POST_BUILD
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${CMAKE_SOURCE_DIR}/minizip-reduced/bin/libzlib1.dll
-        $<TARGET_FILE_DIR:ZhoConverterQt>
-        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-        ${CMAKE_SOURCE_DIR}/minizip-reduced/bin/libminizip.dll
-        $<TARGET_FILE_DIR:ZhoConverterQt>
-)
+#add_custom_command(TARGET ZhoConverterQt POST_BUILD
+#        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+#        ${CMAKE_SOURCE_DIR}/minizip-reduced/bin/libzlib1.dll
+#        $<TARGET_FILE_DIR:ZhoConverterQt>
+#        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+#        ${CMAKE_SOURCE_DIR}/minizip-reduced/bin/libminizip.dll
+#        $<TARGET_FILE_DIR:ZhoConverterQt>
+#)
 
 # Conditionally link the appropriate DLL file based on the operating system
 if (WIN32)
