@@ -4,20 +4,24 @@
 #include <QPlainTextEdit>
 #include <QDragEnterEvent>
 
-class TextEditWidget : public QPlainTextEdit {
-Q_OBJECT
+class TextEditWidget : public QPlainTextEdit
+{
+    Q_OBJECT
 
 public:
-    explicit TextEditWidget(QWidget *parent = nullptr);
+    explicit TextEditWidget(QWidget* parent = nullptr);
 
     QString contentFilename;
 
+signals:
+    void fileDropped(const QString& filePath);
+
 protected:
-    void dragEnterEvent(QDragEnterEvent *event) override;
+    void dragEnterEvent(QDragEnterEvent* event) override;
 
-    void dropEvent(QDropEvent *event) override;
+    void dropEvent(QDropEvent* event) override;
 
-    void loadFile(const QString &filePath) const;
+    void loadFile(const QString& filePath) const;
 };
 
 #endif // TEXTEDITWIDGET_H

@@ -16,6 +16,19 @@ MainWindow::MainWindow(QWidget* parent)
     ui->tabWidget->setCurrentIndex(0);
     // openccInstance = opencc_new();
     // opencc_set_parallel(openccInstance, false);
+    connect(ui->tbSource, &TextEditWidget::fileDropped, this,
+            [this](const QString& path)
+            {
+                if (path.isEmpty())
+                {
+                    refreshFromSource();
+                    ui->statusBar->showMessage("Text contents dropped");
+                }
+                else
+                {
+                    refreshFromSource();
+                }
+            });
 }
 
 MainWindow::~MainWindow()
@@ -440,13 +453,13 @@ void MainWindow::on_btnSaveAs_clicked()
     file.close();
 }
 
-void MainWindow::on_btnRefresh_clicked() const
+void MainWindow::refreshFromSource() const
 {
     if (ui->tbSource->toPlainText().isEmpty())
-    {
         return;
-    }
-    const int text_code = ZhoCheck(ui->tbSource->toPlainText().toStdString());
+
+    const int text_code =
+        openccFmmsegHelper.zhoCheck(ui->tbSource->toPlainText().toStdString());
     update_tbSource_info(text_code);
 }
 

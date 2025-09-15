@@ -21,9 +21,11 @@ void TextEditWidget::dropEvent(QDropEvent *event) {
         const QString filePath = mimeData->urls().at(0).toLocalFile();
         loadFile(filePath);
         contentFilename = filePath;
+        emit fileDropped(filePath);
     } else if (mimeData->hasText()) {
         document()->setPlainText(mimeData->text());
         contentFilename = "";
+        emit fileDropped(QString{});
     }
 }
 

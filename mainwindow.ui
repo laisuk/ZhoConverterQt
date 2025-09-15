@@ -534,32 +534,6 @@
              </widget>
             </item>
             <item>
-             <widget class="QPushButton" name="btnRefresh">
-              <property name="sizePolicy">
-               <sizepolicy hsizetype="Fixed" vsizetype="Fixed">
-                <horstretch>0</horstretch>
-                <verstretch>0</verstretch>
-               </sizepolicy>
-              </property>
-              <property name="maximumSize">
-               <size>
-                <width>30</width>
-                <height>16777215</height>
-               </size>
-              </property>
-              <property name="toolTip">
-               <string>Refresh source text box info</string>
-              </property>
-              <property name="text">
-               <string/>
-              </property>
-              <property name="icon">
-               <iconset resource="Resource.qrc">
-                <normaloff>:/resource/icons8-refresh-48.png</normaloff>:/resource/icons8-refresh-48.png</iconset>
-              </property>
-             </widget>
-            </item>
-            <item>
              <widget class="QPushButton" name="btnClearTbSource">
               <property name="maximumSize">
                <size>
@@ -881,6 +855,9 @@
                 <bold>false</bold>
                </font>
               </property>
+              <property name="frameShape">
+               <enum>QFrame::Shape::Box</enum>
+              </property>
               <property name="text">
                <string>Output</string>
               </property>
@@ -1080,8 +1057,7 @@
            <string>Exit Application</string>
           </property>
           <property name="styleSheet">
-           <string notr="true">color: red;        /* text color */
-font-weight: bold; /* optional: make it stand out */</string>
+           <string notr="true"/>
           </property>
           <property name="text">
            <string>Exit</string>
@@ -1149,7 +1125,7 @@ font-weight: bold; /* optional: make it stand out */</string>
      <x>0</x>
      <y>0</y>
      <width>1048</width>
-     <height>21</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -1207,7 +1183,7 @@ font-weight: bold; /* optional: make it stand out */</string>
  </resources>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup_region"/>
   <buttongroup name="buttonGroup_config"/>
+  <buttongroup name="buttonGroup_region"/>
  </buttongroups>
 </ui>

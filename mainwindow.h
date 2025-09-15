@@ -44,8 +44,6 @@ private slots:
 
 	void on_btnSaveAs_clicked();
 
-	void on_btnRefresh_clicked() const;
-
 	void on_tbSource_textChanged() const;
 
 	void on_btnAdd_clicked();
@@ -65,6 +63,8 @@ private slots:
     void on_btnClearTbDestination_clicked() const;
 
     void on_cbManual_activated() const;
+
+	void refreshFromSource() const;
 
 private:
     Ui::MainWindowClass *ui;
