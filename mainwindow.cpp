@@ -19,14 +19,10 @@ MainWindow::MainWindow(QWidget* parent)
     connect(ui->tbSource, &TextEditWidget::fileDropped, this,
             [this](const QString& path)
             {
+                refreshFromSource();
                 if (path.isEmpty())
                 {
-                    refreshFromSource();
                     ui->statusBar->showMessage("Text contents dropped");
-                }
-                else
-                {
-                    refreshFromSource();
                 }
             });
 }
