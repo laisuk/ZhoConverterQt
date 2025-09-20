@@ -595,7 +595,7 @@ void MainWindow::on_btnPreview_clicked() const
         const QString file_path = selected_item->text();
 
         QFile file(file_path);
-        if (const QFileInfo file_info(file_path); TEXTFILE_EXTENSIONS.count(file_info.suffix().toLower().toStdString())
+        if (const QFileInfo file_info(file_path); isAllowedTextLike(file_info.suffix().toLower())
             && file.open(QIODevice::ReadOnly | QIODevice::Text))
         {
             QTextStream in(&file);
