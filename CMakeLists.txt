@@ -14,7 +14,6 @@ elseif (UNIX)
     set(VCPKG_HOST_TRIPLET "x64-linux" CACHE STRING "" FORCE)
 endif ()
 
-
 project(ZhoConverterQt LANGUAGES CXX)
 
 include(qt.cmake)
@@ -26,14 +25,14 @@ set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "Install path"
 if (WIN32)
     if (MSVC)
         set(CMAKE_PREFIX_PATH "C:/QT/6.8.3/MSVC2022_64")
+        list(APPEND CMAKE_PREFIX_PATH "D:/lib/vcpkg/installed/x64-windows-static-md")
         link_directories("D:/lib/boost_1_88_0/stage/lib")
         include_directories("D:/lib/vcpkg/installed/x64-windows-static-md/include")
-        list(APPEND CMAKE_PREFIX_PATH "D:/lib/vcpkg/installed/x64-windows-static-md")
         # add_compile_options(/Zc:__cplusplus)  # Ensure __cplusplus is correctly set
     else ()
         set(CMAKE_PREFIX_PATH "C:/Qt/6.9.2/mingw_64")
-        include_directories("D:/lib/vcpkg/installed/x64-mingw-static/include")
         list(APPEND CMAKE_PREFIX_PATH "D:/lib/vcpkg/installed/x64-mingw-static")
+        include_directories("D:/lib/vcpkg/installed/x64-mingw-static/include")
     endif ()
     # Include for Boost C Library
     include_directories("D:/lib/boost_1_88_0")

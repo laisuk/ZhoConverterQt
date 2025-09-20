@@ -2,7 +2,8 @@
 #include "draglistwidget.h"
 
 
-DragListWidget::DragListWidget(QWidget *parent) : QListWidget(parent) {
+DragListWidget::DragListWidget(QWidget* parent) : QListWidget(parent)
+{
     setSelectionMode(ExtendedSelection);
     setAcceptDrops(true);
     viewport()->setAcceptDrops(true);
@@ -13,31 +14,33 @@ DragListWidget::DragListWidget(QWidget *parent) : QListWidget(parent) {
 }
 
 
-void DragListWidget::dragEnterEvent(QDragEnterEvent *event) {
-    if (const QMimeData *mimeData = event->mimeData(); mimeData->hasUrls()) {
+void DragListWidget::dragEnterEvent(QDragEnterEvent* event)
+{
+    if (const QMimeData* mimeData = event->mimeData(); mimeData->hasUrls())
+    {
         event->acceptProposedAction();
     }
 }
 
-void DragListWidget::dropEvent(QDropEvent *event) {
-    const QMimeData *mimeData = event->mimeData();
-    if (event->mimeData()->hasUrls()) {
-        QStringList fileUrls;
-        for (const QUrl &url: mimeData->urls()) {
-            fileUrls.append(url.toLocalFile());
-        }
-
-        for (const QString &fileUrl: fileUrls) {
-            if (!isItemInList(fileUrl)) {
-                auto *item = new QListWidgetItem(fileUrl);
-                addItem(item);
+void DragListWidget::dropEvent(QDropEvent* event)
+{
+    const QMimeData* mimeData = event->mimeData();
+    if (event->mimeData()->hasUrls())
+    {
+        for (const QUrl& url : mimeData->urls())
+        {
+            if (const QString path = url.toLocalFile(); !path.isEmpty() && !isItemInList(path))
+            {
+                // Let QListWidget allocate & own the item internally
+                addItem(path);
             }
         }
         event->acceptProposedAction();
     }
 }
 
-bool DragListWidget::isItemInList(const QString &itemText) const {
-    const QList<QListWidgetItem *> items = findItems(itemText, Qt::MatchExactly);
+bool DragListWidget::isItemInList(const QString& itemText) const
+{
+    const QList<QListWidgetItem*> items = findItems(itemText, Qt::MatchExactly);
     return !items.isEmpty();
 }
