@@ -135,8 +135,11 @@ endif ()
 
 # Conditionally link the appropriate DLL file based on the operating system
 if (WIN32)
-    target_link_libraries(ZhoConverterQt PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/opencc-fmmseg/opencc_fmmseg_capi.dll.lib")
-    #    target_link_libraries(ZhoConverterQt PUBLIC "D:/codes/lib/vcpkg/vcpkg/packages/libzip_x64-windows/lib/zip.lib")
+    if (MSVC)
+        target_link_libraries(ZhoConverterQt PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/opencc-fmmseg/opencc_fmmseg_capi.dll.lib")
+    else ()
+        target_link_libraries(ZhoConverterQt PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/opencc-fmmseg/opencc_fmmseg_capi.dll")
+    endif ()
 elseif (APPLE)
     target_link_libraries(ZhoConverterQt PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/opencc-fmmseg/libopencc_fmmseg_capi.dylib")
 elseif (UNIX)
