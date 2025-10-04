@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1048</width>
+    <width>1053</width>
     <height>716</height>
    </rect>
   </property>
@@ -1124,15 +1124,14 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1048</width>
-     <height>22</height>
+     <width>1053</width>
+     <height>33</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
     <property name="title">
      <string>File</string>
     </property>
-    <addaction name="actionConvertFilename"/>
     <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
@@ -1142,7 +1141,14 @@
     </property>
     <addaction name="actionAbout"/>
    </widget>
+   <widget class="QMenu" name="menuSettings">
+    <property name="title">
+     <string>Settings</string>
+    </property>
+    <addaction name="actionConvertFilename"/>
+   </widget>
    <addaction name="menuFile"/>
+   <addaction name="menuSettings"/>
    <addaction name="menuHelp"/>
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
