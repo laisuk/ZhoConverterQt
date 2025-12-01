@@ -66,6 +66,7 @@ find_package(ZLIB REQUIRED)
 
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/opencc-fmmseg)
+include_directories(${CMAKE_CURRENT_SOURCE_DIR}/pdfium)
 
 # Tell CMake where to find minizip headers
 # include_directories(${CMAKE_SOURCE_DIR}/minizip-reduced/include)
@@ -81,6 +82,7 @@ set(PROJECT_SOURCES
         src/texteditwidget.h
         src/zhoutilities.h
         src/zhoutilities.cpp
+        pdfium/PdfExtractWorker.cpp
 )
 
 set(APP_ICON_RESOURCE_WINDOWS "${CMAKE_CURRENT_SOURCE_DIR}/zhoconverterqt.rc")
@@ -88,6 +90,8 @@ set(HEADERS
         src/OfficeConverter.hpp
         src/OfficeConverterMinizip.hpp
         src/ZipPathUtils.hpp
+        pdfium/PdfiumHelper.hpp
+        pdfium/PdfExtractWorker.h
 )
 qt_add_resources(SOURCES Resource.qrc)
 qt_add_executable(ZhoConverterQt
@@ -140,10 +144,22 @@ if (WIN32)
     else ()
         target_link_libraries(ZhoConverterQt PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/opencc-fmmseg/opencc_fmmseg_capi.dll")
     endif ()
+    # ---- PDFium (MinGW + MSVC both link to pdfium.lib) ----
+    target_link_libraries(ZhoConverterQt PUBLIC
+            "${CMAKE_CURRENT_SOURCE_DIR}/pdfium/pdfium.dll.lib"
+    )
 elseif (APPLE)
     target_link_libraries(ZhoConverterQt PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/opencc-fmmseg/libopencc_fmmseg_capi.dylib")
+    # ---- PDFium ----
+    target_link_libraries(ZhoConverterQt PUBLIC
+            "${CMAKE_CURRENT_SOURCE_DIR}/pdfium/libpdfium.dylib"
+    )
 elseif (UNIX)
     target_link_libraries(ZhoConverterQt PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/opencc-fmmseg/libopencc_fmmseg_capi.so")
+    # ---- PDFium ----
+    target_link_libraries(ZhoConverterQt PUBLIC
+            "${CMAKE_CURRENT_SOURCE_DIR}/pdfium/libpdfium.so"
+    )
 endif ()
 
 # Install the application binary

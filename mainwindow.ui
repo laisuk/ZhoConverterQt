@@ -534,6 +534,38 @@
              </widget>
             </item>
             <item>
+             <widget class="QPushButton" name="btnReflow">
+              <property name="maximumSize">
+               <size>
+                <width>30</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <pointsize>10</pointsize>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="toolTip">
+               <string>Reflow PDF extracted CJK text</string>
+              </property>
+              <property name="text">
+               <string/>
+              </property>
+              <property name="icon">
+               <iconset resource="Resource.qrc">
+                <normaloff>:/resource/icons8-refresh-48.png</normaloff>:/resource/icons8-refresh-48.png</iconset>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>18</width>
+                <height>18</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item>
              <widget class="QPushButton" name="btnClearTbSource">
               <property name="maximumSize">
                <size>
@@ -998,7 +1030,7 @@
        </layout>
       </item>
       <item row="0" column="2">
-       <layout class="QHBoxLayout" name="horizontalLayout_Action3" stretch="1,0,0">
+       <layout class="QHBoxLayout" name="horizontalLayout_Action3" stretch="1,0,0,0">
         <property name="spacing">
          <number>10</number>
         </property>
@@ -1017,6 +1049,23 @@
            </size>
           </property>
          </spacer>
+        </item>
+        <item>
+         <widget class="QComboBox" name="cbSaveTarget">
+          <property name="currentIndex">
+           <number>1</number>
+          </property>
+          <item>
+           <property name="text">
+            <string>Source</string>
+           </property>
+          </item>
+          <item>
+           <property name="text">
+            <string>Destination</string>
+           </property>
+          </item>
+         </widget>
         </item>
         <item>
          <widget class="QPushButton" name="btnSaveAs">
@@ -1125,7 +1174,7 @@
      <x>0</x>
      <y>0</y>
      <width>1053</width>
-     <height>33</height>
+     <height>22</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -1146,6 +1195,9 @@
      <string>Settings</string>
     </property>
     <addaction name="actionConvertFilename"/>
+    <addaction name="separator"/>
+    <addaction name="actionAddPageHeader"/>
+    <addaction name="actionCompactPdfText"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuSettings"/>
@@ -1170,6 +1222,22 @@
     <string>Convert Filename （转换文件名）</string>
    </property>
   </action>
+  <action name="actionAddPageHeader">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Add PDF Page Header</string>
+   </property>
+  </action>
+  <action name="actionCompactPdfText">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Compact PDF Extracted Text</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
@@ -1186,6 +1254,7 @@
  </customwidgets>
  <resources>
   <include location="Resource.qrc"/>
+  <include location="../../Python/OpenccPurepyGui/resource.qrc"/>
  </resources>
  <connections/>
  <buttongroups>
