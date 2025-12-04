@@ -1198,6 +1198,7 @@
     <addaction name="separator"/>
     <addaction name="actionAddPageHeader"/>
     <addaction name="actionCompactPdfText"/>
+    <addaction name="actionAutoReflow"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuSettings"/>
@@ -1236,6 +1237,17 @@
    </property>
    <property name="text">
     <string>Compact PDF Extracted Text</string>
+   </property>
+  </action>
+  <action name="actionAutoReflow">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Auto-Reflow PDF Text</string>
    </property>
   </action>
  </widget>

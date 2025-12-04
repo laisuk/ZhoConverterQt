@@ -571,35 +571,31 @@ namespace pdfium {
 
         // Contains any char from set
         inline bool AnyOf(const std::u32string &s, const std::u32string &set) {
-            for (const char32_t ch: s) {
-                if (Contains(set, ch)) return true;
-            }
-            return false;
+            return std::any_of(s.begin(), s.end(),
+                               [&](const char32_t ch) { return Contains(set, ch); });
         }
 
         // Contains any CJK (very simple heuristic: >0x7F)
         inline bool ContainsCjk(const std::u32string &s) {
-            for (const char32_t ch: s) {
-                if (ch > 0x7F) return true;
-            }
-            return false;
+            return std::any_of(s.begin(), s.end(),
+                               [](const char32_t ch) { return ch > 0x7F; });
+        }
+
+
+        inline bool IsAscii(const char32_t ch) {
+            return ch <= 0x7F;
         }
 
         // All ASCII?
         inline bool IsAllAscii(const std::u32string &s) {
-            for (const char32_t ch: s) {
-                if (ch > 0x7F) return false;
-            }
-            return true;
+            return std::all_of(s.begin(), s.end(), IsAscii);
         }
 
         // Any A-Z / a-z
         inline bool HasLatinAlpha(const std::u32string &s) {
-            for (const char32_t ch: s) {
-                if ((ch >= U'a' && ch <= U'z') || (ch >= U'A' && ch <= U'Z'))
-                    return true;
-            }
-            return false;
+            return std::any_of(s.begin(), s.end(), [](const char32_t ch) {
+                return (ch >= U'a' && ch <= U'z') || (ch >= U'A' && ch <= U'Z');
+            });
         }
 
         // Collapse repeated segments (token-level), from collapse_repeated_segments()
@@ -691,10 +687,10 @@ namespace pdfium {
             }
 
             bool is_unclosed() const {
-                for (const auto &[key, val]: counts) {
-                    if (val > 0) return true;
-                }
-                return false;
+                return std::any_of(
+                    counts.begin(), counts.end(),
+                    [](const auto &kv) { return kv.second > 0; }
+                );
             }
         };
 
@@ -745,31 +741,61 @@ namespace pdfium {
         }
 
         inline bool IsHeadingLike(const std::u32string &raw) {
-            // Port of is_heading_like() docstring logic
+            // Unified spec with C#/Java/Python/Rust
             const std::u32string s = Strip(raw);
             if (s.empty()) return false;
 
             // Keep page markers intact
             if (IsPageMarker(s)) return false;
 
-            // If contains CJK end punctuation anywhere, not heading/emphasis
-            if (AnyOf(s, CJK_PUNCT_END)) return false;
-
-            // If line has an opening bracket but no closing bracket:
-            if (HasOpenBracketNoClose(s)) return false;
-
-            const std::size_t len = s.size();
-
-            // Rule A: short CJK/mixed lines
-            if (len <= 15 && ContainsCjk(s)) {
-                if (const char32_t last = s[len - 1]; !(last == U'，' || last == U',')) {
-                    return true;
-                }
+            // Check last char only for CJK punctuation
+            const char32_t last = s.back();
+            if (Contains(CJK_PUNCT_END, last)) {
+                return false;
             }
 
-            // Rule B: short pure ASCII emphasis
-            if (len <= 15 && IsAllAscii(s) && HasLatinAlpha(s)) {
-                return true;
+            // Unclosed brackets: has open but no close
+            if (HasOpenBracketNoClose(s)) {
+                return false;
+            }
+
+            if (const std::size_t len = s.size(); len <= 15) {
+                bool hasNonAscii = false;
+                bool allAscii = true;
+                bool hasLetter = false;
+                bool allAsciiDigits = true;
+
+                for (const char32_t ch: s) {
+                    if (ch > 0x7F) {
+                        hasNonAscii = true;
+                        allAscii = false;
+                        allAsciiDigits = false;
+                        continue;
+                    }
+
+                    if (!(ch >= U'0' && ch <= U'9')) {
+                        allAsciiDigits = false;
+                    }
+
+                    if ((ch >= U'a' && ch <= U'z') || (ch >= U'A' && ch <= U'Z')) {
+                        hasLetter = true;
+                    }
+                }
+
+                // Rule C: pure ASCII digits → heading-like
+                if (allAsciiDigits) {
+                    return true;
+                }
+
+                // Rule A: CJK/mixed short line, not ending with comma
+                if (hasNonAscii && last != U'，' && last != U',') {
+                    return true;
+                }
+
+                // Rule B: pure ASCII short line with at least one letter
+                if (allAscii && hasLetter) {
+                    return true;
+                }
             }
 
             return false;
@@ -877,6 +903,9 @@ namespace pdfium {
                     stripped = CollapseRepeatedSegments(stripped);
                 }
 
+                // NEW: weak heading-like detection on *current* line
+                bool is_short_heading = IsHeadingLike(stripped);
+
                 // 1) Empty line
                 if (stripped.empty()) {
                     if (!addPdfPageHeader && !buffer.empty()) {
@@ -905,6 +934,32 @@ namespace pdfium {
                     continue;
                 }
 
+                // 3b) 弱 heading-like：要先看上一段是否逗號結尾
+                if (is_short_heading) {
+                    if (!buffer.empty()) {
+                        // check last non-space char of buffer
+                        if (std::u32string bt = RStrip(buffer); !bt.empty()) {
+                            if (char32_t last = bt.back(); last == U'，' || last == U',') {
+                                // previous ends with comma → treat as continuation, NOT heading
+                                // fall through; normal rules below will handle merge/split
+                            } else {
+                                // real heading → flush buffer, this line becomes its own segment
+                                flush_buffer();
+                                segments.push_back(stripped);
+                                continue;
+                            }
+                        } else {
+                            // buffer only whitespace → treat as heading
+                            segments.push_back(stripped);
+                            continue;
+                        }
+                    } else {
+                        // no previous text → heading on its own
+                        segments.push_back(stripped);
+                        continue;
+                    }
+                }
+
                 bool current_is_dialog_start = IsDialogStart(stripped);
 
                 // 4) First line of new paragraph
@@ -925,28 +980,23 @@ namespace pdfium {
                     continue;
                 }
 
-                // Colon + dialog continuation: "她写了一行字：" + 「如果连自己都不相信……」
-                if (!buffer_text.empty() &&
-                    (buffer_text.back() == U'：' || buffer_text.back() == U':') &&
-                    !stripped.empty() &&
-                    Contains(DIALOG_OPENERS, stripped[0])) {
-                    buffer += stripped;
-                    dialog_state.update(stripped);
-                    continue;
+                // Colon + dialog continuation: "她写了一行字：" + "  「如果连自己都不相信……」"
+                if (!buffer_text.empty()) {
+                    if (char32_t last = buffer_text.back(); last == U'：' || last == U':') {
+                        // ignore leading half/full-width spaces for dialog opener
+                        if (std::u32string after_indent = LStrip(stripped); !after_indent.empty() && Contains(
+                                                                                DIALOG_OPENERS, after_indent[0])) {
+                            buffer += stripped;
+                            dialog_state.update(stripped);
+                            continue;
+                        }
+                    }
                 }
 
                 // 5) Ends with CJK punctuation → new paragraph if not inside unclosed dialog
                 if (!buffer_text.empty() &&
                     Contains(CJK_PUNCT_END, buffer_text.back()) &&
                     !dialog_state.is_unclosed()) {
-                    flush_buffer();
-                    buffer = stripped;
-                    dialog_state.update(stripped);
-                    continue;
-                }
-
-                // 6) Previous buffer looks like heading-like short title
-                if (IsHeadingLike(buffer_text)) {
                     flush_buffer();
                     buffer = stripped;
                     dialog_state.update(stripped);

@@ -7,10 +7,10 @@
 void PdfExtractWorker::process() {
     try {
         // Build the progress callback for pdfium::ExtractText
-        pdfium::ProgressCallback progressCb =
-                [this](int pageIndex,
-                       int pageCount,
-                       int percent,
+        const pdfium::ProgressCallback progressCb =
+                [this](const int pageIndex,
+                       const int pageCount,
+                       const int percent,
                        const std::string &barUtf8) {
             // If already cancelled, we don't emit anything
             if (m_cancelFlag->load(std::memory_order_relaxed))

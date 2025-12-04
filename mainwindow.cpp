@@ -3,6 +3,7 @@
 #include "QFileDialog"
 #include "QMessageBox"
 #include <QThread>
+#include <QTextDocumentFragment>
 #include <string>
 // #include "opencc_fmmseg_capi.h"
 #include "zhoutilities.h"
@@ -164,8 +165,30 @@ void MainWindow::onPdfExtractionFinished(const QString &text) {
 
     // Put extracted text into tbSource (Even if partially cancelled,
     // but our worker only emits finished() when not cancelled)
+    QString isReflow = "";
     if (!text.isEmpty()) {
-        ui->tbSource->document()->setPlainText(text);
+        if (ui->actionAutoReflow->isChecked()) {
+            isReflow = "(Reflowed)";
+            // Convert to UTF-8 std::string
+            const QByteArray utf8 = text.toUtf8();
+            const std::string input(utf8.constData(),
+                                    static_cast<std::size_t>(utf8.size()));
+
+            const bool addPdfPageHeader = ui->actionAddPageHeader->isChecked();
+            const bool compact = ui->actionCompactPdfText->isChecked();
+
+            const std::string reflowed =
+                    pdfium::ReflowCjkParagraphs(input, addPdfPageHeader, compact);
+
+            // Back to QString
+            const QString out = QString::fromUtf8(reflowed.c_str(),
+                                                  static_cast<int>(reflowed.size()));
+
+            ui->tbSource->document()->setPlainText(out);
+        } else {
+            ui->tbSource->document()->setPlainText(text);
+        }
+
         ui->tbSource->contentFilename = m_currentPdfFilePath;
 
         // Run your language detection / info update
@@ -174,7 +197,7 @@ void MainWindow::onPdfExtractionFinished(const QString &text) {
     }
 
     ui->statusBar->showMessage(
-        tr("✅ PDF loaded: %1").arg(m_currentPdfFilePath));
+        tr("✅ PDF loaded %1: %2").arg(isReflow, m_currentPdfFilePath));
 
     cleanupPdfThread();
 
@@ -602,8 +625,44 @@ bool MainWindow::isPdf(const QString &path) {
     return head == "%PDF-";
 }
 
+// void MainWindow::on_btnReflow_clicked() const {
+//     const QString src = ui->tbSource->toPlainText();
+//     if (src.trimmed().isEmpty()) {
+//         ui->statusBar->showMessage(tr("Source text is empty. Nothing to reflow."));
+//         return;
+//     }
+//
+//     // Convert to UTF-8 std::string
+//     const QByteArray utf8 = src.toUtf8();
+//     const std::string input(utf8.constData(), static_cast<std::size_t>(utf8.size()));
+//
+//     // Use same addPdfPageHeader flag as extraction, or tie to a checkbox if you like
+//     const bool addPdfPageHeader = ui->actionAddPageHeader->isChecked(); // or a setting
+//     const bool compact = ui->actionCompactPdfText->isChecked(); // false = blank line between paragraphs
+//
+//     const std::string reflowed = pdfium::ReflowCjkParagraphs(input, addPdfPageHeader, compact);
+//
+//     // Back to QString
+//     const QString out = QString::fromUtf8(reflowed.c_str(),
+//                                           static_cast<int>(reflowed.size()));
+//
+//     ui->tbSource->setPlainText(out);
+//     ui->statusBar->showMessage(tr("✅ Text reflow complete."));
+// }
 void MainWindow::on_btnReflow_clicked() const {
-    const QString src = ui->tbSource->toPlainText();
+    auto *edit = ui->tbSource;
+    QTextCursor cursor = edit->textCursor();
+    const bool hasSelection = cursor.hasSelection();
+
+    QString src;
+    if (hasSelection) {
+        // Only reflow the selected range
+        src = cursor.selection().toPlainText();
+    } else {
+        // Reflow the whole document
+        src = edit->toPlainText();
+    }
+
     if (src.trimmed().isEmpty()) {
         ui->statusBar->showMessage(tr("Source text is empty. Nothing to reflow."));
         return;
@@ -611,19 +670,45 @@ void MainWindow::on_btnReflow_clicked() const {
 
     // Convert to UTF-8 std::string
     const QByteArray utf8 = src.toUtf8();
-    const std::string input(utf8.constData(), static_cast<std::size_t>(utf8.size()));
+    const std::string input(utf8.constData(),
+                            static_cast<std::size_t>(utf8.size()));
 
-    // Use same addPdfPageHeader flag as extraction, or tie to a checkbox if you like
-    const bool addPdfPageHeader = ui->actionAddPageHeader->isChecked(); // or a setting
-    const bool compact = ui->actionCompactPdfText->isChecked(); // false = blank line between paragraphs
+    const bool addPdfPageHeader = ui->actionAddPageHeader->isChecked();
+    const bool compact = ui->actionCompactPdfText->isChecked();
 
-    const std::string reflowed = pdfium::ReflowCjkParagraphs(input, addPdfPageHeader, compact);
+    const std::string reflowed =
+            pdfium::ReflowCjkParagraphs(input, addPdfPageHeader, compact);
 
     // Back to QString
     const QString out = QString::fromUtf8(reflowed.c_str(),
                                           static_cast<int>(reflowed.size()));
 
-    ui->tbSource->setPlainText(out);
+    // ✅ Replace text via QTextCursor so undo history is preserved
+    if (auto *doc = edit->document(); doc->isUndoRedoEnabled()) {
+        if (hasSelection) {
+            // Reflow only selection → one undo step
+            cursor.beginEditBlock();
+            cursor.insertText(out); // replaces the selection
+            cursor.endEditBlock();
+            edit->setTextCursor(cursor);
+        } else {
+            // No selection → reflow entire document → one undo step
+            QTextCursor docCursor(doc);
+            docCursor.beginEditBlock();
+            docCursor.select(QTextCursor::Document); // select all existing text
+            docCursor.insertText(out); // replace with reflowed text
+            docCursor.endEditBlock();
+        }
+    } else {
+        // Fallback (if you ever disable undo somewhere else)
+        if (hasSelection) {
+            cursor.insertText(out);
+            edit->setTextCursor(cursor);
+        } else {
+            edit->setPlainText(out);
+        }
+    }
+
     ui->statusBar->showMessage(tr("✅ Text reflow complete."));
 }
 
