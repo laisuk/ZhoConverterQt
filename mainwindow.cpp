@@ -71,6 +71,12 @@ MainWindow::MainWindow(QWidget *parent)
                 }
             });
 
+    connect(ui->tbSource, &TextEditWidget::pdfDropped, this,
+            [this](const QString &path) {
+                // Start PDF extraction in worker thread
+                startPdfExtraction(path);
+            });
+
     // --- Status-bar Cancel button ---
     m_cancelPdfButton = new QPushButton(tr("Cancel"), this);
     m_cancelPdfButton->setObjectName("btnCancelPdf");

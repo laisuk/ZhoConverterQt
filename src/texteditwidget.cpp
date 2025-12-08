@@ -19,8 +19,11 @@ void TextEditWidget::dragEnterEvent(QDragEnterEvent *event) {
 void TextEditWidget::dropEvent(QDropEvent *event) {
     if (const QMimeData *mimeData = event->mimeData(); mimeData->hasUrls()) {
         const QString filePath = mimeData->urls().at(0).toLocalFile();
-        loadFile(filePath);
         contentFilename = filePath;
+        if (isPdf(filePath)) {
+            emit pdfDropped(filePath);
+        }
+        loadFile(filePath);
         emit fileDropped(filePath);
     } else if (mimeData->hasText()) {
         document()->setPlainText(mimeData->text());
@@ -38,4 +41,13 @@ void TextEditWidget::loadFile(const QString &filePath) const {
     } else {
         document()->setPlainText("Error loading file: " + file.errorString());
     }
+}
+
+bool TextEditWidget::isPdf(const QString &path) {
+    QFile f(path);
+    if (!f.open(QIODevice::ReadOnly))
+        return false;
+
+    const QByteArray head = f.read(5);
+    return head == "%PDF-";
 }

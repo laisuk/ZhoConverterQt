@@ -15,6 +15,7 @@ public:
 
 signals:
     void fileDropped(const QString& filePath);
+    void pdfDropped(const QString& filePath);
 
 protected:
     void dragEnterEvent(QDragEnterEvent* event) override;
@@ -22,6 +23,8 @@ protected:
     void dropEvent(QDropEvent* event) override;
 
     void loadFile(const QString& filePath) const;
+
+    static bool isPdf(const QString &path);
 };
 
 #endif // TEXTEDITWIDGET_H
