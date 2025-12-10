@@ -169,7 +169,7 @@ void MainWindow::onPdfExtractionFinished(const QString &text) {
     // Hide cancel button
     m_cancelPdfButton->hide();
 
-    // Put extracted text into tbSource (Even if partially cancelled,
+    // Put extracted text into tbSource (Even if partially canceled,
     // but our worker only emits finished() when not cancelled)
     QString isReflow = "";
     if (!text.isEmpty()) {
@@ -301,24 +301,6 @@ QString MainWindow::getCurrentConfig() const {
     return config;
 }
 
-void MainWindow::displayFileList(const QStringList &files) const {
-    for (const QString &file: files) {
-        // Check if the file path is not already in the list box
-        if (!filePathExists(file)) {
-            ui->listSource->addItem(file);
-        }
-    }
-}
-
-bool MainWindow::filePathExists(const QString &file_path) const {
-    // Check if the file path is already in the list box
-    for (int index = 0; index < ui->listSource->count(); ++index) {
-        if (const QListWidgetItem *item = ui->listSource->item(index); item && item->text() == file_path) {
-            return true;
-        }
-    }
-    return false;
-}
 
 void MainWindow::on_tabWidget_currentChanged(const int index) const {
     switch (index) {
@@ -622,13 +604,15 @@ void MainWindow::on_btnOpenFile_clicked() {
     update_tbSource_info(text_code);
 }
 
-bool MainWindow::isPdf(const QString &path) {
+bool MainWindow::isPdf(const QString &path)
+{
     QFile f(path);
     if (!f.open(QIODevice::ReadOnly))
         return false;
 
-    const QByteArray head = f.read(5);
-    return head == "%PDF-";
+    const QByteArray head = f.read(64); // enough for all real PDFs
+    const qsizetype index = head.indexOf("%PDF-");
+    return index >= 0;
 }
 
 // void MainWindow::on_btnReflow_clicked() const {
@@ -787,10 +771,50 @@ void MainWindow::on_btnAdd_clicked() {
                                           "Text Files (*.txt);;"
                                           "Subtitle Files (*.srt *.vtt *.ass *.ttml2 *.xml);;"
                                           "Office Files (*.docx *.xlsx *.pptx *.odt *.ods *.odp *.epub);;"
+                                          "PDF Files (*.pdf);;"
                                           "All Files (*.*)"); !files.isEmpty()) {
         displayFileList(files);
         ui->statusBar->showMessage("File(s) added.");
     }
+}
+
+void MainWindow::displayFileList(const QStringList &files) const {
+    // Find insertion point: first PDF index
+    int insertPdfAt = ui->listSource->count();
+
+    // Move backwards to find last non-PDF
+    for (int i = ui->listSource->count() - 1; i >= 0; --i) {
+        if (QString text = ui->listSource->item(i)->text(); !text.endsWith(".pdf", Qt::CaseInsensitive)) {
+            insertPdfAt = i + 1;
+            break;
+        }
+    }
+
+    for (const QString &file: files) {
+        if (filePathExists(file))
+            continue;
+
+        if (isPdf(file)) {
+            // Insert PDF at the predefined position
+            ui->listSource->insertItem(insertPdfAt, file);
+
+            // Move the insertion point down (next PDF should follow)
+            insertPdfAt++;
+        } else {
+            // Normal file, append at top section
+            ui->listSource->addItem(file);
+        }
+    }
+}
+
+bool MainWindow::filePathExists(const QString &file_path) const {
+    // Check if the file path is already in the list box
+    for (int index = 0; index < ui->listSource->count(); ++index) {
+        if (const QListWidgetItem *item = ui->listSource->item(index); item && item->text() == file_path) {
+            return true;
+        }
+    }
+    return false;
 }
 
 void MainWindow::on_btnRemove_clicked() const {

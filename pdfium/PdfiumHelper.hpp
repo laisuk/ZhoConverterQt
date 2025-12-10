@@ -8,7 +8,9 @@
 #include <stdexcept>
 #include <string>
 #include <utility>
-// #include <vector>
+#include <unordered_set>
+#include <vector>
+#include <algorithm>
 
 // PDFium public headers.
 // Make sure they are in your include path.
@@ -435,10 +437,6 @@ namespace pdfium {
 // punctuation and dialog logic, then re-encodes to UTF-8.
 //
 
-#include <vector>
-#include <unordered_map>
-#include <algorithm>
-
 namespace pdfium {
     namespace detail {
         // ---------- UTF-8 <-> UTF-32 helpers (minimal, enough for CJK text) ----------
@@ -510,122 +508,457 @@ namespace pdfium {
 
         // ------------------------- Tables / constants -------------------------
 
-        // CJK punctuation / title rules (from pdf_helper.py CJK_PUNCT_END)
-        static const std::u32string CJK_PUNCT_END = U"。！？；：…”」’』）】》〗〕〉］｝.!?)";
+        // CJK punctuation / sentence enders
+        static const std::u32string CJK_PUNCT_END =
+                U"。！？；：…—”」’』）】》〗〔〕〉］｝.!?";
 
-        // Dialog brackets (from DIALOG_OPEN_TO_CLOSE)
-        static const std::u32string DIALOG_OPENERS = U"“‘「『";
-        static const std::u32string DIALOG_CLOSERS = U"”’」』";
+        // Dialog brackets (openers + closers)
+        // Note: we intentionally keep dialog brackets out of OPEN/CLOSE_BRACKETS
+        // so that heading-bracket logic does not conflict with dialog detection.
+        static const std::u32string DIALOG_OPENERS = U"“‘「『﹁﹃";
+        static const std::u32string DIALOG_CLOSERS = U"”’」』﹂﹄";
 
-        // Brackets for heading check
-        static const std::u32string OPEN_BRACKETS = U"（([【《";
-        static const std::u32string CLOSE_BRACKETS = U"）)]】》";
+        // Brackets used for heading unmatched-bracket checks
+        static const std::u32string OPEN_BRACKETS = U"（([【《<{";
+        static const std::u32string CLOSE_BRACKETS = U"）)]】》>}";
 
-        // Title heading patterns (see TITLE_HEADING_REGEX)
+        // Title heading keywords (equivalent to TITLE_HEADING_REGEX words)
         static const std::u32string TITLE_WORDS[] = {
             U"前言", U"序章", U"终章", U"尾声", U"后记",
             U"番外", U"尾聲", U"後記"
         };
+
+        // Chapter markers for patterns like "第…章 / 節 / 部 / 卷 / 回"
         static const std::u32string CHAPTER_MARKERS = U"章节部卷節回";
 
         // Closing bracket chars for chapter-ending rule
         static const std::u32string CHAPTER_END_BRACKETS = U"】》〗〕〉」』）";
 
-        // Utility: contains
+        // Metadata separators: full-width colon, ASCII colon, ideographic space
+        static const std::u32string METADATA_SEPARATORS = U"：:　";
+
+        // Metadata keys (書名 / 作者 / 出版時間 / 版權 / ISBN / etc.)
+        static const std::unordered_set<std::u32string> METADATA_KEYS = {
+            // 1. Title / Author / Publishing
+            U"書名", U"书名",
+            U"作者",
+            U"譯者", U"译者",
+            U"校訂", U"校订",
+            U"出版社",
+            U"出版時間", U"出版时间",
+            U"出版日期",
+
+            // 2. Copyright / License
+            U"版權", U"版权",
+            U"版權頁", U"版权页",
+            U"版權信息", U"版权信息",
+
+            // 3. Editor / Pricing
+            U"責任編輯", U"责任编辑",
+            U"編輯", U"编辑",
+            U"責編", U"责编",
+            U"定價", U"定价",
+
+            // 4. Descriptions / Forewords (only some are treated as metadata)
+            U"前言",
+            U"序章",
+            U"終章", U"终章",
+            U"尾聲", U"尾声",
+            U"後記", U"后记",
+
+            // 5. Digital publishing (ebook platforms)
+            U"品牌方",
+            U"出品方",
+            U"授權方", U"授权方",
+            U"電子版權", U"数字版权",
+            U"掃描", U"扫描",
+            U"OCR",
+
+            // 6. CIP / Cataloging
+            U"CIP",
+            U"在版編目", U"在版编目",
+            U"分類號", U"分类号",
+            U"主題詞", U"主题词",
+
+            // 7. Publishing cycle
+            U"發行日", U"发行日",
+            U"初版",
+
+            // 8. Common key without variants
+            U"ISBN"
+        };
+
+        // ------------------------- Small utility helpers -------------------------
+
         inline bool Contains(const std::u32string &s, const char32_t ch) {
             return std::find(s.begin(), s.end(), ch) != s.end();
         }
 
-        // Utility: startswith "=== " && endswith "==="
-        inline bool IsPageMarker(const std::u32string &s) {
-            if (s.size() < 7) return false; // "=== x ==="
-            return s.rfind(U"=== ", 0) == 0 && s.size() >= 3 &&
-                   s[s.size() - 1] == U'=' &&
-                   s[s.size() - 2] == U'=' &&
-                   s[s.size() - 3] == U'=';
+        inline bool AnyOf(const std::u32string &s, const std::u32string &set) {
+            return std::any_of(
+                s.begin(), s.end(),
+                [&](char32_t ch) { return Contains(set, ch); });
         }
 
-        // Trim helpers (simple)
         inline std::u32string RStrip(const std::u32string &s) {
             std::size_t end = s.size();
-            while (end > 0 && (s[end - 1] == U' ' || s[end - 1] == U'\t' || s[end - 1] == U'\r')) {
-                --end;
+            while (end > 0) {
+                char32_t ch = s[end - 1];
+                if (ch == U' ' || ch == U'\t' || ch == U'\r')
+                    --end;
+                else
+                    break;
             }
             return s.substr(0, end);
         }
 
-        inline std::u32string LStrip(const std::u32string &s) {
+        // Strip only half-width leading spaces, but keep full-width \u3000 indent.
+        inline std::u32string StripHalfWidthIndentKeepFullWidth(const std::u32string &s) {
             std::size_t pos = 0;
-            while (pos < s.size() && (s[pos] == U' ' || s[pos] == U'\t' || s[pos] == U'\u3000')) {
+            while (pos < s.size() && s[pos] == U' ')
+                ++pos;
+            return s.substr(pos);
+        }
+
+        // Trim spaces + full-width spaces from the left (for logical probes).
+        inline std::u32string LStripSpacesAndFullWidth(const std::u32string &s) {
+            std::size_t pos = 0;
+            while (pos < s.size() &&
+                   (s[pos] == U' ' || s[pos] == U'\t' || s[pos] == U'\u3000')) {
                 ++pos;
             }
             return s.substr(pos);
         }
 
         inline std::u32string Strip(const std::u32string &s) {
-            return RStrip(LStrip(s));
+            return RStrip(LStripSpacesAndFullWidth(s));
         }
 
-        // Length in codepoints
-        inline std::size_t Len(const std::u32string &s) { return s.size(); }
-
-        // Contains any char from set
-        inline bool AnyOf(const std::u32string &s, const std::u32string &set) {
-            return std::any_of(s.begin(), s.end(),
-                               [&](const char32_t ch) { return Contains(set, ch); });
+        inline bool IsWhitespaceLine(const std::u32string &s) {
+            return std::all_of(
+                s.begin(), s.end(),
+                [](char32_t ch) {
+                    return ch == U' ' || ch == U'\t' || ch == U'\r' || ch == U'\n';
+                });
         }
 
-        // Contains any CJK (very simple heuristic: >0x7F)
-        inline bool ContainsCjk(const std::u32string &s) {
-            return std::any_of(s.begin(), s.end(),
-                               [](const char32_t ch) { return ch > 0x7F; });
+        inline bool BufferEndsWithCjkPunct(const std::u32string &s) {
+            for (auto it = s.rbegin(); it != s.rend(); ++it) {
+                char32_t ch = *it;
+                if (ch == U' ' || ch == U'\t' || ch == U'\r' || ch == U'\n')
+                    continue;
+                return Contains(CJK_PUNCT_END, ch);
+            }
+            return false;
         }
 
-
-        inline bool IsAscii(const char32_t ch) {
-            return ch <= 0x7F;
+        inline bool IsPageMarker(const std::u32string &s) {
+            if (s.size() < 7) return false; // "=== x ==="
+            if (s.rfind(U"=== ", 0) != 0)
+                return false;
+            std::size_t n = s.size();
+            return n >= 3 && s[n - 1] == U'=' && s[n - 2] == U'=' && s[n - 3] == U'=';
         }
 
-        // All ASCII?
-        inline bool IsAllAscii(const std::u32string &s) {
-            return std::all_of(s.begin(), s.end(), IsAscii);
+        // ------------------------- Metadata detection -------------------------
+
+        /// Detect lines like:
+        ///   書名：假面遊戲
+        ///   作者 : 東野圭吾
+        ///   出版時間　2024-03-12
+        ///   ISBN 9787573506078
+        inline bool IsMetadataLine(const std::u32string &line) {
+            std::u32string s = Strip(line);
+            if (s.empty())
+                return false;
+
+            if (s.size() > 30)
+                return false;
+
+            // Find first separator (：, :, or full-width space)
+            std::size_t sep_idx = std::u32string::npos;
+            for (std::size_t i = 0; i < s.size(); ++i) {
+                char32_t ch = s[i];
+                if (Contains(METADATA_SEPARATORS, ch)) {
+                    if (i == 0 || i > 10) {
+                        // Separator too early or too far → not a compact key
+                        return false;
+                    }
+                    sep_idx = i;
+                    break;
+                }
+            }
+
+            if (sep_idx == std::u32string::npos)
+                return false;
+
+            // Key before separator
+            std::u32string key = Strip(s.substr(0, sep_idx));
+            if (key.empty())
+                return false;
+
+            if (!METADATA_KEYS.count(key))
+                return false;
+
+            // First non-space after separator
+            std::size_t j = sep_idx + 1;
+            while (j < s.size()) {
+                char32_t ch = s[j];
+                if (ch == U' ' || ch == U'\t' || ch == U'\u3000')
+                    ++j;
+                else
+                    break;
+            }
+
+            if (j >= s.size())
+                return false;
+
+            char32_t first_after = s[j];
+            // If the value starts with dialog opener, it's more like dialog, not metadata.
+            if (Contains(DIALOG_OPENERS, first_after))
+                return false;
+
+            return true;
         }
 
-        // Any A-Z / a-z
-        inline bool HasLatinAlpha(const std::u32string &s) {
-            return std::any_of(s.begin(), s.end(), [](const char32_t ch) {
-                return (ch >= U'a' && ch <= U'z') || (ch >= U'A' && ch <= U'Z');
-            });
+        // ------------------------- Heading / title heuristics -------------------------
+
+        inline bool IsTitleHeading(const std::u32string &s_left) {
+            std::u32string s = Strip(s_left);
+            if (s.empty())
+                return false;
+
+            if (s.size() > 60)
+                return false;
+
+            // Fixed words, e.g. 前言 / 序章 / 終章 / 尾聲 / 後記 / 番外
+            for (const auto &w: TITLE_WORDS) {
+                if (s.rfind(w, 0) == 0)
+                    return true;
+            }
+
+            // Pattern: "第...章/节/部/卷/節/回" within first ~12 chars
+            if (s[0] == U'第') {
+                for (std::size_t i = 1; i < s.size(); ++i) {
+                    char32_t ch = s[i];
+                    if (Contains(CHAPTER_MARKERS, ch)) {
+                        return i <= 12;
+                    }
+                    if (i > 12)
+                        return false;
+                }
+            }
+
+            return false;
         }
 
-        // Collapse repeated segments (token-level), from collapse_repeated_segments()
+        inline bool HasOpenBracketNoClose(const std::u32string &s) {
+            bool hasOpen = AnyOf(s, OPEN_BRACKETS);
+            if (!hasOpen) return false;
+            if (AnyOf(s, CLOSE_BRACKETS)) return false;
+            return true;
+        }
+
+        /// Heading-like heuristic for short CJK titles / emphasis lines
+        inline bool IsHeadingLike(const std::u32string &raw) {
+            std::u32string s = Strip(raw);
+            if (s.empty())
+                return false;
+
+            // Keep page markers intact
+            if (IsPageMarker(s))
+                return false;
+
+            // If ends with CJK end punctuation → not heading
+            char32_t last = s.back();
+            if (Contains(CJK_PUNCT_END, last))
+                return false;
+
+            // Reject any short line that contains comma-like punctuation
+            if (AnyOf(s, U"，,、"))
+                return false;
+
+            // Reject unclosed brackets
+            if (HasOpenBracketNoClose(s))
+                return false;
+
+            std::size_t len = s.size();
+            if (len <= 10) {
+                // If a very short line contains ANY CJK end punctuation → not heading
+                if (AnyOf(s, CJK_PUNCT_END))
+                    return false;
+
+                bool hasNonAscii = false;
+                bool allAscii = true;
+                bool hasLetter = false;
+                bool allDigits = true;
+
+                for (char32_t ch: s) {
+                    if (ch > 0x7F) {
+                        hasNonAscii = true;
+                        allAscii = false;
+                        allDigits = false;
+                        continue;
+                    }
+
+                    if (!(ch >= U'0' && ch <= U'9')) {
+                        allDigits = false;
+                    }
+
+                    if ((ch >= U'a' && ch <= U'z') || (ch >= U'A' && ch <= U'Z')) {
+                        hasLetter = true;
+                    }
+                }
+
+                // Rule C: pure ASCII digits → heading
+                if (allDigits)
+                    return true;
+
+                // Rule A: short CJK/mixed line → heading
+                if (hasNonAscii)
+                    return true;
+
+                // Rule B: short ASCII with at least one letter → heading
+                if (allAscii && hasLetter)
+                    return true;
+            }
+
+            return false;
+        }
+
+        // Chapter-like ending: line <= 15 chars and last non-bracket char in CHAPTER_MARKERS
+        inline bool IsChapterEnding(const std::u32string &s_raw) {
+            std::u32string s = Strip(s_raw);
+            if (s.empty())
+                return false;
+
+            if (s.size() > 15)
+                return false;
+
+            std::size_t end = s.size();
+            while (end > 0 && Contains(CHAPTER_END_BRACKETS, s[end - 1])) {
+                --end;
+            }
+            if (end == 0)
+                return false;
+
+            char32_t last = s[end - 1];
+            return Contains(CHAPTER_MARKERS, last);
+        }
+
+        // Dialog start: ignore half/full-width spaces, then check if first char is dialog opener
+        inline bool IsDialogStart(const std::u32string &line) {
+            std::u32string s = LStripSpacesAndFullWidth(line);
+            if (s.empty())
+                return false;
+            return Contains(DIALOG_OPENERS, s[0]);
+        }
+
+        // ------------------------- Collapse repeated segments -------------------------
+
+        // Collapse repeated substring inside a token:
+        //   - token length 4..200
+        //   - base unit length 4..10
+        //   - repeated at least 3 times exactly
         inline std::u32string CollapseRepeatedToken(const std::u32string &token) {
             const std::size_t length = token.size();
-            if (length < 4 || length > 200) return token;
+            if (length < 4 || length > 200)
+                return token;
 
-            for (std::size_t unit_len = 2; unit_len <= 20; ++unit_len) {
-                if (unit_len > length / 2) break;
-                if (length % unit_len != 0) continue;
+            for (std::size_t unit_len = 4; unit_len <= 10; ++unit_len) {
+                if (unit_len > length / 3)
+                    break;
+                if (length % unit_len != 0)
+                    continue;
 
                 const std::u32string unit = token.substr(0, unit_len);
-                const std::size_t repeat = length / unit_len;
+                const std::size_t repeat_count = length / unit_len;
 
-                std::u32string repeated;
-                repeated.reserve(length);
-                for (std::size_t i = 0; i < repeat; ++i)
-                    repeated += unit;
+                bool allMatch = true;
+                for (std::size_t i = 1; i < repeat_count; ++i) {
+                    std::size_t start = i * unit_len;
+                    if (token.compare(start, unit_len, unit) != 0) {
+                        allMatch = false;
+                        break;
+                    }
+                }
 
-                if (repeated == token)
+                if (allMatch)
                     return unit;
             }
+
             return token;
         }
 
+        // Phrase-level collapse: collapse repeated word sequences
+        inline std::vector<std::u32string>
+        CollapseRepeatedWordSequences(const std::vector<std::u32string> &parts) {
+            const std::size_t n = parts.size();
+            constexpr std::size_t MIN_REPEATS = 3;
+            constexpr std::size_t MAX_PHRASE_LEN = 8;
+
+            if (n < MIN_REPEATS)
+                return parts;
+
+            for (std::size_t start = 0; start < n; ++start) {
+                for (std::size_t phrase_len = 1;
+                     phrase_len <= MAX_PHRASE_LEN && start + phrase_len <= n;
+                     ++phrase_len) {
+                    std::size_t count = 1;
+
+                    while (true) {
+                        std::size_t next_start = start + count * phrase_len;
+                        if (next_start + phrase_len > n)
+                            break;
+
+                        bool equal = true;
+                        for (std::size_t k = 0; k < phrase_len; ++k) {
+                            if (parts[start + k] != parts[next_start + k]) {
+                                equal = false;
+                                break;
+                            }
+                        }
+
+                        if (!equal)
+                            break;
+
+                        ++count;
+                    }
+
+                    if (count >= MIN_REPEATS) {
+                        std::vector<std::u32string> result;
+                        result.reserve(n - (count - 1) * phrase_len);
+
+                        // prefix
+                        for (std::size_t i = 0; i < start; ++i)
+                            result.push_back(parts[i]);
+
+                        // one copy of the phrase
+                        for (std::size_t k = 0; k < phrase_len; ++k)
+                            result.push_back(parts[start + k]);
+
+                        // tail
+                        std::size_t tail_start = start + count * phrase_len;
+                        for (std::size_t i = tail_start; i < n; ++i)
+                            result.push_back(parts[i]);
+
+                        return result;
+                    }
+                }
+            }
+
+            return parts;
+        }
+
         inline std::u32string CollapseRepeatedSegments(const std::u32string &line) {
-            // split on spaces/tabs
+            std::u32string trimmed = Strip(line);
+            if (trimmed.empty())
+                return line;
+
+            // Split on spaces/tabs
             std::vector<std::u32string> parts;
             std::u32string current;
-            for (const char32_t ch: line) {
+            for (char32_t ch: trimmed) {
                 if (ch == U' ' || ch == U'\t') {
                     if (!current.empty()) {
                         parts.push_back(current);
@@ -641,231 +974,116 @@ namespace pdfium {
             if (parts.empty())
                 return line;
 
+            // 1) Phrase-level collapse
+            auto phrase_collapsed = CollapseRepeatedWordSequences(parts);
+
+            // 2) Token-level collapse
             std::u32string out;
             bool first = true;
-            for (auto &tok: parts) {
-                const auto collapsed = CollapseRepeatedToken(tok);
-                if (!first) out.push_back(U' ');
+            for (auto &tok: phrase_collapsed) {
+                auto collapsed = CollapseRepeatedToken(tok);
+                if (!first)
+                    out.push_back(U' ');
                 out += collapsed;
                 first = false;
             }
+
             return out;
         }
 
         // ------------------------- DialogState -------------------------
 
         struct DialogState {
-            // counts for each opener
-            std::unordered_map<char32_t, int> counts;
-
-            DialogState() {
-                for (char32_t ch: DIALOG_OPENERS) {
-                    counts[ch] = 0;
-                }
-            }
+            int double_quote = 0; // “ ”
+            int single_quote = 0; // ‘ ’
+            int corner = 0; // 「 」
+            int corner_bold = 0; // 『 』
+            int corner_top = 0; // ﹁ ﹂
+            int corner_wide = 0; // ﹄ ﹃
 
             void reset() {
-                for (auto &[key, val]: counts) {
-                    val = 0;
-                }
+                double_quote = 0;
+                single_quote = 0;
+                corner = 0;
+                corner_bold = 0;
+                corner_top = 0;
+                corner_wide = 0;
             }
 
             void update(const std::u32string &s) {
                 for (char32_t ch: s) {
-                    if (auto it = std::find(DIALOG_OPENERS.begin(), DIALOG_OPENERS.end(), ch);
-                        it != DIALOG_OPENERS.end()) {
-                        counts[ch] += 1;
-                    } else {
-                        // if it's a closer, map back to opener
-                        if (const std::size_t idx = DIALOG_CLOSERS.find(ch); idx != std::u32string::npos) {
-                            char32_t open_ch = DIALOG_OPENERS[idx];
-                            if (auto it2 = counts.find(open_ch); it2 != counts.end() && it2->second > 0)
-                                it2->second -= 1;
-                        }
+                    switch (ch) {
+                        case U'“': ++double_quote;
+                            break;
+                        case U'”': if (double_quote > 0) --double_quote;
+                            break;
+                        case U'‘': ++single_quote;
+                            break;
+                        case U'’': if (single_quote > 0) --single_quote;
+                            break;
+                        case U'「': ++corner;
+                            break;
+                        case U'」': if (corner > 0) --corner;
+                            break;
+                        case U'『': ++corner_bold;
+                            break;
+                        case U'』': if (corner_bold > 0) --corner_bold;
+                            break;
+                        case U'﹁': ++corner_top;
+                            break;
+                        case U'﹂': if (corner_top > 0) --corner_top;
+                            break;
+                        case U'﹃': ++corner_wide;
+                            break;
+                        case U'﹄': if (corner_wide > 0) --corner_wide;
+                            break;
+                        default: break;
                     }
                 }
             }
 
             bool is_unclosed() const {
-                return std::any_of(
-                    counts.begin(), counts.end(),
-                    [](const auto &kv) { return kv.second > 0; }
-                );
+                return double_quote > 0 ||
+                       single_quote > 0 ||
+                       corner > 0 ||
+                       corner_bold > 0 ||
+                       corner_top > 0 ||
+                       corner_wide > 0;
             }
         };
-
-        // ------------------------- Title & heading heuristics -------------------------
-
-        inline bool IsTitleHeading(const std::u32string &s_left) {
-            // Equivalent to TITLE_HEADING_REGEX: length <= 60 and
-            //   starts with fixed title word OR "第 ... [章节部卷節回]"
-            const std::size_t len = s_left.size();
-            if (len == 0 || len > 60) return false;
-
-            // fixed words
-            for (const auto &w: TITLE_WORDS) {
-                if (s_left.rfind(w, 0) == 0) {
-                    return true;
-                }
-            }
-
-            // "第 ... [章节部卷節回]"
-            if (s_left[0] == U'第') {
-                // find last non-space char
-                std::size_t pos = len;
-                while (pos > 1 && (s_left[pos - 1] == U' ' || s_left[pos - 1] == U'\u3000')) {
-                    --pos;
-                }
-                if (pos > 1) {
-                    if (const char32_t last = s_left[pos - 1]; Contains(CHAPTER_MARKERS, last)) {
-                        // limit middle length to <= 10 (like regex)
-                        if (pos - 1 <= 1 + 10)
-                            return true;
-                    }
-                }
-            }
-
-            return false;
-        }
-
-        inline bool IsDialogStart(const std::u32string &line) {
-            const auto s = LStrip(line);
-            if (s.empty()) return false;
-            return DIALOG_OPENERS.find(s[0]) != std::u32string::npos;
-        }
-
-        inline bool HasOpenBracketNoClose(const std::u32string &s) {
-            if (const bool hasOpen = AnyOf(s, OPEN_BRACKETS); !hasOpen) return false;
-            if (AnyOf(s, CLOSE_BRACKETS)) return false;
-            return true;
-        }
-
-        inline bool IsHeadingLike(const std::u32string &raw) {
-            // Unified spec with C#/Java/Python/Rust
-            const std::u32string s = Strip(raw);
-            if (s.empty()) return false;
-
-            // Keep page markers intact
-            if (IsPageMarker(s)) return false;
-
-            // Check last char only for CJK punctuation
-            const char32_t last = s.back();
-            if (Contains(CJK_PUNCT_END, last)) {
-                return false;
-            }
-
-            // Unclosed brackets: has open but no close
-            if (HasOpenBracketNoClose(s)) {
-                return false;
-            }
-
-            if (const std::size_t len = s.size(); len <= 15) {
-                bool hasNonAscii = false;
-                bool allAscii = true;
-                bool hasLetter = false;
-                bool allAsciiDigits = true;
-
-                for (const char32_t ch: s) {
-                    if (ch > 0x7F) {
-                        hasNonAscii = true;
-                        allAscii = false;
-                        allAsciiDigits = false;
-                        continue;
-                    }
-
-                    if (!(ch >= U'0' && ch <= U'9')) {
-                        allAsciiDigits = false;
-                    }
-
-                    if ((ch >= U'a' && ch <= U'z') || (ch >= U'A' && ch <= U'Z')) {
-                        hasLetter = true;
-                    }
-                }
-
-                // Rule C: pure ASCII digits → heading-like
-                if (allAsciiDigits) {
-                    return true;
-                }
-
-                // Rule A: CJK/mixed short line, not ending with comma
-                if (hasNonAscii && last != U'，' && last != U',') {
-                    return true;
-                }
-
-                // Rule B: pure ASCII short line with at least one letter
-                if (allAscii && hasLetter) {
-                    return true;
-                }
-            }
-
-            return false;
-        }
-
-        // Indentation: "^\s{2,}" - we approximate: at least 2 leading spaces/full-width spaces
-        inline bool IsIndented(const std::u32string &raw_line) {
-            int count = 0;
-            for (const char32_t ch: raw_line) {
-                if (ch == U' ' || ch == U'\t' || ch == U'\u3000') {
-                    ++count;
-                    if (count >= 2) return true;
-                } else {
-                    break;
-                }
-            }
-            return false;
-        }
-
-        // Chapter-like ending: short line ending with 章 / 节 / 部 / 卷 / 節, with trailing brackets
-        inline bool IsChapterEnding(const std::u32string &s) {
-            if (s.size() > 15) return false;
-            // strip trailing closing brackets
-            std::size_t end = s.size();
-            while (end > 0 && Contains(CHAPTER_END_BRACKETS, s[end - 1])) {
-                --end;
-            }
-            if (end == 0) return false;
-            if (const char32_t last = s[end - 1]; !Contains(CHAPTER_MARKERS, last)) return false;
-            return true;
-        }
 
         // ------------------------- Core reflow implementation -------------------------
 
         inline std::string ReflowCjkParagraphs(const std::string &utf8Text,
                                                bool addPdfPageHeader,
                                                bool compact) {
-            // Empty/whitespace text → return as-is
-            bool allSpace = true;
-            for (char ch: utf8Text) {
-                if (!(ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n')) {
-                    allSpace = false;
-                    break;
-                }
-            }
-            if (allSpace) {
+            // Whole string is whitespace → return as-is
+            if (std::all_of(
+                utf8Text.begin(),
+                utf8Text.end(),
+                [](char ch) {
+                    return ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n';
+                })) {
                 return utf8Text;
             }
 
-            // Normalize line endings
-            std::string norm = utf8Text;
-            // replace CRLF and CR with LF
-            {
-                std::string tmp;
-                tmp.reserve(norm.size());
-                for (std::size_t i = 0; i < norm.size(); ++i) {
-                    if (char c = norm[i]; c == '\r') {
-                        if (i + 1 < norm.size() && norm[i + 1] == '\n') {
-                            // skip this CR, LF will be handled next iteration
-                            continue;
-                        }
-                        tmp.push_back('\n');
-                    } else {
-                        tmp.push_back(c);
+            // Normalize CRLF / CR → LF
+            std::string norm;
+            norm.reserve(utf8Text.size());
+            for (std::size_t i = 0; i < utf8Text.size(); ++i) {
+                char c = utf8Text[i];
+                if (c == '\r') {
+                    if (i + 1 < utf8Text.size() && utf8Text[i + 1] == '\n') {
+                        // Skip CR of CRLF, LF will be processed next
+                        continue;
                     }
+                    norm.push_back('\n');
+                } else {
+                    norm.push_back(c);
                 }
-                norm.swap(tmp);
             }
 
-            // Split into lines (UTF-8) and convert each to UTF-32
+            // Split into UTF-8 lines, then convert to UTF-32
             std::vector<std::u32string> lines32; {
                 std::string current;
                 for (char ch: norm) {
@@ -876,7 +1094,6 @@ namespace pdfium {
                         current.push_back(ch);
                     }
                 }
-                // last line
                 lines32.push_back(Utf8ToU32(current));
             }
 
@@ -884,144 +1101,158 @@ namespace pdfium {
             std::u32string buffer;
             DialogState dialog_state;
 
-            auto flush_buffer = [&]() {
+            auto flush_buffer_and_push = [&](const std::u32string &line) {
                 if (!buffer.empty()) {
                     segments.push_back(buffer);
                     buffer.clear();
                     dialog_state.reset();
                 }
+                segments.push_back(line);
             };
 
             for (const auto &raw_line32: lines32) {
+                // 1) Visual form: trim right + strip only half-width leading spaces
                 std::u32string stripped = RStrip(raw_line32);
-                std::u32string stripped_left = LStrip(stripped);
+                stripped = StripHalfWidthIndentKeepFullWidth(stripped);
 
-                bool is_title_heading = IsTitleHeading(stripped_left);
+                // 2) Collapse style-layer repetition (per line)
+                std::u32string line_text = CollapseRepeatedSegments(stripped);
 
-                // style-layer repeated titles collapse
-                if (is_title_heading) {
-                    stripped = CollapseRepeatedSegments(stripped);
-                }
+                // 3) Logical probe for headings: no indent at all
+                std::u32string heading_probe = LStripSpacesAndFullWidth(line_text);
 
-                // NEW: weak heading-like detection on *current* line
-                bool is_short_heading = IsHeadingLike(stripped);
-
-                // 1) Empty line
-                if (stripped.empty()) {
+                // 4) Empty line handling
+                if (IsWhitespaceLine(heading_probe)) {
                     if (!addPdfPageHeader && !buffer.empty()) {
-                        if (char32_t last_char = buffer.back(); !Contains(CJK_PUNCT_END, last_char)) {
-                            // treat as layout gap, skip
+                        if (!BufferEndsWithCjkPunct(buffer)) {
+                            // Looks like a layout gap / fake page break → skip
                             continue;
                         }
                     }
 
-                    // End of paragraph -> flush buffer, no empty segment
-                    flush_buffer();
+                    // End of paragraph: flush buffer, do NOT add empty segment
+                    if (!buffer.empty()) {
+                        segments.push_back(buffer);
+                        buffer.clear();
+                        dialog_state.reset();
+                    }
                     continue;
                 }
 
-                // 2) Page markers === [Page x/y] ===
-                if (IsPageMarker(stripped)) {
-                    flush_buffer();
-                    segments.push_back(stripped);
+                // 5) Page markers: "=== [Page x/y] ==="
+                if (IsPageMarker(heading_probe)) {
+                    flush_buffer_and_push(line_text);
                     continue;
                 }
 
-                // 3) Title heading
+                // 6) Heading / metadata detection
+                bool is_title_heading = IsTitleHeading(heading_probe);
+                bool is_short_heading = IsHeadingLike(line_text);
+                bool is_metadata = IsMetadataLine(line_text);
+
+                // 6a) Metadata lines as standalone segments
+                if (is_metadata) {
+                    flush_buffer_and_push(line_text);
+                    continue;
+                }
+
+                // 6b) Strong title headings as standalone segments
                 if (is_title_heading) {
-                    flush_buffer();
-                    segments.push_back(stripped);
+                    flush_buffer_and_push(line_text);
                     continue;
                 }
 
-                // 3b) 弱 heading-like：要先看上一段是否逗號結尾
+                // 6c) Soft heading-like lines
                 if (is_short_heading) {
                     if (!buffer.empty()) {
-                        // check last non-space char of buffer
-                        if (std::u32string bt = RStrip(buffer); !bt.empty()) {
-                            if (char32_t last = bt.back(); last == U'，' || last == U',') {
-                                // previous ends with comma → treat as continuation, NOT heading
-                                // fall through; normal rules below will handle merge/split
+                        std::u32string bt = RStrip(buffer);
+                        if (!bt.empty()) {
+                            char32_t last = bt.back();
+                            if (last == U'，' || last == U',') {
+                                // Comma-ending previous line → treat as continuation
+                                // fall through below
                             } else {
-                                // real heading → flush buffer, this line becomes its own segment
-                                flush_buffer();
-                                segments.push_back(stripped);
+                                // Real heading boundary → split
+                                flush_buffer_and_push(line_text);
                                 continue;
                             }
                         } else {
-                            // buffer only whitespace → treat as heading
-                            segments.push_back(stripped);
+                            // Buffer only whitespace → treat as standalone heading
+                            segments.push_back(line_text);
                             continue;
                         }
                     } else {
-                        // no previous text → heading on its own
-                        segments.push_back(stripped);
+                        // No previous text → standalone heading
+                        segments.push_back(line_text);
                         continue;
                     }
                 }
 
-                bool current_is_dialog_start = IsDialogStart(stripped);
+                // 7) Dialog start detection
+                bool current_is_dialog_start = IsDialogStart(line_text);
 
-                // 4) First line of new paragraph
                 if (buffer.empty()) {
-                    buffer = stripped;
+                    buffer = line_text;
                     dialog_state.reset();
-                    dialog_state.update(stripped);
+                    dialog_state.update(line_text);
                     continue;
                 }
 
-                std::u32string &buffer_text = buffer;
-
-                // Dialog rule: if this line starts with dialog opener → new paragraph
+                // NEW: if previous line ends with comma, do NOT force flush even if
+                // this line starts with a dialog opener.
                 if (current_is_dialog_start) {
-                    flush_buffer();
-                    buffer = stripped;
-                    dialog_state.update(stripped);
-                    continue;
+                    std::u32string trimmed_buf = RStrip(buffer);
+                    if (!trimmed_buf.empty()) {
+                        char32_t last = trimmed_buf.back();
+                        if (last != U'，' && last != U',') {
+                            // Safe to flush previous paragraph and start new dialog block
+                            flush_buffer_and_push(line_text);
+                            continue;
+                        }
+                        // else: fall through, treat as continuation
+                    } else {
+                        // buffer only whitespace, just treat as new dialog block
+                        flush_buffer_and_push(line_text);
+                        continue;
+                    }
                 }
 
-                // Colon + dialog continuation: "她写了一行字：" + "  「如果连自己都不相信……」"
-                if (!buffer_text.empty()) {
-                    if (char32_t last = buffer_text.back(); last == U'：' || last == U':') {
-                        // ignore leading half/full-width spaces for dialog opener
-                        if (std::u32string after_indent = LStrip(stripped); !after_indent.empty() && Contains(
-                                                                                DIALOG_OPENERS, after_indent[0])) {
-                            buffer += stripped;
-                            dialog_state.update(stripped);
-                            continue;
+                // Colon + dialog continuation:
+                //   "她寫了一行字：" + "  「如果連自己都不相信……」"
+                if (!buffer.empty()) {
+                    std::u32string trimmed_buf = RStrip(buffer);
+                    if (!trimmed_buf.empty()) {
+                        char32_t last = trimmed_buf.back();
+                        if (last == U'：' || last == U':') {
+                            std::u32string after_indent = LStripSpacesAndFullWidth(line_text);
+                            if (!after_indent.empty() &&
+                                Contains(DIALOG_OPENERS, after_indent[0])) {
+                                buffer += line_text;
+                                dialog_state.update(line_text);
+                                continue;
+                            }
                         }
                     }
                 }
 
-                // 5) Ends with CJK punctuation → new paragraph if not inside unclosed dialog
-                if (!buffer_text.empty() &&
-                    Contains(CJK_PUNCT_END, buffer_text.back()) &&
+                // CJK punctuation boundary: if buffer ends with CJK punctuation
+                // and dialog is balanced, treat as paragraph break.
+                if (!buffer.empty() &&
+                    BufferEndsWithCjkPunct(buffer) &&
                     !dialog_state.is_unclosed()) {
-                    flush_buffer();
-                    buffer = stripped;
-                    dialog_state.update(stripped);
+                    flush_buffer_and_push(line_text);
                     continue;
                 }
 
-                // 7) Indentation -> new paragraph
-                if (IsIndented(raw_line32)) {
-                    flush_buffer();
-                    buffer = stripped;
-                    dialog_state.update(stripped);
+                // Chapter-like ending
+                if (IsChapterEnding(buffer)) {
+                    flush_buffer_and_push(line_text);
                     continue;
                 }
 
-                // 8) Chapter-like endings
-                if (IsChapterEnding(buffer_text)) {
-                    flush_buffer();
-                    buffer = stripped;
-                    dialog_state.update(stripped);
-                    continue;
-                }
-
-                // 9) Default: merge (soft line break)
-                buffer += stripped;
-                dialog_state.update(stripped);
+                // Default: soft join
+                buffer += line_text;
+                dialog_state.update(line_text);
             }
 
             // Flush last buffer
@@ -1029,7 +1260,7 @@ namespace pdfium {
                 segments.push_back(buffer);
             }
 
-            // Join segments with one or two blank lines
+            // Join segments with one or two newlines
             std::u32string result32;
             for (std::size_t i = 0; i < segments.size(); ++i) {
                 if (i > 0) {
@@ -1047,7 +1278,7 @@ namespace pdfium {
         }
     } // namespace detail
 
-    // Public wrapper
+    // Public wrapper (API remains the same)
     inline std::string ReflowCjkParagraphs(const std::string &utf8Text,
                                            const bool addPdfPageHeader,
                                            const bool compact) {
