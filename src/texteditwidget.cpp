@@ -22,6 +22,7 @@ void TextEditWidget::dropEvent(QDropEvent *event) {
         contentFilename = filePath;
         if (isPdf(filePath)) {
             emit pdfDropped(filePath);
+            return;
         }
         loadFile(filePath);
         emit fileDropped(filePath);

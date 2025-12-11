@@ -759,7 +759,7 @@ namespace pdfium {
                 return false;
             }
 
-            if (const std::size_t len = s.size(); len <= 15) {
+            if (const std::size_t len = s.size(); len <= 8) {
                 bool hasNonAscii = false;
                 bool allAscii = true;
                 bool hasLetter = false;
