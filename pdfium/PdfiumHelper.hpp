@@ -8,7 +8,10 @@
 #include <stdexcept>
 #include <string>
 #include <utility>
-// #include <vector>
+#include <unordered_set>
+#include <vector>
+#include <algorithm>
+
 
 // PDFium public headers.
 // Make sure they are in your include path.
@@ -84,7 +87,7 @@ namespace pdfium {
             Reset();
 
             auto &lib = PdfiumLibrary::Instance();
-            std::lock_guard<std::mutex> lock(lib.Mutex());
+            std::lock_guard lock(lib.Mutex());
 
             handle_ = FPDF_LoadDocument(
                 path.c_str(),
@@ -158,7 +161,7 @@ namespace pdfium {
                 throw std::runtime_error("Page::Open: null document handle");
 
             auto &lib = PdfiumLibrary::Instance();
-            std::lock_guard<std::mutex> lock(lib.Mutex());
+            std::lock_guard lock(lib.Mutex());
 
             handle_ = FPDF_LoadPage(doc, index);
             if (!handle_)
@@ -279,8 +282,17 @@ namespace pdfium {
                 return {};
 
             auto &lib = PdfiumLibrary::Instance();
-            std::lock_guard<std::mutex> lock(lib.Mutex());
+            std::lock_guard lock(lib.Mutex());
 
+            // IMPORTANT:
+            // Pdfium handles (FPDF_PAGE, FPDF_TEXTPAGE, FPDF_DOCUMENT, etc.)
+            // must NEVER be declared as `const`.
+            //
+            // They are opaque pointers that Pdfium may mutate internally.
+            // Adding `const` will break compatibility with the Pdfium C API
+            // and may cause undefined behavior when Pdfium expects a mutable handle.
+            //
+            // Always keep them as raw, non-const handles.
             FPDF_TEXTPAGE textPage = FPDFText_LoadPage(page);
             if (!textPage)
                 return {};
@@ -414,12 +426,12 @@ namespace pdfium {
                                                      cancelFlag.get());
                               } catch (...) {
                                   // For GUI integration, you may want to rethrow and handle outside.
-                                  throw;
+                                  // throw;
+                                  return "";
                               }
                           });
     }
 } // namespace pdfium
-
 
 // -----------------------------------------------------------------------------
 // CJK paragraph reflow (ported from pdf_helper.py::reflow_cjk_paragraphs_core)
@@ -434,10 +446,6 @@ namespace pdfium {
 // This function assumes `utf8Text` is UTF-8. It decodes to char32_t for
 // punctuation and dialog logic, then re-encodes to UTF-8.
 //
-
-#include <vector>
-#include <unordered_map>
-#include <algorithm>
 
 namespace pdfium {
     namespace detail {
@@ -526,10 +534,78 @@ namespace pdfium {
             U"前言", U"序章", U"终章", U"尾声", U"后记",
             U"番外", U"尾聲", U"後記"
         };
+
+        // Markers like 章 / 节 / 部 / 卷 / 回 etc.
         static const std::u32string CHAPTER_MARKERS = U"章节部卷節回";
+
+        // Characters that invalidate chapter headings when they appear *immediately after*
+        // a chapter marker, matching the C# regex [章节部卷節回][^分合]
+        //
+        // Later if you find more patterns, simply append to this string.
+        // Example future additions:
+        //
+        //   "U"分合附补增修編編輯"   // ← expandable
+        //
+        static const std::u32string EXCLUDED_CHAPTER_MARKERS_PREFIX = U"分合";
 
         // Closing bracket chars for chapter-ending rule
         static const std::u32string CHAPTER_END_BRACKETS = U"】》〗〕〉」』）";
+
+        // Metadata separators: full-width colon, ASCII colon, ideographic space
+        static const std::u32string METADATA_SEPARATORS = U"：:　";
+
+        // Metadata keys (書名 / 作者 / 出版時間 / 版權 / ISBN / etc.)
+        static const std::unordered_set<std::u32string> METADATA_KEYS = {
+            // 1. Title / Author / Publishing
+            U"書名", U"书名",
+            U"作者",
+            U"譯者", U"译者",
+            U"校訂", U"校订",
+            U"出版社",
+            U"出版時間", U"出版时间",
+            U"出版日期",
+
+            // 2. Copyright / License
+            U"版權", U"版权",
+            U"版權頁", U"版权页",
+            U"版權信息", U"版权信息",
+
+            // 3. Editor / Pricing
+            U"責任編輯", U"责任编辑",
+            U"編輯", U"编辑",
+            U"責編", U"责编",
+            U"定價", U"定价",
+
+            // 4. Descriptions / Forewords (only some are treated as metadata)
+            U"前言",
+            U"序章",
+            U"終章", U"终章",
+            U"尾聲", U"尾声",
+            U"後記", U"后记",
+
+            // 5. Digital publishing (ebook platforms)
+            U"品牌方",
+            U"出品方",
+            U"授權方", U"授权方",
+            U"電子版權", U"数字版权",
+            U"掃描", U"扫描",
+            U"OCR",
+
+            // 6. CIP / Cataloging
+            U"CIP",
+            U"在版編目", U"在版编目",
+            U"分類號", U"分类号",
+            U"主題詞", U"主题词",
+
+            // 7. Publishing cycle
+            U"發行日", U"发行日",
+            U"初版",
+
+            // 8. Common key without variants
+            U"ISBN"
+        };
+
+        // ------------------------- Small utility helpers -------------------------
 
         // Utility: contains
         inline bool Contains(const std::u32string &s, const char32_t ch) {
@@ -655,72 +731,159 @@ namespace pdfium {
         // ------------------------- DialogState -------------------------
 
         struct DialogState {
-            // counts for each opener
-            std::unordered_map<char32_t, int> counts;
-
-            DialogState() {
-                for (char32_t ch: DIALOG_OPENERS) {
-                    counts[ch] = 0;
-                }
-            }
+            int double_quote = 0; // “ ”
+            int single_quote = 0; // ‘ ’
+            int corner = 0; // 「 」
+            int corner_bold = 0; // 『 』
+            int corner_top = 0; // ﹁ ﹂
+            int corner_wide = 0; // ﹄ ﹃
 
             void reset() {
-                for (auto &[key, val]: counts) {
-                    val = 0;
-                }
+                double_quote = 0;
+                single_quote = 0;
+                corner = 0;
+                corner_bold = 0;
+                corner_top = 0;
+                corner_wide = 0;
             }
 
             void update(const std::u32string &s) {
-                for (char32_t ch: s) {
-                    if (auto it = std::find(DIALOG_OPENERS.begin(), DIALOG_OPENERS.end(), ch);
-                        it != DIALOG_OPENERS.end()) {
-                        counts[ch] += 1;
-                    } else {
-                        // if it's a closer, map back to opener
-                        if (const std::size_t idx = DIALOG_CLOSERS.find(ch); idx != std::u32string::npos) {
-                            char32_t open_ch = DIALOG_OPENERS[idx];
-                            if (auto it2 = counts.find(open_ch); it2 != counts.end() && it2->second > 0)
-                                it2->second -= 1;
-                        }
+                for (const char32_t ch: s) {
+                    switch (ch) {
+                        case U'“': ++double_quote;
+                            break;
+                        case U'”': if (double_quote > 0) --double_quote;
+                            break;
+                        case U'‘': ++single_quote;
+                            break;
+                        case U'’': if (single_quote > 0) --single_quote;
+                            break;
+                        case U'「': ++corner;
+                            break;
+                        case U'」': if (corner > 0) --corner;
+                            break;
+                        case U'『': ++corner_bold;
+                            break;
+                        case U'』': if (corner_bold > 0) --corner_bold;
+                            break;
+                        case U'﹁': ++corner_top;
+                            break;
+                        case U'﹂': if (corner_top > 0) --corner_top;
+                            break;
+                        case U'﹃': ++corner_wide;
+                            break;
+                        case U'﹄': if (corner_wide > 0) --corner_wide;
+                            break;
+                        default: break;
                     }
                 }
             }
 
-            bool is_unclosed() const {
-                return std::any_of(
-                    counts.begin(), counts.end(),
-                    [](const auto &kv) { return kv.second > 0; }
-                );
+            [[nodiscard]] bool is_unclosed() const {
+                return double_quote > 0 ||
+                       single_quote > 0 ||
+                       corner > 0 ||
+                       corner_bold > 0 ||
+                       corner_top > 0 ||
+                       corner_wide > 0;
             }
         };
+
+        // ------------------------- Metadata detection -------------------------
+        /// Detect lines like:
+        ///   書名：假面遊戲
+        ///   作者 : 東野圭吾
+        ///   出版時間　2024-03-12
+        ///   ISBN 9787573506078
+        inline bool IsMetadataLine(const std::u32string &line) {
+            const std::u32string s = Strip(line);
+            if (s.empty())
+                return false;
+
+            if (s.size() > 30)
+                return false;
+
+            // Find first separator (：, :, or full-width space)
+            std::size_t sep_idx = std::u32string::npos;
+            for (std::size_t i = 0; i < s.size(); ++i) {
+                if (const char32_t ch = s[i]; Contains(METADATA_SEPARATORS, ch)) {
+                    if (i == 0 || i > 10) {
+                        // Separator too early or too far → not a compact key
+                        return false;
+                    }
+                    sep_idx = i;
+                    break;
+                }
+            }
+
+            if (sep_idx == std::u32string::npos)
+                return false;
+
+            // Key before separator
+            const std::u32string key = Strip(s.substr(0, sep_idx));
+            if (key.empty())
+                return false;
+            if (!METADATA_KEYS.count(key))
+                return false;
+
+            // Find first non-space after the separator
+            std::size_t j = sep_idx + 1;
+            while (j < s.size()) {
+                // ASCII space, tab, or full-width space
+                if (const char32_t c = s[j]; c == U' ' || c == U'\t' || c == U'　') {
+                    ++j;
+                } else {
+                    break;
+                }
+            }
+
+            if (j >= s.size())
+                return false;
+
+            // If the value starts with dialog opener, it's more like dialog, not metadata.
+            if (const char32_t first_after = s[j]; Contains(DIALOG_OPENERS, first_after))
+                return false;
+
+            return true;
+        }
 
         // ------------------------- Title & heading heuristics -------------------------
 
         inline bool IsTitleHeading(const std::u32string &s_left) {
-            // Equivalent to TITLE_HEADING_REGEX: length <= 60 and
-            //   starts with fixed title word OR "第 ... [章节部卷節回]"
             const std::size_t len = s_left.size();
             if (len == 0 || len > 60) return false;
 
-            // fixed words
+            // 1. Fixed words at the start: 前言 / 序章 / 终章 / 尾声 / 后记 / 番外 / 尾聲 / 後記
             for (const auto &w: TITLE_WORDS) {
                 if (s_left.rfind(w, 0) == 0) {
                     return true;
                 }
             }
 
-            // "第 ... [章节部卷節回]"
-            if (s_left[0] == U'第') {
-                // find last non-space char
-                std::size_t pos = len;
-                while (pos > 1 && (s_left[pos - 1] == U' ' || s_left[pos - 1] == U'\u3000')) {
-                    --pos;
+            // 2. Chapter-like: .{0,20}?第.{0,10}?([章节部卷節回][^分合])
+            //    - search for '第' within the first 20 chars
+            std::size_t di = std::u32string::npos;
+            const std::size_t max_before_di = std::min<std::size_t>(20, len - 1);
+            // at least leave room for something after '第'
+            for (std::size_t i = 0; i <= max_before_di; ++i) {
+                if (s_left[i] == U'第') {
+                    di = i;
+                    break;
                 }
-                if (pos > 1) {
-                    if (const char32_t last = s_left[pos - 1]; Contains(CHAPTER_MARKERS, last)) {
-                        // limit middle length to <= 10 (like regex)
-                        if (pos - 1 <= 1 + 10)
+            }
+            if (di == std::u32string::npos) {
+                return false;
+            }
+
+            // 2b. From just after '第', scan up to 10 chars for a chapter marker
+            //     [章节部卷節回], and ensure the next char is not '分' or '合'.
+            const std::size_t max_marker_pos = std::min<std::size_t>(len - 1, di + 1 + 10);
+            for (std::size_t j = di + 1; j <= max_marker_pos; ++j) {
+                if (const char32_t ch = s_left[j]; Contains(CHAPTER_MARKERS, ch)) {
+                    if (j + 1 < len) {
+                        if (const char32_t next = s_left[j + 1]; !Contains(EXCLUDED_CHAPTER_MARKERS_PREFIX, next)) {
                             return true;
+                        }
                     }
                 }
             }
@@ -903,6 +1066,9 @@ namespace pdfium {
                     stripped = CollapseRepeatedSegments(stripped);
                 }
 
+                // *** NEW: metadata detection (書名：…, 作者：…, ISBN … etc.) ***
+                bool is_metadata = IsMetadataLine(stripped_left);
+
                 // NEW: weak heading-like detection on *current* line
                 bool is_short_heading = IsHeadingLike(stripped);
 
@@ -929,6 +1095,14 @@ namespace pdfium {
 
                 // 3) Title heading
                 if (is_title_heading) {
+                    flush_buffer();
+                    segments.push_back(stripped);
+                    continue;
+                }
+
+                // 3a) Metadata lines (書名：…, 作者：…, ISBN …)
+                //     These should be standalone segments, not joined to prose.
+                if (is_metadata) {
                     flush_buffer();
                     segments.push_back(stripped);
                     continue;
@@ -964,6 +1138,7 @@ namespace pdfium {
 
                 // 4) First line of new paragraph
                 if (buffer.empty()) {
+                    // First line – just start a new paragraph (dialog or not)
                     buffer = stripped;
                     dialog_state.reset();
                     dialog_state.update(stripped);
@@ -972,12 +1147,33 @@ namespace pdfium {
 
                 std::u32string &buffer_text = buffer;
 
-                // Dialog rule: if this line starts with dialog opener → new paragraph
-                if (current_is_dialog_start) {
-                    flush_buffer();
-                    buffer = stripped;
-                    dialog_state.update(stripped);
-                    continue;
+                // We already have some text in buffer
+                if (!buffer_text.empty()) {
+                    // 🔸 NEW RULE: If previous line ends with comma,
+                    //     do NOT flush even if this line starts dialog.
+                    //     (comma-ending means the sentence is not finished)
+                    std::u32string trimmed = RStrip(buffer_text);
+
+                    if (char32_t last = trimmed.empty() ? U'\0' : trimmed.back(); last == U'，' || last == U',') {
+                        // fall through → treat as continuation
+                        // do NOT flush here even if current_is_dialog_start
+                    } else if (current_is_dialog_start) {
+                        // *** DIALOG: if this line starts a dialog,
+                        //     flush previous paragraph (only if safe)
+                        flush_buffer();
+                        buffer = stripped;
+                        dialog_state.reset();
+                        dialog_state.update(stripped);
+                        continue;
+                    }
+                } else {
+                    // buffer logically empty, just add new dialog line
+                    if (current_is_dialog_start) {
+                        buffer = stripped;
+                        dialog_state.reset();
+                        dialog_state.update(stripped);
+                        continue;
+                    }
                 }
 
                 // Colon + dialog continuation: "她写了一行字：" + "  「如果连自己都不相信……」"
