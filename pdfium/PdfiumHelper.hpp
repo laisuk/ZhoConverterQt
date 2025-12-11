@@ -551,6 +551,8 @@ namespace pdfium {
         // Closing bracket chars for chapter-ending rule
         static const std::u32string CHAPTER_END_BRACKETS = U"】》〗〕〉」』）";
 
+        static constexpr std::size_t SHORT_HEADING_MAX_LEN = 8;
+
         // Metadata separators: full-width colon, ASCII colon, ideographic space
         static const std::u32string METADATA_SEPARATORS = U"：:　";
 
@@ -1093,54 +1095,66 @@ namespace pdfium {
             // Keep page markers intact
             if (IsPageMarker(s)) return false;
 
-            // Check last char only for CJK punctuation
+            // Last char cannot be terminal punctuation
             const char32_t last = s.back();
             if (Contains(CJK_PUNCT_END, last)) {
                 return false;
             }
 
-            // Unclosed brackets: has open but no close
+            // Cannot have an open bracket without a matching closed one
             if (HasOpenBracketNoClose(s)) {
                 return false;
             }
 
-            if (const std::size_t len = s.size(); len <= 8) {
-                bool hasNonAscii = false;
-                bool allAscii = true;
-                bool hasLetter = false;
-                bool allAsciiDigits = true;
+            // Determine dynamic max length:
+            //   - CJK/mixed: SHORT_HEADING_MAX_LEN
+            //   - pure ASCII: double
+            const bool all_ascii = IsAllAscii(s);
+            const std::size_t max_len =
+                    all_ascii ? (SHORT_HEADING_MAX_LEN * 2) : SHORT_HEADING_MAX_LEN;
 
-                for (const char32_t ch: s) {
-                    if (ch > 0x7F) {
-                        hasNonAscii = true;
-                        allAscii = false;
-                        allAsciiDigits = false;
-                        continue;
-                    }
+            if (const std::size_t len = s.size(); len > max_len) {
+                return false;
+            }
 
-                    if (!(ch >= U'0' && ch <= U'9')) {
-                        allAsciiDigits = false;
-                    }
+            // Analyze characters
+            bool hasNonAscii = false;
+            bool hasLetter = false;
+            bool allAsciiDigits = true;
 
-                    if ((ch >= U'a' && ch <= U'z') || (ch >= U'A' && ch <= U'Z')) {
-                        hasLetter = true;
-                    }
+            for (const char32_t ch: s) {
+                if (ch > 0x7F) {
+                    hasNonAscii = true;
+                    allAsciiDigits = false;
+                    continue;
                 }
 
-                // Rule C: pure ASCII digits → heading-like
-                if (allAsciiDigits) {
-                    return true;
+                // Check ASCII digits
+                if (!(ch >= U'0' && ch <= U'9')) {
+                    allAsciiDigits = false;
                 }
 
-                // Rule A: CJK/mixed short line, not ending with comma
-                if (hasNonAscii && last != U'，' && last != U',') {
-                    return true;
+                // Check ASCII letters
+                if ((ch >= U'a' && ch <= U'z') || (ch >= U'A' && ch <= U'Z')) {
+                    hasLetter = true;
                 }
+            }
 
-                // Rule B: pure ASCII short line with at least one letter
-                if (allAscii && hasLetter) {
-                    return true;
-                }
+            // ----------------- RULE SET -----------------
+
+            // Rule C: pure ASCII digits → heading-like (e.g., "1", "02", "12")
+            if (allAsciiDigits) {
+                return true;
+            }
+
+            // Rule A: CJK/mixed short line → heading-like
+            if (hasNonAscii && last != U'，' && last != U',') {
+                return true;
+            }
+
+            // Rule B: pure ASCII short line with letters → heading-like
+            if (all_ascii && hasLetter) {
+                return true;
             }
 
             return false;
