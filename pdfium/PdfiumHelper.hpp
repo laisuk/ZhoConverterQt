@@ -674,57 +674,239 @@ namespace pdfium {
             });
         }
 
-        // Collapse repeated segments (token-level), from collapse_repeated_segments()
+        // // Collapse repeated segments (token-level), from collapse_repeated_segments()
+        // inline std::u32string CollapseRepeatedToken(const std::u32string &token) {
+        //     const std::size_t length = token.size();
+        //     if (length < 4 || length > 200) return token;
+        //
+        //     for (std::size_t unit_len = 2; unit_len <= 20; ++unit_len) {
+        //         if (unit_len > length / 2) break;
+        //         if (length % unit_len != 0) continue;
+        //
+        //         const std::u32string unit = token.substr(0, unit_len);
+        //         const std::size_t repeat = length / unit_len;
+        //
+        //         std::u32string repeated;
+        //         repeated.reserve(length);
+        //         for (std::size_t i = 0; i < repeat; ++i)
+        //             repeated += unit;
+        //
+        //         if (repeated == token)
+        //             return unit;
+        //     }
+        //     return token;
+        // }
+        //
+        // inline std::u32string CollapseRepeatedSegments(const std::u32string &line) {
+        //     // split on spaces/tabs
+        //     std::vector<std::u32string> parts;
+        //     std::u32string current;
+        //     for (const char32_t ch: line) {
+        //         if (ch == U' ' || ch == U'\t') {
+        //             if (!current.empty()) {
+        //                 parts.push_back(current);
+        //                 current.clear();
+        //             }
+        //         } else {
+        //             current.push_back(ch);
+        //         }
+        //     }
+        //     if (!current.empty())
+        //         parts.push_back(current);
+        //
+        //     if (parts.empty())
+        //         return line;
+        //
+        //     std::u32string out;
+        //     bool first = true;
+        //     for (auto &tok: parts) {
+        //         const auto collapsed = CollapseRepeatedToken(tok);
+        //         if (!first) out.push_back(U' ');
+        //         out += collapsed;
+        //         first = false;
+        //     }
+        //     return out;
+        // }
+        // ------------------------------------------------------------
+        // Style-layer repeat collapse for PDF headings / title lines.
+        //
+        // Conceptually similar to:
+        //
+        //    (.{4,10}?)\1{2,3}
+        //
+        // i.e. “a phrase of length 4–10 chars, repeated 3–4 times”,
+        // but implemented in a token- and phrase-aware way so we can
+        // correctly handle CJK titles and multi-word headings.
+        //
+        // This routine is intentionally conservative:
+        //   - It targets layout / styling noise (highlighted titles,
+        //     duplicated TOC entries, etc.).
+        //   - It avoids collapsing natural language like “哈哈哈哈哈哈”.
+        // ------------------------------------------------------------
+
+        // Token-level: collapse a single token if it is entirely made of
+        // a repeated substring of length 4..10, repeated at least 3 times.
         inline std::u32string CollapseRepeatedToken(const std::u32string &token) {
             const std::size_t length = token.size();
-            if (length < 4 || length > 200) return token;
+            // Very short tokens or huge ones are unlikely to be styled repeats.
+            if (length < 4 || length > 200) {
+                return token;
+            }
 
-            for (std::size_t unit_len = 2; unit_len <= 20; ++unit_len) {
-                if (unit_len > length / 2) break;
-                if (length % unit_len != 0) continue;
+            // Try unit sizes between 4 and 10 chars, and require at least
+            // 3 repeats (N >= 3). This corresponds roughly to:
+            //
+            //   (.{4,10}?)\1{2,}
+            //
+            // but constrained to exactly fill the entire token.
+            for (std::size_t unit_len = 4;
+                 unit_len <= 10 && unit_len <= length / 3;
+                 ++unit_len) {
+                if (length % unit_len != 0)
+                    continue;
 
                 const std::u32string unit = token.substr(0, unit_len);
-                const std::size_t repeat = length / unit_len;
+                bool all_match = true;
 
-                std::u32string repeated;
-                repeated.reserve(length);
-                for (std::size_t i = 0; i < repeat; ++i)
-                    repeated += unit;
+                for (std::size_t pos = 0; pos < length; pos += unit_len) {
+                    if (token.compare(pos, unit_len, unit) != 0) {
+                        all_match = false;
+                        break;
+                    }
+                }
 
-                if (repeated == token)
+                if (all_match) {
+                    // Token is just [unit] repeated N times (N >= 3):
+                    // collapse it to a single unit.
                     return unit;
+                }
             }
+
             return token;
         }
 
-        inline std::u32string CollapseRepeatedSegments(const std::u32string &line) {
-            // split on spaces/tabs
-            std::vector<std::u32string> parts;
-            std::u32string current;
-            for (const char32_t ch: line) {
-                if (ch == U' ' || ch == U'\t') {
-                    if (!current.empty()) {
-                        parts.push_back(current);
-                        current.clear();
+        // --------------------------------
+        // Normalize Repeated Words
+        // --------------------------------
+
+        // Phrase-level: collapse repeated sequences of tokens (phrases).
+        //
+        // Example:
+        //   「背负着一切的麒麟 背负着一切的麒麟 背负着一切的麒麟 背负着一切的麒麟」
+        //   → 「背负着一切的麒麟」
+        inline std::vector<std::u32string>
+        CollapseRepeatedWordSequences(const std::vector<std::u32string> &parts) {
+            constexpr int minRepeats = 3; // minimum number of repeats
+            constexpr int maxPhraseLen = 8; // typical heading phrases are short
+
+            const std::size_t n = parts.size();
+            if (n < static_cast<std::size_t>(minRepeats)) {
+                return parts;
+            }
+
+            // Scan from left to right for any repeating phrase.
+            for (std::size_t start = 0; start < n; ++start) {
+                for (int phraseLen = 1;
+                     phraseLen <= maxPhraseLen && start + static_cast<std::size_t>(phraseLen) <= n;
+                     ++phraseLen) {
+                    std::size_t count = 1;
+
+                    while (true) {
+                        const std::size_t nextStart = start + count * static_cast<std::size_t>(phraseLen);
+                        if (nextStart + static_cast<std::size_t>(phraseLen) > n) {
+                            break;
+                        }
+
+                        bool equal = true;
+                        for (int k = 0; k < phraseLen; ++k) {
+                            if (parts[start + k] != parts[nextStart + k]) {
+                                equal = false;
+                                break;
+                            }
+                        }
+
+                        if (!equal)
+                            break;
+
+                        ++count;
                     }
-                } else {
-                    current.push_back(ch);
+
+                    if (count < static_cast<std::size_t>(minRepeats)) {
+                        continue;
+                    }
+
+                    // Build collapsed list:
+                    //   [prefix] + [one phrase] + [tail]
+                    std::vector<std::u32string> result;
+                    result.reserve(n - (count - 1) * static_cast<std::size_t>(phraseLen));
+
+                    // Prefix before the repeated phrase.
+                    for (std::size_t i = 0; i < start; ++i) {
+                        result.push_back(parts[i]);
+                    }
+
+                    // Single copy of the repeated phrase.
+                    for (int k = 0; k < phraseLen; ++k) {
+                        result.push_back(parts[start + k]);
+                    }
+
+                    // Tail after all repeats.
+                    const std::size_t tailStart = start + count * static_cast<std::size_t>(phraseLen);
+                    for (std::size_t i = tailStart; i < n; ++i) {
+                        result.push_back(parts[i]);
+                    }
+
+                    return result;
                 }
             }
-            if (!current.empty())
-                parts.push_back(current);
+
+            return parts;
+        }
+
+        // Line-level wrapper:
+        //   1) split on spaces/tabs into tokens
+        //   2) collapse repeated *phrases*
+        //   3) collapse repeated patterns inside each token
+        inline std::u32string CollapseRepeatedSegments(const std::u32string &line) {
+            if (line.empty())
+                return line;
+
+            // Split on spaces/tabs into discrete tokens.
+            std::vector<std::u32string> parts; {
+                std::u32string current;
+                for (const char32_t ch: line) {
+                    if (ch == U' ' || ch == U'\t') {
+                        if (!current.empty()) {
+                            parts.push_back(current);
+                            current.clear();
+                        }
+                    } else {
+                        current.push_back(ch);
+                    }
+                }
+                if (!current.empty()) {
+                    parts.push_back(current);
+                }
+            }
 
             if (parts.empty())
                 return line;
 
+            // 1) Phrase-level collapse
+            parts = CollapseRepeatedWordSequences(parts);
+
+            // 2) Token-level collapse
             std::u32string out;
             bool first = true;
             for (auto &tok: parts) {
-                const auto collapsed = CollapseRepeatedToken(tok);
-                if (!first) out.push_back(U' ');
+                const std::u32string collapsed = CollapseRepeatedToken(tok);
+                if (!first) {
+                    out.push_back(U' ');
+                }
                 out += collapsed;
                 first = false;
             }
+
             return out;
         }
 
@@ -1059,12 +1241,18 @@ namespace pdfium {
                 std::u32string stripped = RStrip(raw_line32);
                 std::u32string stripped_left = LStrip(stripped);
 
+                // NEW: style-layer repeat collapse applied at paragraph level.
+                // If this ever causes weird behavior in body text, you can:
+                //   - comment this line out, and
+                //   - call CollapseRepeatedSegments(stripped) only when is_title_heading is true.
+                stripped = CollapseRepeatedSegments(stripped);
+
                 bool is_title_heading = IsTitleHeading(stripped_left);
 
                 // style-layer repeated titles collapse
-                if (is_title_heading) {
-                    stripped = CollapseRepeatedSegments(stripped);
-                }
+                // if (is_title_heading) {
+                //     stripped = CollapseRepeatedSegments(stripped);
+                // }
 
                 // *** NEW: metadata detection (書名：…, 作者：…, ISBN … etc.) ***
                 bool is_metadata = IsMetadataLine(stripped_left);
