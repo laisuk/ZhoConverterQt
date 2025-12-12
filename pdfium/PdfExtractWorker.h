@@ -44,7 +44,7 @@ signals:
     // Emitted when extraction finished normally
     void finished(const QString &text);
 
-    // Emitted when user cancelled with partial extracted text
+    // Emitted when user canceled with partial extracted text
     void cancelled(const QString &partialText);
 
     // Emitted on error
