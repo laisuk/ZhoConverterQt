@@ -3,6 +3,7 @@
 #include "ui_mainwindow.h"
 #include "OpenccFmmsegHelper.hpp"
 #include "PdfExtractWorker.h"
+#include "batchworker.h"
 
 QT_BEGIN_NAMESPACE
 
@@ -83,6 +84,16 @@ private slots:
 
     void onCancelPdfClicked() const;
 
+    // Batch handlers
+    void onBatchProgress(int current, int total) const;
+    void onBatchError(const QString &msg) const;
+    void onBatchFinished(bool cancelled) const;
+    void onBatchThreadFinished();
+
+    // Helper
+    void startBatchProcess(const QString &config, bool isPunctuation);
+    void cleanupBatchThread();
+
 private:
     Ui::MainWindowClass *ui;
 
@@ -107,4 +118,8 @@ private:
     QString m_currentPdfFilePath; // <--- add this
 
     void startPdfExtraction(const QString &filePath);
+
+    // NEW: batch
+    QThread *m_batchThread = nullptr;
+    BatchWorker *m_batchWorker = nullptr;
 };

@@ -50,6 +50,15 @@ signals:
     // Emitted on error
     void errorOccurred(const QString &message);
 
+public:
+    // ✅ 新增：同步 helper，給 BatchWorker 用
+    static QString extractPdfTextBlocking(
+        const QString &filePath,
+        bool addPdfPageHeader,
+        bool autoReflowPdf,
+        bool compactPdf,
+        const std::function<bool()> &isCancelled);
+
 private:
     QString m_filePath;
     bool m_addPdfPageHeader;

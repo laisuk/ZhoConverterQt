@@ -92,6 +92,10 @@ set(HEADERS
         src/ZipPathUtils.hpp
         pdfium/PdfiumHelper.hpp
         pdfium/PdfExtractWorker.h
+        pdfium/batchworker.h
+        pdfium/batchworker.cpp
+        src/filetype_utils.h
+        src/filetype_utils.cpp
 )
 qt_add_resources(SOURCES Resource.qrc)
 qt_add_executable(ZhoConverterQt
