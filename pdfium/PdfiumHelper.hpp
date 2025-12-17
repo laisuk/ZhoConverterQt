@@ -253,6 +253,37 @@ namespace pdfium {
             return out;
         }
 
+        inline void NormalizeNewlinesInPlace(std::string &s) {
+            std::string out;
+            out.reserve(s.size());
+
+            for (size_t i = 0; i < s.size(); ++i) {
+                if (const char c = s[i]; c == '\r') {
+                    // skip CR, but convert CRLF / CR to LF
+                    if (i + 1 < s.size() && s[i + 1] == '\n')
+                        ++i;
+                    out.push_back('\n');
+                } else {
+                    out.push_back(c);
+                }
+            }
+
+            s.swap(out);
+        }
+
+        inline std::string TrimCopy(const std::string &s) {
+            size_t start = 0;
+            size_t end = s.size();
+
+            while (start < end && std::isspace(static_cast<unsigned char>(s[start])))
+                ++start;
+            while (end > start && std::isspace(static_cast<unsigned char>(s[end - 1])))
+                --end;
+
+            return s.substr(start, end - start);
+        }
+
+
         // Emoji progress bar:
         // 🟩 = U+1F7E9 = F0 9F 9F A9
         // ⬜ = U+2B1C  = E2 AC 9C
@@ -381,8 +412,9 @@ namespace pdfium {
             }
 
             // Extract text for this page
-            const std::string pageText = detail::ExtractPageText(page.Get());
-            result += pageText;
+            std::string pageText = detail::ExtractPageText(page.Get());
+            detail::NormalizeNewlinesInPlace(pageText); // \r\n and \r -> \n
+            result += detail::TrimCopy(pageText);
             result += "\n\n";
 
             // Progress callback
@@ -532,7 +564,7 @@ namespace pdfium {
         // Title heading patterns (see TITLE_HEADING_REGEX)
         static const std::u32string TITLE_WORDS[] = {
             U"前言", U"序章", U"终章", U"尾声", U"后记",
-            U"番外", U"尾聲", U"後記"
+            U"番外", U"尾聲", U"後記", U"楔子"
         };
 
         // Markers like 章 / 节 / 部 / 卷 / 回 etc.
@@ -1032,43 +1064,63 @@ namespace pdfium {
         }
 
         // ------------------------- Title & heading heuristics -------------------------
-
+        //
+        // Matches:
+        //  - 前言 / 序章 / 终章 / 尾声 / 后记 / 尾聲 / 後記
+        //  - 番外 + optional short suffix
+        //  - Short chapter-like lines with 第N章/卷/节/部/回 (excluding 分 / 合)
+        //
+        // Equivalent to:
+        // ^(?=.{0,50}$)
+        // (前言|序章|终章|尾声|后记|尾聲|後記|番外.{0,15}|.{0,10}?第.{0,5}?([章节部卷節回][^分合]).{0,20}?)
+        //
         inline bool IsTitleHeading(const std::u32string &s_left) {
             const std::size_t len = s_left.size();
-            if (len == 0 || len > 60) return false;
+            if (len == 0 || len > 50)
+                return false;
 
-            // 1. Fixed words at the start: 前言 / 序章 / 终章 / 尾声 / 后记 / 番外 / 尾聲 / 後記
+            // 1) Fixed title words
             for (const auto &w: TITLE_WORDS) {
                 if (s_left.rfind(w, 0) == 0) {
                     return true;
                 }
             }
 
-            // 2. Chapter-like: .{0,20}?第.{0,10}?([章节部卷節回][^分合])
-            //    - search for '第' within the first 20 chars
+            // 1b) 番外.{0,15}
+            if (s_left.rfind(U"番外", 0) == 0) {
+                // allow short suffix after 番外
+                if (len <= 2 + 15)
+                    return true;
+            }
+
+            // 2) Chapter-like: .{0,10}?第.{0,5}?([章节部卷節回][^分合]).{0,20}?
+            //    Step-by-step scan, same semantics as regex but safer/debuggable.
+
+            // 2a) Search for '第' within first 10 chars
             std::size_t di = std::u32string::npos;
-            const std::size_t max_before_di = std::min<std::size_t>(20, len - 1);
-            // at least leave room for something after '第'
+            const std::size_t max_before_di = std::min<std::size_t>(10, len - 1);
             for (std::size_t i = 0; i <= max_before_di; ++i) {
                 if (s_left[i] == U'第') {
                     di = i;
                     break;
                 }
             }
-            if (di == std::u32string::npos) {
+            if (di == std::u32string::npos)
                 return false;
-            }
 
-            // 2b. From just after '第', scan up to 10 chars for a chapter marker
-            //     [章节部卷節回], and ensure the next char is not '分' or '合'.
-            const std::size_t max_marker_pos = std::min<std::size_t>(len - 1, di + 1 + 10);
+            // 2b) After '第', scan up to 5 chars to find a chapter marker
+            const std::size_t max_marker_pos = std::min<std::size_t>(len - 1, di + 1 + 5);
             for (std::size_t j = di + 1; j <= max_marker_pos; ++j) {
                 if (const char32_t ch = s_left[j]; Contains(CHAPTER_MARKERS, ch)) {
+                    // Next char must NOT be 分 / 合
                     if (j + 1 < len) {
-                        if (const char32_t next = s_left[j + 1]; !Contains(EXCLUDED_CHAPTER_MARKERS_PREFIX, next)) {
-                            return true;
-                        }
+                        if (const char32_t next = s_left[j + 1]; Contains(EXCLUDED_CHAPTER_MARKERS_PREFIX, next))
+                            continue;
                     }
+
+                    // Remaining tail length <= 20
+                    if (len - j - 1 <= 20)
+                        return true;
                 }
             }
 
@@ -1187,6 +1239,40 @@ namespace pdfium {
             return true;
         }
 
+        inline bool IsBoxDrawingLine(const std::u32string &s) {
+            auto is_ws = [](const char32_t ch) {
+                // Minimal whitespace set (extend if needed)
+                return ch == U' ' || ch == U'\t' || ch == U'\n' || ch == U'\r' || ch == 0x3000;
+            };
+
+            // Quick reject: all whitespace
+            bool any_non_ws = false;
+            for (const char32_t ch: s) {
+                if (!is_ws(ch)) {
+                    any_non_ws = true;
+                    break;
+                }
+            }
+            if (!any_non_ws) return false;
+
+            int total = 0;
+
+            for (const char32_t ch: s) {
+                if (is_ws(ch)) continue;
+                ++total;
+
+                if (ch >= 0x2500 && ch <= 0x257F) continue; // box drawing
+
+                if (ch == U'-' || ch == U'=' || ch == U'_' || ch == U'~' || ch == 0xFF5E) continue; // incl '～'
+
+                if (ch == U'*' || ch == 0xFF0A /*＊*/ || ch == 0x2605 /*★*/ || ch == 0x2606 /*☆*/) continue;
+
+                return false;
+            }
+
+            return total >= 3;
+        }
+
         // ------------------------- Core reflow implementation -------------------------
 
         inline std::string ReflowCjkParagraphs(const std::string &utf8Text,
@@ -1256,23 +1342,10 @@ namespace pdfium {
                 std::u32string stripped_left = LStrip(stripped);
 
                 // NEW: style-layer repeat collapse applied at paragraph level.
-                // If this ever causes weird behavior in body text, you can:
-                //   - comment this line out, and
-                //   - call CollapseRepeatedSegments(stripped) only when is_title_heading is true.
                 stripped = CollapseRepeatedSegments(stripped);
 
-                bool is_title_heading = IsTitleHeading(stripped_left);
-
-                // style-layer repeated titles collapse
-                // if (is_title_heading) {
-                //     stripped = CollapseRepeatedSegments(stripped);
-                // }
-
-                // *** NEW: metadata detection (書名：…, 作者：…, ISBN … etc.) ***
-                bool is_metadata = IsMetadataLine(stripped_left);
-
-                // NEW: weak heading-like detection on *current* line
-                bool is_short_heading = IsHeadingLike(stripped);
+                // IMPORTANT: collapse may change leading layout; recompute probe
+                stripped_left = LStrip(stripped);
 
                 // 1) Empty line
                 if (stripped.empty()) {
@@ -1283,10 +1356,29 @@ namespace pdfium {
                         }
                     }
 
-                    // End of paragraph -> flush buffer, no empty segment
                     flush_buffer();
                     continue;
                 }
+
+                // 2) Visual divider / box drawing line (MUST force paragraph break)
+                if (IsBoxDrawingLine(stripped_left)) {
+                    flush_buffer();
+
+                    // keep divider as its own segment (u32)
+                    segments.emplace_back(stripped_left);
+
+                    // optional: blank line after divider
+                    flush_buffer();
+                    continue;
+                }
+
+                bool is_title_heading = IsTitleHeading(stripped_left);
+
+                // *** NEW: metadata detection (書名：…, 作者：…, ISBN … etc.) ***
+                bool is_metadata = IsMetadataLine(stripped_left);
+
+                // NEW: weak heading-like detection on *current* line
+                bool is_short_heading = IsHeadingLike(stripped);
 
                 // 2) Page markers === [Page x/y] ===
                 if (IsPageMarker(stripped)) {
