@@ -551,15 +551,15 @@ namespace pdfium {
         // ------------------------- Tables / constants -------------------------
 
         // CJK punctuation / title rules (from pdf_helper.py CJK_PUNCT_END)
-        static const std::u32string CJK_PUNCT_END = U"。！？；：…”」’』）】》〗〕〉］｝.!?)";
+        static const std::u32string CJK_PUNCT_END = U"。！？；：…—”」’』）】》〗〕〉］｝.!?)";
 
         // Dialog brackets (from DIALOG_OPEN_TO_CLOSE)
         static const std::u32string DIALOG_OPENERS = U"“‘「『";
         static const std::u32string DIALOG_CLOSERS = U"”’」』";
 
         // Brackets for heading check
-        static const std::u32string OPEN_BRACKETS = U"（([【《";
-        static const std::u32string CLOSE_BRACKETS = U"）)]】》";
+        static const std::u32string OPEN_BRACKETS = U"（([【《〈［｛";
+        static const std::u32string CLOSE_BRACKETS = U"）)]】》〉］｝";
 
         // Title heading patterns (see TITLE_HEADING_REGEX)
         static const std::u32string TITLE_WORDS[] = {
@@ -581,7 +581,7 @@ namespace pdfium {
         static const std::u32string EXCLUDED_CHAPTER_MARKERS_PREFIX = U"分合";
 
         // Closing bracket chars for chapter-ending rule
-        static const std::u32string CHAPTER_END_BRACKETS = U"】》〗〕〉」』）";
+        static const std::u32string CHAPTER_END_BRACKETS = U"】》〗〕〉」』）］";
 
         static constexpr std::size_t SHORT_HEADING_MAX_LEN = 8;
 
@@ -611,6 +611,7 @@ namespace pdfium {
             U"定價", U"定价",
 
             // 4. Descriptions / Forewords (only some are treated as metadata)
+            U"簡介", U"简介",
             U"前言",
             U"序章",
             U"終章", U"终章",
@@ -630,6 +631,8 @@ namespace pdfium {
             U"在版編目", U"在版编目",
             U"分類號", U"分类号",
             U"主題詞", U"主题词",
+            U"類型", U"类型",
+            U"系列",
 
             // 7. Publishing cycle
             U"發行日", U"发行日",
@@ -708,59 +711,78 @@ namespace pdfium {
             });
         }
 
-        // // Collapse repeated segments (token-level), from collapse_repeated_segments()
-        // inline std::u32string CollapseRepeatedToken(const std::u32string &token) {
-        //     const std::size_t length = token.size();
-        //     if (length < 4 || length > 200) return token;
-        //
-        //     for (std::size_t unit_len = 2; unit_len <= 20; ++unit_len) {
-        //         if (unit_len > length / 2) break;
-        //         if (length % unit_len != 0) continue;
-        //
-        //         const std::u32string unit = token.substr(0, unit_len);
-        //         const std::size_t repeat = length / unit_len;
-        //
-        //         std::u32string repeated;
-        //         repeated.reserve(length);
-        //         for (std::size_t i = 0; i < repeat; ++i)
-        //             repeated += unit;
-        //
-        //         if (repeated == token)
-        //             return unit;
-        //     }
-        //     return token;
-        // }
-        //
-        // inline std::u32string CollapseRepeatedSegments(const std::u32string &line) {
-        //     // split on spaces/tabs
-        //     std::vector<std::u32string> parts;
-        //     std::u32string current;
-        //     for (const char32_t ch: line) {
-        //         if (ch == U' ' || ch == U'\t') {
-        //             if (!current.empty()) {
-        //                 parts.push_back(current);
-        //                 current.clear();
-        //             }
-        //         } else {
-        //             current.push_back(ch);
-        //         }
-        //     }
-        //     if (!current.empty())
-        //         parts.push_back(current);
-        //
-        //     if (parts.empty())
-        //         return line;
-        //
-        //     std::u32string out;
-        //     bool first = true;
-        //     for (auto &tok: parts) {
-        //         const auto collapsed = CollapseRepeatedToken(tok);
-        //         if (!first) out.push_back(U' ');
-        //         out += collapsed;
-        //         first = false;
-        //     }
-        //     return out;
-        // }
+        // Minimal CJK checker (BMP focused)
+        // Matches C# logic exactly
+        inline bool IsCjk(const char32_t ch) {
+            const auto c = static_cast<uint32_t>(ch);
+
+            // CJK Unified Ideographs Extension A: U+3400–U+4DBF
+            if ((c - 0x3400u) <= (0x4DBFu - 0x3400u))
+                return true;
+
+            // CJK Unified Ideographs: U+4E00–U+9FFF
+            if ((c - 0x4E00u) <= (0x9FFFu - 0x4E00u))
+                return true;
+
+            // CJK Compatibility Ideographs: U+F900–U+FAFF
+            return (c - 0xF900u) <= (0xFAFFu - 0xF900u);
+        }
+
+
+        // ASCII letter/digit?
+        inline bool IsAsciiLetterOrDigit(const char32_t ch) {
+            return (ch >= U'0' && ch <= U'9') ||
+                   (ch >= U'a' && ch <= U'z') ||
+                   (ch >= U'A' && ch <= U'Z');
+        }
+
+        // Full-width digits: '０'..'９'
+        inline bool IsFullwidthDigit(const char32_t ch) {
+            return (ch >= U'０' && ch <= U'９');
+        }
+
+        // Neutral ASCII separators allowed (do not count as ASCII content)
+        inline bool IsNeutralAsciiForMixed(const char32_t ch) {
+            return ch == U' ' || ch == U'-' || ch == U'/' || ch == U':' || ch == U'.';
+        }
+
+        // Mixed CJK + ASCII (like "第3章 Chapter 1", "iPhone 16 Pro Max", etc.)
+        // Rules (same as your C#):
+        // - Allow neutral ASCII separators: space - / : .
+        // - ASCII must be alnum only; other ASCII punctuation rejects.
+        // - Allow full-width digits as ASCII content.
+        // - Non-ASCII must be CJK (IsCjk), otherwise reject.
+        // - Return true only if both CJK and ASCII content appear.
+        inline bool IsMixedCjkAscii(const std::u32string &s) {
+            bool hasCjk = false;
+            bool hasAscii = false;
+
+            for (const char32_t ch: s) {
+                // Neutral ASCII (allowed, but doesn't count as ASCII content)
+                if (IsNeutralAsciiForMixed(ch))
+                    continue;
+
+                if (ch <= 0x7F) {
+                    if (IsAsciiLetterOrDigit(ch)) {
+                        hasAscii = true;
+                    } else {
+                        return false; // other ASCII punct/control => reject
+                    }
+                } else if (IsFullwidthDigit(ch)) {
+                    hasAscii = true;
+                } else if (IsCjk(ch)) {
+                    hasCjk = true;
+                } else {
+                    return false; // non-ASCII, non-CJK => reject
+                }
+
+                if (hasCjk && hasAscii)
+                    return true;
+            }
+
+            return false;
+        }
+
         // ------------------------------------------------------------
         // Style-layer repeat collapse for PDF headings / title lines.
         //
@@ -1163,7 +1185,7 @@ namespace pdfium {
             //   - pure ASCII: double
             const bool all_ascii = IsAllAscii(s);
             const std::size_t max_len =
-                    all_ascii ? (SHORT_HEADING_MAX_LEN * 2) : SHORT_HEADING_MAX_LEN;
+                    all_ascii || IsMixedCjkAscii(s) ? (SHORT_HEADING_MAX_LEN * 2) : SHORT_HEADING_MAX_LEN;
 
             if (const std::size_t len = s.size(); len > max_len) {
                 return false;
@@ -1373,10 +1395,8 @@ namespace pdfium {
                 }
 
                 bool is_title_heading = IsTitleHeading(stripped_left);
-
                 // *** NEW: metadata detection (書名：…, 作者：…, ISBN … etc.) ***
                 bool is_metadata = IsMetadataLine(stripped_left);
-
                 // NEW: weak heading-like detection on *current* line
                 bool is_short_heading = IsHeadingLike(stripped);
 
@@ -1407,7 +1427,7 @@ namespace pdfium {
                     if (!buffer.empty()) {
                         // check last non-space char of buffer
                         if (std::u32string bt = RStrip(buffer); !bt.empty()) {
-                            if (char32_t last = bt.back(); last == U'，' || last == U',') {
+                            if (char32_t last = bt.back(); last == U'，' || last == U',' || last == U'、') {
                                 // previous ends with comma → treat as continuation, NOT heading
                                 // fall through; normal rules below will handle merge/split
                             } else {
@@ -1448,7 +1468,8 @@ namespace pdfium {
                     //     (comma-ending means the sentence is not finished)
                     std::u32string trimmed = RStrip(buffer_text);
 
-                    if (char32_t last = trimmed.empty() ? U'\0' : trimmed.back(); last == U'，' || last == U',') {
+                    if (char32_t last = trimmed.empty() ? U'\0' : trimmed.back();
+                        last == U'，' || last == U',' || last == U'、') {
                         // fall through → treat as continuation
                         // do NOT flush here even if current_is_dialog_start
                     } else if (current_is_dialog_start) {

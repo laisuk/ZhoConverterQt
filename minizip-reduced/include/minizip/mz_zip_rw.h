@@ -10,6 +10,9 @@
 
 #ifndef MZ_ZIP_RW_H
 #define MZ_ZIP_RW_H
+#include <cstdint>
+#include <mz_zip.h>
+
 #include "mz_strm.h"
 
 #ifdef __cplusplus

@@ -10,6 +10,7 @@
 #include "openccfmmseghelper.hpp"   // adjust include name
 #include "filetype_utils.h"
 #include "OfficeConverter.hpp"
+#include "OfficeConverterMinizip.hpp"
 
 class QPlainTextEdit;
 
@@ -125,7 +126,7 @@ void BatchWorker::processOneFile(const int idx, const int total, const QString &
         }
 
         // We already know QFileInfo exists
-        auto [ok, msg] = OfficeConverter::Convert(
+        auto [ok, msg] = OfficeConverterMinizip::Convert(
             path.toStdString(),
             outPath.toStdString(),
             extLower.toStdString(),

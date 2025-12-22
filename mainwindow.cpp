@@ -1,6 +1,7 @@
 #include "mainwindow.h"
 #include "QClipboard"
 #include "QFileDialog"
+#include "QSaveFile"
 #include "QMessageBox"
 #include <QThread>
 #include <QTextDocumentFragment>
@@ -12,51 +13,6 @@
 #include "OfficeConverter.hpp"
 #include "OfficeConverterMinizip.hpp"
 
-// namespace {
-//     inline const std::unordered_set<std::string> TEXTFILE_EXTENSIONS = {
-//         "txt", "md", "rst",
-//         "html", "htm", "xhtml", "xml",
-//         "json", "yml", "yaml", "ini", "cfg", "toml",
-//         "csv", "tsv",
-//         "c", "cpp", "cc", "cxx", "h", "hpp",
-//         "cs", "java", "kt", "kts",
-//         "py", "rb", "go", "rs", "swift",
-//         "js", "mjs", "cjs", "ts", "tsx", "jsx",
-//         "sh", "bash", "zsh", "ps1", "cmd", "bat",
-//         "gradle", "cmake", "make", "mak", "ninja",
-//         "tex", "bib", "log",
-//         "srt", "vtt", "ass", "ttml2"
-//     };
-//
-//     inline const std::unordered_set<std::string> OFFICE_EXTENSIONS = {
-//         "docx", "xlsx", "pptx", "odt", "ods", "odp", "epub"
-//         // add more if needed: "doc","xls","ppt","rtf","csv" (csv also in text), etc.
-//     };
-//
-//     bool isOfficeExt(const QString &extLower) {
-//         return OFFICE_EXTENSIONS.count(extLower.toStdString()) != 0;
-//     }
-//
-//     bool isTextExt(const QString &extLower) {
-//         return TEXTFILE_EXTENSIONS.count(extLower.toStdString()) != 0;
-//     }
-//
-//     bool isAllowedTextLike(const QString &extLower) {
-//         // <- allow files with NO extension as text
-//         return extLower.isEmpty() || isTextExt(extLower);
-//     }
-//
-//     void appendLine(QPlainTextEdit *box, const QString &line) {
-//         box->appendPlainText(line + QLatin1Char('\n'));
-//     }
-//
-//     QString makeOutputPath(const QString &outDir,
-//                            const QString &baseName,
-//                            const QString &config,
-//                            const QString &extLower) {
-//         return QDir(outDir).filePath(baseName + "_" + config + (extLower.isEmpty() ? QString() : "." + extLower));
-//     }
-// } // namespace
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindowClass()) {
@@ -127,7 +83,7 @@ void MainWindow::startPdfExtraction(const QString &filePath) {
     // Progress → update status bar text / emoji bar
     connect(m_pdfWorker, &PdfExtractWorker::progressChanged,
             this, [this](const int percent, const QString &bar) {
-                ui->statusBar->showMessage(bar + "  " + QString::number(percent) + "%");
+                ui->statusBar->showMessage("Loading PDF  " + bar + "  " + QString::number(percent) + "%");
             });
 
     // Normal finish
@@ -165,8 +121,7 @@ void MainWindow::startPdfExtraction(const QString &filePath) {
 //         ui->statusBar->showMessage(tr("Cancelling PDF extraction..."));
 //     }
 // }
-void MainWindow::onCancelPdfClicked() const
-{
+void MainWindow::onCancelPdfClicked() const {
     if (m_pdfWorker) {
         // Existing PDF cancel logic
         // e.g. m_pdfWorker->requestCancel();
@@ -472,133 +427,6 @@ void MainWindow::main_process(const QString &config, const bool is_punctuation) 
     );
 }
 
-// ============================== batch process ==============================
-// void MainWindow::batch_process(const QString &config, const bool is_punctuation) {
-//     // ---- pre-checks
-//     if (ui->listSource->count() == 0) {
-//         ui->statusBar->showMessage("Nothing to convert: Empty file list.");
-//         return;
-//     }
-//
-//     const QString outDir = ui->lineEditDir->text();
-//     if (!QDir(outDir).exists()) {
-//         QMessageBox msg;
-//         msg.setWindowTitle("Attention");
-//         msg.setIcon(QMessageBox::Information);
-//         msg.setText("Invalid output directory.");
-//         msg.setInformativeText("Output directory:\n" + outDir + "\n not found.");
-//         msg.exec();
-//         ui->lineEditDir->setFocus();
-//         ui->statusBar->showMessage("Invalid output directory.");
-//         return;
-//     }
-//
-//     ui->tbPreview->clear();
-//
-//     // Cache once
-//     const std::string config_s = config.toStdString();
-//
-//     for (int i = 0; i < ui->listSource->count(); ++i) {
-//         const QString srcPath = ui->listSource->item(i)->text();
-//         const QFileInfo fi(srcPath);
-//         const QString extLower = fi.suffix().toLower(); // normalized extension
-//         const bool noExt = extLower.isEmpty();
-//         QString baseName = fi.baseName(); // stem without last suffix
-//
-//         // Optional: convert filename stem (no punctuation for names unless you want it)
-//         if (ui->actionConvertFilename->isChecked()) {
-//             baseName = QString::fromStdString(
-//                 openccFmmsegHelper.convert(baseName.toStdString(), config_s, /*punctuation=*/false)
-//             );
-//         }
-//
-//         const QString outPath = makeOutputPath(outDir, baseName, config, extLower);
-//
-//         // Same path? skip early
-//         if (srcPath == outPath) {
-//             appendLine(ui->tbPreview,
-//                        QString("%1: %2 -> ❌ Skip: Output Path = Source Path.")
-//                        .arg(QString::number(i + 1), outPath));
-//             continue;
-//         }
-//
-//         // Must exist
-//         if (!fi.exists()) {
-//             appendLine(ui->tbPreview,
-//                        QString("%1: %2 -> ❌ File not found.")
-//                        .arg(QString::number(i + 1), srcPath));
-//             continue;
-//         }
-//
-//         // ---- Office route
-//         if (isOfficeExt(extLower)) {
-//             auto [ok, msg] = OfficeConverterMinizip::Convert(
-//                 srcPath.toStdString(),
-//                 outPath.toStdString(),
-//                 extLower.toStdString(),
-//                 openccFmmsegHelper,
-//                 config_s,
-//                 is_punctuation,
-//                 /*keepFont=*/true
-//             );
-//
-//             appendLine(ui->tbPreview,
-//                        QString("%1: %2 -> %3")
-//                        .arg(QString::number(i + 1),
-//                             outPath,
-//                             QString::fromStdString(msg)));
-//             continue;
-//         }
-//
-//         // ---- Text-like route (includes NO extension)
-//         if (!isAllowedTextLike(extLower)) {
-//             appendLine(ui->tbPreview,
-//                        QString("%1: %2 -> ❌ Skip: Unsupported file type.")
-//                        .arg(QString::number(i + 1), srcPath));
-//             continue;
-//         }
-//
-//         QFile inFile(srcPath);
-//         if (!inFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
-//             appendLine(ui->tbPreview,
-//                        QString("%1: %2 -> ❌ Error opening for read.")
-//                        .arg(QString::number(i + 1), srcPath));
-//             continue;
-//         }
-//         const QString inputText = QTextStream(&inFile).readAll();
-//         inFile.close();
-//
-//         const std::string converted =
-//                 openccFmmsegHelper.convert(inputText.toStdString(), config_s, is_punctuation);
-//
-//         QFile outFile(outPath);
-//         if (!outFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
-//             appendLine(ui->tbPreview,
-//                        QString("%1: %2 -> ❌ Error opening for write: %3")
-//                        .arg(QString::number(i + 1), outPath, outFile.errorString()));
-//             continue;
-//         } {
-//             QTextStream ts(&outFile);
-//             ts.setEncoding(QStringConverter::Utf8); // Qt 6
-//             ts << QString::fromStdString(converted);
-//         }
-//         outFile.flush();
-//         outFile.close();
-//
-//         // Success line (call out the no-extension case explicitly)
-//         if (noExt) {
-//             appendLine(ui->tbPreview,
-//                        QString("%1: %2 -> ✅ Done (treated as text: no extension).")
-//                        .arg(QString::number(i + 1), outPath));
-//         } else {
-//             appendLine(ui->tbPreview,
-//                        QString("%1: %2 -> ✅ Done.")
-//                        .arg(QString::number(i + 1), outPath));
-//         }
-//     }
-//
-//     ui->statusBar->showMessage("Batch process completed");
-// }
 
 void MainWindow::batch_process(const QString &config, const bool is_punctuation) {
     startBatchProcess(config, is_punctuation);
@@ -650,9 +478,9 @@ void MainWindow::startBatchProcess(const QString &config,
         config,
         isPunctuation,
         ui->actionConvertFilename->isChecked(), // same as Python
-        ui->actionAddPageHeader->isChecked(),     // 是否加 === [Page x/y] ===
-        ui->actionAutoReflow->isChecked(),     // 自動重排
-        ui->actionCompactPdfText->isChecked(),    // 緊湊模式
+        ui->actionAddPageHeader->isChecked(), // 是否加 === [Page x/y] ===
+        ui->actionAutoReflow->isChecked(), // 自動重排
+        ui->actionCompactPdfText->isChecked(), // 緊湊模式
         nullptr
     );
 
@@ -760,30 +588,6 @@ bool MainWindow::isPdf(const QString &path) {
     return index >= 0;
 }
 
-// void MainWindow::on_btnReflow_clicked() const {
-//     const QString src = ui->tbSource->toPlainText();
-//     if (src.trimmed().isEmpty()) {
-//         ui->statusBar->showMessage(tr("Source text is empty. Nothing to reflow."));
-//         return;
-//     }
-//
-//     // Convert to UTF-8 std::string
-//     const QByteArray utf8 = src.toUtf8();
-//     const std::string input(utf8.constData(), static_cast<std::size_t>(utf8.size()));
-//
-//     // Use same addPdfPageHeader flag as extraction, or tie to a checkbox if you like
-//     const bool addPdfPageHeader = ui->actionAddPageHeader->isChecked(); // or a setting
-//     const bool compact = ui->actionCompactPdfText->isChecked(); // false = blank line between paragraphs
-//
-//     const std::string reflowed = pdfium::ReflowCjkParagraphs(input, addPdfPageHeader, compact);
-//
-//     // Back to QString
-//     const QString out = QString::fromUtf8(reflowed.c_str(),
-//                                           static_cast<int>(reflowed.size()));
-//
-//     ui->tbSource->setPlainText(out);
-//     ui->statusBar->showMessage(tr("✅ Text reflow complete."));
-// }
 void MainWindow::on_btnReflow_clicked() const {
     auto *edit = ui->tbSource;
     QTextCursor cursor = edit->textCursor();
@@ -847,40 +651,41 @@ void MainWindow::on_btnReflow_clicked() const {
     ui->statusBar->showMessage(tr("✅ Text reflow complete."));
 }
 
+
 void MainWindow::on_btnSaveAs_clicked() {
     // Determine which text box to save
-    QString targetName = ui->cbSaveTarget->currentText();
-    QString content;
+    const QString targetName = ui->cbSaveTarget->currentText();
+    const QString content =
+            (targetName == "Source")
+                ? ui->tbSource->toPlainText()
+                : ui->tbDestination->toPlainText();
 
-    if (targetName == "Source") {
-        content = ui->tbSource->toPlainText();
-    } else {
-        content = ui->tbDestination->toPlainText();
-    }
     // Suggested filename like "./Source.txt"
     const QString suggested = QString("./%1.txt").arg(targetName);
-    // Dialog
-    const QString filename =
-            QFileDialog::getSaveFileName(
-                this,
-                tr("Save Text File"),
-                suggested,
-                tr("Text File (*.txt);;All Files (*.*)")
-            );
+
+    const QString filename = QFileDialog::getSaveFileName(
+        this,
+        tr("Save Text File"),
+        suggested,
+        tr("Text File (*.txt);;All Files (*.*)")
+    );
 
     if (filename.isEmpty())
         return;
 
-    // Write file
-    QFile file(filename);
+    QSaveFile file(filename);
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        ui->statusBar->showMessage("❌ Cannot open file for writing.");
+        ui->statusBar->showMessage(tr("❌ Cannot open file for writing."));
         return;
     }
 
     QTextStream out(&file);
     out << content;
-    file.close();
+
+    if (!file.commit()) {
+        ui->statusBar->showMessage(tr("❌ Failed to save file."));
+        return;
+    }
 
     ui->statusBar->showMessage(
         QStringLiteral("💾 File saved (%1): %2")

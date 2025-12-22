@@ -11,6 +11,8 @@
 #ifndef MZ_ZIP_RW_H
 #define MZ_ZIP_RW_H
 #include "mz_strm.h"
+#include <cstdint>
+#include <mz_zip.h>
 
 #ifdef __cplusplus
 extern "C" {
