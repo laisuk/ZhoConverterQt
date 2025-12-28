@@ -37,7 +37,7 @@ public:
                           const std::string &outputPath,
                           const std::string &format,
                           OpenccFmmsegHelper &helper,
-                          const std::string &config,
+                          const opencc_config_t &config,
                           bool punctuation,
                           bool keepFont = false) {
         // Read input file as bytes
@@ -68,7 +68,7 @@ public:
     static BytesResult ConvertBytes(const std::vector<uint8_t> &inputZipBytes,
                                     const std::string &format,
                                     OpenccFmmsegHelper &helper,
-                                    const std::string &config,
+                                    const opencc_config_t &config,
                                     bool punctuation,
                                     bool keepFont = false) {
         if (inputZipBytes.empty())
@@ -178,7 +178,7 @@ public:
             if (keepFont)
                 maskFont(text, format, fontMap);
 
-            std::string converted = helper.convert(text, config, punctuation);
+            std::string converted = helper.convert_cfg(text, config, punctuation);
 
             if (keepFont && !fontMap.empty()) {
                 for (auto &[key, val]: fontMap) {
@@ -345,7 +345,7 @@ private:
         if (name.find('\0') != std::string::npos) return false;
         if (name.find('\\') != std::string::npos) return false; // normalize or reject
         if (name.find("..") != std::string::npos) {
-            // stricter: reject any ".." path segment
+            // stricter: reject any "../" path segment
             if (name.find("../") != std::string::npos || name.find("/..") != std::string::npos)
                 return false;
         }

@@ -11,7 +11,7 @@
 #include "draglistwidget.h"
 #include "filetype_utils.h"
 #include "OfficeConverter.hpp"
-#include "OfficeConverterMinizip.hpp"
+// #include "OfficeConverterMinizip.hpp"
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -313,6 +313,30 @@ QString MainWindow::getCurrentConfig() const {
     return config;
 }
 
+opencc_config_t MainWindow::getCurrentConfigId() const {
+    if (ui->rbManual->isChecked()) {
+        return OpenccFmmsegHelper::config_name_to_id(
+            ui->cbManual->currentText()
+            .split(' ')
+            .first()
+            .toStdString()
+        );
+    }
+
+    if (ui->rbS2t->isChecked()) {
+        if (ui->rbStd->isChecked()) return OPENCC_CONFIG_S2T;
+        if (ui->rbHK->isChecked()) return OPENCC_CONFIG_S2HK;
+        return ui->cbTWCN->isChecked()
+                   ? OPENCC_CONFIG_S2TWP
+                   : OPENCC_CONFIG_S2TW;
+    } else {
+        if (ui->rbStd->isChecked()) return OPENCC_CONFIG_T2S;
+        if (ui->rbHK->isChecked()) return OPENCC_CONFIG_HK2S;
+        return ui->cbTWCN->isChecked()
+                   ? OPENCC_CONFIG_TW2SP
+                   : OPENCC_CONFIG_TW2S;
+    }
+}
 
 void MainWindow::on_tabWidget_currentChanged(const int index) const {
     switch (index) {
@@ -366,8 +390,10 @@ void MainWindow::on_btnPaste_clicked() const {
 }
 
 void MainWindow::on_btnProcess_clicked() {
-    const QString config = getCurrentConfig();
-    openccFmmsegHelper.setConfig(config.toStdString());
+    // const QString config = getCurrentConfig();
+    const opencc_config_t config = getCurrentConfigId();
+    // openccFmmsegHelper.setConfig(config.toStdString());
+    openccFmmsegHelper.setConfigId(config);
 
     const bool is_punctuation = ui->cbPunctuation->isChecked();
     openccFmmsegHelper.setPunctuation(is_punctuation);
@@ -381,7 +407,7 @@ void MainWindow::on_btnProcess_clicked() {
 } // on_btnProcess_clicked
 
 // ----- single text conversion -----
-void MainWindow::main_process(const QString &config, const bool is_punctuation) const {
+void MainWindow::main_process(const opencc_config_t &config, const bool is_punctuation) const {
     const QString input = ui->tbSource->toPlainText();
     if (input.isEmpty()) {
         ui->statusBar->showMessage("Source content is empty");
@@ -399,14 +425,15 @@ void MainWindow::main_process(const QString &config, const bool is_punctuation) 
     }
 
     const QByteArray inUtf8 = input.toUtf8();
-    const QByteArray cfgUtf8 = config.toUtf8();
+    // const QByteArray cfgUtf8 = config.toUtf8();
 
     QElapsedTimer timer;
     timer.start();
 
-    const auto output = openccFmmsegHelper.convert(
+    const auto output = openccFmmsegHelper.convert_cfg(
         inUtf8.constData(),
-        cfgUtf8.constData(),
+        // cfgUtf8.constData(),
+        config,
         is_punctuation
     );
 
@@ -428,12 +455,12 @@ void MainWindow::main_process(const QString &config, const bool is_punctuation) 
 }
 
 
-void MainWindow::batch_process(const QString &config, const bool is_punctuation) {
+void MainWindow::batch_process(const opencc_config_t &config, const bool is_punctuation) {
     startBatchProcess(config, is_punctuation);
 }
 
 
-void MainWindow::startBatchProcess(const QString &config,
+void MainWindow::startBatchProcess(const opencc_config_t &config,
                                    const bool isPunctuation) {
     // ---- pre-checks (same as before)
     if (ui->listSource->count() == 0) {

@@ -19,6 +19,7 @@
 #include <string>
 #include <unordered_set>
 #include <vector>
+#include <cstring>
 
 class OfficeConverterMinizip {
 public:
@@ -43,7 +44,7 @@ public:
                           const std::string &outputPath,
                           const std::string &format,
                           OpenccFmmsegHelper &helper,
-                          const std::string &config,
+                          const opencc_config_t &config,
                           bool punctuation,
                           bool keepFont = false) {
         // Read input file as bytes
@@ -73,7 +74,7 @@ public:
     static BytesResult ConvertBytes(const std::vector<uint8_t> &inputZipBytes,
                                     const std::string &format,
                                     OpenccFmmsegHelper &helper,
-                                    const std::string &config,
+                                    const opencc_config_t &config,
                                     bool punctuation,
                                     bool keepFont = false) {
         if (inputZipBytes.empty())
@@ -215,7 +216,7 @@ public:
             std::map<std::string, std::string> fontMap;
             if (keepFont) maskFont(xml, format, fontMap);
 
-            std::string converted = helper.convert(xml, config, punctuation);
+            std::string converted = helper.convert_cfg(xml, config, punctuation);
 
             if (keepFont) {
                 for (auto &[key, val]: fontMap) {

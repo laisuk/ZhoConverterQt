@@ -4,6 +4,9 @@
 #include <unordered_set>
 #include <string>
 
+#include "OpenccFmmsegHelper.hpp"
+#include "opencc_fmmseg_capi.h"
+
 namespace {
 
     inline const std::unordered_set<std::string> TEXTFILE_EXTENSIONS = {
@@ -46,11 +49,11 @@ bool isAllowedTextLike(const QString &extLower)
 
 QString makeOutputPath(const QString &outDir,
                        const QString &baseName,
-                       const QString &config,
+                       const opencc_config_t &config,
                        const QString &extLower)
 {
     const QString fileName =
-        baseName + "_" + config +
+        baseName + "_" + OpenccFmmsegHelper::config_id_to_name(config).data() +
         (extLower.isEmpty() ? QString() : "." + extLower);
 
     return QDir(outDir).filePath(fileName);

@@ -5,6 +5,8 @@
 #include <QDir>
 #include <QAtomicInteger>
 
+#include "opencc_fmmseg_capi.h"
+
 class OpenccFmmsegHelper; // forward-declare your helper
 
 class BatchWorker : public QObject
@@ -15,7 +17,7 @@ public:
     BatchWorker(const QStringList &files,
                 const QString &outDir,
                 OpenccFmmsegHelper *converter,
-                const QString &config,
+                const opencc_config_t &config,
                 bool isPunctuation,
                 bool convertFilename,
                 bool addPdfPageHeader,
@@ -40,7 +42,7 @@ private:
 QStringList m_files;
     QString     m_outDir;
     OpenccFmmsegHelper *m_converter;
-    QString     m_config;
+    opencc_config_t     m_config;
     bool        m_isPunctuation;
     bool        m_convertFilename;
     bool        m_addPdfPageHeader;

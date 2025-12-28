@@ -91,7 +91,7 @@ private slots:
     void onBatchThreadFinished();
 
     // Helper
-    void startBatchProcess(const QString &config, bool isPunctuation);
+    void startBatchProcess(const opencc_config_t &config, bool isPunctuation);
     void cleanupBatchThread();
 
 private:
@@ -103,11 +103,13 @@ private:
 
     void update_tbSource_info(int text_code) const;
 
-    void main_process(const QString &config, bool is_punctuation) const;
+    void main_process(const opencc_config_t &config, bool is_punctuation) const;
 
-    void batch_process(const QString &config, bool is_punctuation);
+    void batch_process(const opencc_config_t &config, bool is_punctuation);
 
     [[nodiscard]] QString getCurrentConfig() const;
+
+    [[nodiscard]] opencc_config_t getCurrentConfigId() const;
 
     // void *openccInstance = nullptr;
     OpenccFmmsegHelper openccFmmsegHelper;

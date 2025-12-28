@@ -10,14 +10,14 @@
 #include "openccfmmseghelper.hpp"   // adjust include name
 #include "filetype_utils.h"
 #include "OfficeConverter.hpp"
-#include "OfficeConverterMinizip.hpp"
+// #include "OfficeConverterMinizip.hpp"
 
 class QPlainTextEdit;
 
 BatchWorker::BatchWorker(const QStringList &files,
                          const QString &outDir,
                          OpenccFmmsegHelper *converter,
-                         const QString &config,
+                         const opencc_config_t &config,
                          const bool isPunctuation,
                          const bool convertFilename,
                          const bool addPdfPageHeader,
@@ -100,9 +100,9 @@ void BatchWorker::processOneFile(const int idx, const int total, const QString &
     // Optional: convert filename stem (no punctuation for names unless you want it)
     if (m_convertFilename && m_converter) {
         const std::string convertedName =
-                m_converter->convert(baseName.toStdString(),
-                                     m_config.toStdString(),
-                                     /*punctuation=*/false);
+                m_converter->convert_cfg(baseName.toStdString(),
+                                         m_config,
+                                         /*punctuation=*/false);
         baseName = QString::fromStdString(convertedName);
     }
 
@@ -126,12 +126,12 @@ void BatchWorker::processOneFile(const int idx, const int total, const QString &
         }
 
         // We already know QFileInfo exists
-        auto [ok, msg] = OfficeConverterMinizip::Convert(
+        auto [ok, msg] = OfficeConverter::Convert(
             path.toStdString(),
             outPath.toStdString(),
             extLower.toStdString(),
             *m_converter,
-            m_config.toStdString(),
+            m_config,
             m_isPunctuation,
             /*keepFont=*/true
         );
@@ -172,9 +172,9 @@ void BatchWorker::processOneFile(const int idx, const int total, const QString &
     inFile.close();
 
     const std::string converted =
-            m_converter->convert(inputText.toStdString(),
-                                 m_config.toStdString(),
-                                 m_isPunctuation);
+            m_converter->convert_cfg(inputText.toStdString(),
+                                     m_config,
+                                     m_isPunctuation);
 
     QFile outFile(outPath);
     if (!outFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
@@ -203,17 +203,16 @@ void BatchWorker::processOneFile(const int idx, const int total, const QString &
 
 void BatchWorker::processPdf(const int idx, const int total,
                              const QString &path,
-                             const QString &baseName)
-{
+                             const QString &baseName) {
     Q_UNUSED(total);
 
     // PDF 一律輸出為 .txt
     const QString outPath =
-        QDir(m_outDir).filePath(baseName + "_" + m_config + ".txt");
+            QDir(m_outDir).filePath(baseName + "_" + OpenccFmmsegHelper::config_id_to_name(m_config).data() + ".txt");
 
     emit log(QString("%1: %2 -> Extracting PDF text...")
-             .arg(idx)
-             .arg(path));
+        .arg(idx)
+        .arg(path));
 
     // 同步抽取 PDF 文字（含 PageHeader / Reflow / Compact）
     const QString rawText = PdfExtractWorker::extractPdfTextBlocking(
@@ -226,34 +225,32 @@ void BatchWorker::processPdf(const int idx, const int total,
     // 被取消或空內容
     if (m_cancelRequested.loadRelaxed()) {
         emit log(QString("%1: %2 -> ❌ Cancelled during PDF extraction.")
-                 .arg(idx)
-                 .arg(path));
+            .arg(idx)
+            .arg(path));
         return;
     }
 
     if (rawText.isEmpty()) {
         emit log(QString("%1: %2 -> ❌ Empty or non-text PDF.")
-                 .arg(idx)
-                 .arg(path));
+            .arg(idx)
+            .arg(path));
         return;
     }
 
     // OpenCC 轉換
     const std::string converted =
-        m_converter->convert(
-            rawText.toStdString(),
-            m_config.toStdString(),
-            m_isPunctuation);
+            m_converter->convert_cfg(
+                rawText.toStdString(),
+                m_config,
+                m_isPunctuation);
 
     QFile outFile(outPath);
     if (!outFile.open(QIODevice::WriteOnly | QIODevice::Text)) {
         emit log(QString("%1: %2 -> ❌ Error opening for write: %3")
-                 .arg(idx)
-                 .arg(outPath, outFile.errorString()));
+            .arg(idx)
+            .arg(outPath, outFile.errorString()));
         return;
-    }
-
-    {
+    } {
         QTextStream ts(&outFile);
         ts.setEncoding(QStringConverter::Utf8);
         ts << QString::fromStdString(converted);
@@ -261,6 +258,6 @@ void BatchWorker::processPdf(const int idx, const int total,
     outFile.close();
 
     emit log(QString("%1: %2 -> ✅ Done.")
-             .arg(idx)
-             .arg(outPath));
+        .arg(idx)
+        .arg(outPath));
 }
