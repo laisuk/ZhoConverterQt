@@ -91,6 +91,7 @@ set(HEADERS
         src/OfficeConverterMinizip.hpp
         src/ZipPathUtils.hpp
         pdfium/PdfiumHelper.hpp
+        pdfium/ReflowHelper.hpp
         pdfium/PdfExtractWorker.h
         pdfium/batchworker.h
         pdfium/batchworker.cpp

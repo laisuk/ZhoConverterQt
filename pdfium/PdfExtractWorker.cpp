@@ -2,6 +2,7 @@
 
 #include "PdfExtractWorker.h"
 #include "PdfiumHelper.hpp"
+#include "ReflowHelper.hpp"
 
 #include <QString>
 #include <QDebug>

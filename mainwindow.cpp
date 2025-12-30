@@ -12,6 +12,7 @@
 #include "filetype_utils.h"
 #include "OfficeConverter.hpp"
 // #include "OfficeConverterMinizip.hpp"
+#include "ReflowHelper.hpp"
 
 
 MainWindow::MainWindow(QWidget *parent)
