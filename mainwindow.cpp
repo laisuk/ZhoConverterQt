@@ -46,6 +46,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(m_cancelPdfButton, &QPushButton::clicked,
             this, &MainWindow::onCancelPdfClicked);
+    const auto capi_info = opencc_version_string();
+    ui->statusBar->showMessage(QString("Loaded: opencc-fmmseg ver. %1").arg(capi_info));
 }
 
 MainWindow::~MainWindow() {
