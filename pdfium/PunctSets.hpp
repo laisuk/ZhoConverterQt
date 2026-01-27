@@ -7,7 +7,7 @@ namespace pdfium::text::punct {
             U"。！？；：…—”」’』）】》〗〕〉］｝＞.!?):?>";
 
     [[nodiscard]]
-    [[gnu::always_inline]] inline bool IsClauseOrEndPunct(char32_t ch) noexcept {
+    [[gnu::always_inline]] inline bool IsClauseOrEndPunct(const char32_t ch) noexcept {
         return CLAUSE_OR_END_PUNCT.find(ch) != std::u32string_view::npos;
     }
 
@@ -18,7 +18,7 @@ namespace pdfium::text::punct {
     // Tier 1: hard sentence enders (safe for "flush now")
     // (Matches your C#: '。' '！' '？' '!' '?')
     [[nodiscard]]
-    [[gnu::always_inline]] inline bool IsStrongSentenceEnd(char32_t ch) noexcept {
+    [[gnu::always_inline]] inline bool IsStrongSentenceEnd(const char32_t ch) noexcept {
         switch (ch) {
             case U'。':
             case U'！':
