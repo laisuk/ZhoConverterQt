@@ -97,6 +97,8 @@ set(HEADERS
         pdfium/batchworker.cpp
         src/filetype_utils.h
         src/filetype_utils.cpp
+        pdfium/PunctSets.hpp
+        pdfium/CjkText.hpp
 )
 qt_add_resources(SOURCES Resource.qrc)
 qt_add_executable(ZhoConverterQt
