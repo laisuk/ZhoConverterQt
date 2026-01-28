@@ -33,6 +33,7 @@ namespace pdfium::detail {
     using text::punct::IsClauseOrEndPunct;
     using text::punct::IsStrongSentenceEnd;
     using text::punct::EndsWithStrongSentenceEnd;
+    using text::punct::ContainsStrongSentenceEnd;
     using text::punct::IsBracketOpener;
     using text::punct::IsBracketCloser;
     using text::punct::IsMatchingBracket;
@@ -41,6 +42,7 @@ namespace pdfium::detail {
     using text::punct::HasUnclosedBracket;
     using text::punct::IsCommaLike;
     using text::punct::ContainsAnyCommaLike;
+    using text::punct::IsColonLike;
     using text::punct::EndsWithColonLike;
     using text::punct::IsDialogCloser;
     using text::punct::IsQuoteCloser;
@@ -136,34 +138,38 @@ namespace pdfium::detail {
     // ------------------------- Tables / constants -------------------------
 
     // Title heading patterns (see TITLE_HEADING_REGEX)
-    static const std::u32string TITLE_WORDS[] = {
+    inline constexpr std::u32string_view TITLE_WORDS[] = {
         U"前言", U"序章", U"终章", U"尾声", U"后记",
         U"番外", U"尾聲", U"後記", U"楔子"
     };
 
     // Markers like 章 / 节 / 部 / 卷 / 回 etc.
-    static const std::u32string CHAPTER_MARKERS = U"章节部卷節回";
+    inline constexpr std::u32string_view CHAPTER_MARKERS = U"章节部卷節回";
 
     // Characters that invalidate chapter headings when they appear *immediately after*
-    // a chapter marker, matching the C# regex [章节部卷節回][^分合]
+    // a chapter marker, matching the C# regex: [章节部卷節回][^分合的]
     //
     // Later if you find more patterns, simply append to this string.
     // Example future additions:
     //
     //   "U"分合附补增修編編輯"   // ← expandable
     //
-    static const std::u32string EXCLUDED_CHAPTER_MARKERS_PREFIX = U"分合";
+    inline constexpr std::u32string_view EXCLUDED_CHAPTER_MARKERS_PREFIX = U"分合的";
+
+    // For "(?:卷|章)[一二三四五六七八九十]"
+    inline constexpr std::u32string_view CN_NUM_1_TO_10 = U"一二三四五六七八九十";
 
     // Closing bracket chars for chapter-ending rule
-    static const std::u32string CHAPTER_END_BRACKETS = U"】》〗〕〉」』）］";
+    inline constexpr std::u32string_view CHAPTER_END_BRACKETS = U"】》〗〕〉」』）］";
 
     static constexpr std::size_t SHORT_HEADING_MAX_LEN = 8;
 
     // Metadata separators: full-width colon, ASCII colon, ideographic space
-    static const std::u32string METADATA_SEPARATORS = U"：:　";
+    inline constexpr std::u32string_view METADATA_SEPARATORS = U"：:　";
 
-    // Metadata keys (書名 / 作者 / 出版時間 / 版權 / ISBN / etc.)
-    static const std::unordered_set<std::u32string> METADATA_KEYS = {
+    // ------------------------- Metadata keys (view-based, zero allocation) -------------------------
+
+    inline constexpr std::u32string_view METADATA_KEYS[] = {
         // 1. Title / Author / Publishing
         U"書名", U"书名",
         U"作者",
@@ -184,7 +190,7 @@ namespace pdfium::detail {
         U"責編", U"责编",
         U"定價", U"定价",
 
-        // 4. Descriptions / Forewords (only some are treated as metadata)
+        // 4. Descriptions / Forewords
         U"簡介", U"简介",
         U"前言",
         U"序章",
@@ -192,7 +198,7 @@ namespace pdfium::detail {
         U"尾聲", U"尾声",
         U"後記", U"后记",
 
-        // 5. Digital publishing (ebook platforms)
+        // 5. Digital publishing
         U"品牌方",
         U"出品方",
         U"授權方", U"授权方",
@@ -212,9 +218,18 @@ namespace pdfium::detail {
         U"發行日", U"发行日",
         U"初版",
 
-        // 8. Common key without variants
+        // 8. Common
         U"ISBN"
     };
+
+    [[nodiscard]]
+    inline bool IsMetadataKey(std::u32string_view key) noexcept {
+        return std::any_of(
+            std::begin(METADATA_KEYS),
+            std::end(METADATA_KEYS),
+            [&](auto k) noexcept { return k == key; }
+        );
+    }
 
     // ------------------------- Small utility helpers -------------------------
 
@@ -242,7 +257,9 @@ namespace pdfium::detail {
     inline std::u32string_view RStripView(const std::u32string_view s) noexcept {
         std::size_t end = s.size();
         while (end > 0) {
-            if (const char32_t ch = s[end - 1]; ch == U' ' || ch == U'\t' || ch == U'\r')
+            if (const char32_t ch = s[end - 1];
+                ch == U' ' || ch == U'\t' || ch == U'\r' || ch == U'\n' || ch == U'\u3000'
+            )
                 --end;
             else
                 break;
@@ -254,7 +271,9 @@ namespace pdfium::detail {
     inline std::u32string_view LStripView(const std::u32string_view s) noexcept {
         std::size_t pos = 0;
         while (pos < s.size()) {
-            if (const char32_t ch = s[pos]; ch == U' ' || ch == U'\t' || ch == U'\u3000')
+            if (const char32_t ch = s[pos];
+                ch == U' ' || ch == U'\t' || ch == U'\r' || ch == U'\n' || ch == U'\u3000'
+            )
                 ++pos;
             else
                 break;
@@ -307,39 +326,29 @@ namespace pdfium::detail {
 
     // Token-level: collapse a single token if it is entirely made of
     // a repeated substring of length 4..10, repeated at least 3 times.
-    inline std::u32string CollapseRepeatedToken(const std::u32string &token) {
+    //
+    // Returns a view into `token` (either the whole token, or token[0 to unit_len]).
+    [[nodiscard]]
+    inline std::u32string_view CollapseRepeatedToken(const std::u32string_view &token) noexcept {
         const std::size_t length = token.size();
-        // Very short tokens or huge ones are unlikely to be styled repeats.
-        if (length < 4 || length > 200) {
+        if (length < 4 || length > 200)
             return token;
-        }
 
-        // Try unit sizes between 4 and 10 chars, and require at least
-        // 3 repeats (N >= 3). This corresponds roughly to:
-        //
-        //   (.{4,10}?)\1{2,}
-        //
-        // but constrained to exactly fill the entire token.
-        for (std::size_t unit_len = 4;
-             unit_len <= 10 && unit_len <= length / 3;
-             ++unit_len) {
+        for (std::size_t unit_len = 4; unit_len <= 10 && unit_len <= length / 3; ++unit_len) {
             if (length % unit_len != 0)
                 continue;
 
-            const std::u32string unit = token.substr(0, unit_len);
+            // Compare all chunks against the first unit, without allocating `unit`.
             bool all_match = true;
-
-            for (std::size_t pos = 0; pos < length; pos += unit_len) {
-                if (token.compare(pos, unit_len, unit) != 0) {
+            for (std::size_t pos = unit_len; pos < length; pos += unit_len) {
+                if (token.compare(pos, unit_len, token.substr(0, unit_len)) != 0) {
                     all_match = false;
                     break;
                 }
             }
 
             if (all_match) {
-                // Token is just [unit] repeated N times (N >= 3):
-                // collapse it to a single unit.
-                return unit;
+                return token.substr(0, unit_len);
             }
         }
 
@@ -355,67 +364,54 @@ namespace pdfium::detail {
     // Example:
     //   「背负着一切的麒麟 背负着一切的麒麟 背负着一切的麒麟 背负着一切的麒麟」
     //   → 「背负着一切的麒麟」
-    inline std::vector<std::u32string>
-    CollapseRepeatedWordSequences(const std::vector<std::u32string> &parts) {
-        constexpr int minRepeats = 3; // minimum number of repeats
+    inline std::vector<std::u32string_view>
+    CollapseRepeatedWordSequences(const std::vector<std::u32string_view> &parts) {
+        constexpr int minRepeats = 3;
+        constexpr int maxPhraseLen = 8;
 
         const std::size_t n = parts.size();
-        if (n < static_cast<std::size_t>(minRepeats)) {
+        if (n < static_cast<std::size_t>(minRepeats))
             return parts;
-        }
 
-        // Scan from left to right for any repeating phrase.
         for (std::size_t start = 0; start < n; ++start) {
-            constexpr int maxPhraseLen = 8;
             for (int phraseLen = 1;
                  phraseLen <= maxPhraseLen && start + static_cast<std::size_t>(phraseLen) <= n;
                  ++phraseLen) {
                 std::size_t count = 1;
-
                 while (true) {
                     const std::size_t nextStart = start + count * static_cast<std::size_t>(phraseLen);
-                    if (nextStart + static_cast<std::size_t>(phraseLen) > n) {
+                    if (nextStart + static_cast<std::size_t>(phraseLen) > n)
                         break;
-                    }
 
                     bool equal = true;
                     for (int k = 0; k < phraseLen; ++k) {
-                        if (parts[start + k] != parts[nextStart + k]) {
+                        if (parts[start + static_cast<std::size_t>(k)] !=
+                            parts[nextStart + static_cast<std::size_t>(k)]) {
                             equal = false;
                             break;
                         }
                     }
-
                     if (!equal)
                         break;
 
                     ++count;
                 }
 
-                if (count < static_cast<std::size_t>(minRepeats)) {
+                if (count < static_cast<std::size_t>(minRepeats))
                     continue;
-                }
 
-                // Build collapsed list:
-                //   [prefix] + [one phrase] + [tail]
-                std::vector<std::u32string> result;
+                std::vector<std::u32string_view> result;
                 result.reserve(n - (count - 1) * static_cast<std::size_t>(phraseLen));
 
-                // Prefix before the repeated phrase.
-                for (std::size_t i = 0; i < start; ++i) {
+                for (std::size_t i = 0; i < start; ++i)
                     result.push_back(parts[i]);
-                }
 
-                // Single copy of the repeated phrase.
-                for (int k = 0; k < phraseLen; ++k) {
-                    result.push_back(parts[start + k]);
-                }
+                for (int k = 0; k < phraseLen; ++k)
+                    result.push_back(parts[start + static_cast<std::size_t>(k)]);
 
-                // Tail after all repeats.
                 const std::size_t tailStart = start + count * static_cast<std::size_t>(phraseLen);
-                for (std::size_t i = tailStart; i < n; ++i) {
+                for (std::size_t i = tailStart; i < n; ++i)
                     result.push_back(parts[i]);
-                }
 
                 return result;
             }
@@ -432,39 +428,43 @@ namespace pdfium::detail {
         if (line.empty())
             return line;
 
-        // Split on spaces/tabs into discrete tokens.
-        std::vector<std::u32string> parts; {
-            std::u32string current;
-            for (const char32_t ch: line) {
-                if (ch == U' ' || ch == U'\t') {
-                    if (!current.empty()) {
-                        parts.push_back(current);
-                        current.clear();
-                    }
-                } else {
-                    current.push_back(ch);
-                }
-            }
-            if (!current.empty()) {
-                parts.push_back(current);
-            }
+        // Split into token views (no allocation per token).
+        std::vector<std::u32string_view> parts;
+        parts.reserve(16);
+
+        const char32_t *data = line.data();
+        const std::size_t n = line.size();
+
+        std::size_t i = 0;
+        while (i < n) {
+            while (i < n && (data[i] == U' ' || data[i] == U'\t'))
+                ++i;
+            if (i >= n)
+                break;
+
+            const std::size_t start = i;
+            while (i < n && data[i] != U' ' && data[i] != U'\t')
+                ++i;
+
+            parts.emplace_back(data + start, i - start);
         }
 
         if (parts.empty())
             return line;
 
-        // 1) Phrase-level collapse
+        // 1) Phrase-level collapse (views)
         parts = CollapseRepeatedWordSequences(parts);
 
-        // 2) Token-level collapse
+        // 2) Token-level collapse (views) + join
         std::u32string out;
+        out.reserve(line.size()); // safe upper bound
+
         bool first = true;
-        for (auto &tok: parts) {
-            const std::u32string collapsed = CollapseRepeatedToken(tok);
-            if (!first) {
+        for (const auto tok: parts) {
+            const std::u32string_view collapsed = CollapseRepeatedToken(tok);
+            if (!first)
                 out.push_back(U' ');
-            }
-            out += collapsed;
+            out.append(collapsed.begin(), collapsed.end());
             first = false;
         }
 
@@ -533,58 +533,58 @@ namespace pdfium::detail {
     };
 
     // ------------------------- Metadata detection -------------------------
-    /// Detect lines like:
-    ///   書名：假面遊戲
-    ///   作者 : 東野圭吾
-    ///   出版時間　2024-03-12
-    ///   ISBN 9787573506078
+    // Detect lines like:
+    //   書名：假面遊戲
+    //   作者 : 東野圭吾
+    //   出版時間　2024-03-12
+    //   ISBN 9787573506078
     inline bool IsMetadataLine(const std::u32string_view line) noexcept {
-        const std::u32string s = Strip(line.data());
+        const std::u32string_view s = StripView(line);
         if (s.empty())
             return false;
 
         if (s.size() > 30)
             return false;
 
-        // Find first separator (：, :, or full-width space)
-        std::size_t sep_idx = std::u32string::npos;
+        // Find first separator
+        std::size_t sep_idx = std::u32string_view::npos;
         for (std::size_t i = 0; i < s.size(); ++i) {
-            if (const char32_t ch = s[i]; Contains(METADATA_SEPARATORS, ch)) {
-                if (i == 0 || i > 10) {
-                    // Separator too early or too far → not a compact key
-                    return false;
-                }
-                sep_idx = i;
-                break;
-            }
+            if (const char32_t ch = s[i]; !Contains(METADATA_SEPARATORS, ch))
+                continue;
+
+            // Separator too early or too far
+            if (i == 0 || i > 10)
+                return false;
+
+            sep_idx = i;
+            break;
         }
 
-        if (sep_idx == std::u32string::npos)
+        if (sep_idx == std::u32string_view::npos)
             return false;
 
-        // Key before separator
-        const std::u32string key = Strip(s.substr(0, sep_idx));
+        // Key
+        const std::u32string_view key = StripView(s.substr(0, sep_idx));
         if (key.empty())
             return false;
-        if (!METADATA_KEYS.count(key))
+
+        if (!IsMetadataKey(key))
             return false;
 
-        // Find first non-space after the separator
+        // Skip spaces after separator
         std::size_t j = sep_idx + 1;
         while (j < s.size()) {
-            // ASCII space, tab, or full-width space
-            if (const char32_t c = s[j]; c == U' ' || c == U'\t' || c == U'　') {
+            if (const char32_t c = s[j]; c == U' ' || c == U'\t' || c == U'\r' || c == U'\u3000')
                 ++j;
-            } else {
+            else
                 break;
-            }
         }
 
         if (j >= s.size())
             return false;
 
-        // If the value starts with dialog opener, it's more like dialog, not metadata.
-        if (const char32_t first_after = s[j]; Contains(DIALOG_OPENERS.data(), first_after))
+        // Dialog-like content guard
+        if (Contains(DIALOG_OPENERS, s[j]))
             return false;
 
         return true;
@@ -592,71 +592,99 @@ namespace pdfium::detail {
 
     // ------------------------- Title & heading heuristics -------------------------
     //
-    // Matches:
-    //  - 前言 / 序章 / 终章 / 尾声 / 后记 / 尾聲 / 後記
-    //  - 番外 + optional short suffix
-    //  - Short chapter-like lines with 第N章/卷/节/部/回 (excluding 分 / 合)
+    // Title / chapter heading detection (regex-simulated, allocation-free).
     //
-    // Equivalent to:
-    // ^(?=.{0,50}$)
-    // (前言|序章|终章|尾声|后记|尾聲|後記|番外.{0,15}|.{0,10}?第.{0,5}?([章节部卷節回][^分合]).{0,20}?)
+    // Matches short, standalone title-like lines, equivalent to the following C# regex:
+    //
+    //   ^(?!.*[,，])(?=.{0,50}$)
+    //   (
+    //     前言 | 序章 | 楔子 | 终章 | 尾声 | 后记 | 尾聲 | 後記 |
+    //     番外.{0,15} |
+    //     .{0,10}?第.{0,5}?([章节部卷節回][^分合的]) |
+    //     (?:卷|章)[一二三四五六七八九十](?:$|.{0,20}?)
+    //   )
+    //
+    // Semantics:
+    //  - Line length ≤ 50 characters
+    //  - Must NOT contain ASCII or full-width commas (',' / '，')
+    //  - Fixed title words match only at the start of the line
+    //  - “番外” allows a short suffix (≤ 15 chars)
+    //  - Chapter-like patterns:
+    //      * “第…章/节/部/卷/回”, excluding 分 / 合 / 的 immediately after the marker
+    //      * “卷X” / “章X” where X is a Chinese numeral (一 to 十), with optional short tail
+    //
+    // Implemented as step-by-step scans for clarity, debuggability, and
+    // cross-language consistency (C# / Java / Rust / Python).
     //
     inline bool IsTitleHeading(const std::u32string_view s_left) noexcept {
         const std::size_t len = s_left.size();
         if (len == 0 || len > 50)
             return false;
 
-        // 1) Fixed title words
-        for (const auto &w: TITLE_WORDS) {
-            if (s_left.rfind(w, 0) == 0) {
-                return true;
-            }
-        }
-
-        // 1b) 番外.{0,15}
-        if (s_left.rfind(U"番外", 0) == 0) {
-            // allow short suffix after 番外
-            if (len <= 2 + 15)
-                return true;
-        }
-
-        // 2) Chapter-like: .{0,10}?第.{0,5}?([章节部卷節回][^分合]).{0,20}?
-        //    Step-by-step scan, same semantics as regex but safer/debuggable.
-
-        // 2a) Search for '第' within first 10 chars
-        std::size_t di = std::u32string::npos;
-        const std::size_t max_before_di = std::min<std::size_t>(10, len - 1);
-        for (std::size_t i = 0; i <= max_before_di; ++i) {
-            if (s_left[i] == U'第') {
-                di = i;
-                break;
-            }
-        }
-        if (di == std::u32string::npos)
+        // (?!.*[,，])  → reject if contains comma anywhere
+        if (std::find(s_left.begin(), s_left.end(), U',') != s_left.end() ||
+            std::find(s_left.begin(), s_left.end(), U'，') != s_left.end()) {
             return false;
+        }
 
-        // 2b) After '第', scan up to 5 chars to find a chapter marker
-        const std::size_t max_marker_pos = std::min<std::size_t>(len - 1, di + 1 + 5);
-        for (std::size_t j = di + 1; j <= max_marker_pos; ++j) {
-            if (const char32_t ch = s_left[j]; Contains(CHAPTER_MARKERS, ch)) {
-                // Next char must NOT be 分 / 合
-                if (j + 1 < len) {
-                    if (const char32_t next = s_left[j + 1]; Contains(EXCLUDED_CHAPTER_MARKERS_PREFIX, next))
-                        continue;
-                }
+        // 1) Fixed title words + 番外.{0,15}
+        for (const std::u32string_view w: TITLE_WORDS) {
+            if (s_left.rfind(w, 0) != 0)
+                continue;
 
-                // Remaining tail length <= 20
-                if (len - j - 1 <= 20)
-                    return true;
+            // 番外.{0,15}
+            if (w == U"番外") {
+                // 2 chars + up to 15 chars suffix
+                return len <= (2 + 15);
             }
+
+            return true;
+        }
+
+        // 2) .{0,10}?第.{0,5}?([章节部卷節回][^分合的])
+        {
+            // Find '第' within first 10 chars
+            std::size_t di = std::u32string_view::npos;
+            const std::size_t max_before_di = std::min<std::size_t>(10, len - 1);
+            for (std::size_t i = 0; i <= max_before_di; ++i) {
+                if (s_left[i] == U'第') {
+                    di = i;
+                    break;
+                }
+            }
+
+            if (di != std::u32string_view::npos) {
+                // After '第', scan up to 5 chars to find a chapter marker
+                const std::size_t max_marker_pos = std::min<std::size_t>(len - 1, di + 1 + 5);
+                for (std::size_t j = di + 1; j <= max_marker_pos; ++j) {
+                    if (const char32_t ch = s_left[j]; !Contains(CHAPTER_MARKERS, ch))
+                        continue;
+
+                    // Next char must NOT be 分 / 合 / 的
+                    if (j + 1 < len) {
+                        if (Contains(EXCLUDED_CHAPTER_MARKERS_PREFIX, s_left[j + 1]))
+                            continue;
+                    }
+
+                    // Regex has no further tail constraint here (only overall len<=50)
+                    return true;
+                }
+            }
+        }
+
+        // 3) (?:卷|章)[一二三四五六七八九十](?:$|.{0,20}?)
+        // Anchor is '^' in regex, so this must match from start.
+        if (len >= 2 && (s_left[0] == U'卷' || s_left[0] == U'章') &&
+            Contains(CN_NUM_1_TO_10, s_left[1])) {
+            // (?:$|.{0,20}?)  → either ends right there, or allow up to 20 more chars
+            return (len == 2) || (len - 2 <= 20);
         }
 
         return false;
     }
 
     inline bool IsHeadingLike(const std::u32string_view raw) noexcept {
-        // Unified spec with C#/Java/Python/Rust
-        const std::u32string s = Strip(raw.data());
+        const std::u32string_view s = StripView(raw);
         if (s.empty()) return false;
 
         // Keep page markers intact
@@ -682,7 +710,7 @@ namespace pdfium::detail {
         const std::size_t len = s.size();
 
         // Short circuit for item title-like: "物品准备："
-        if (text::punct::IsColonLike(last) &&
+        if (IsColonLike(last) &&
             len <= max_len &&
             lastIdx > 0 && // need at least one char before ':'
             text::IsAllCjkNoWhitespace(s.substr(0, lastIdx))) {
@@ -691,7 +719,7 @@ namespace pdfium::detail {
 
         // Allow postfix closer with condition
         if (IsAllowedPostfixCloser(last) &&
-            !text::punct::ContainsAnyCommaLike(s.substr(0, lastIdx))) // only scan the meaningful prefix
+            !ContainsAnyCommaLike(s.substr(0, lastIdx))) // only scan the meaningful prefix
         {
             return true;
         }
@@ -706,7 +734,9 @@ namespace pdfium::detail {
 
         // Reject any other clause or End Punct
         // Reject any short line containing comma-like separators
-        if (IsClauseOrEndPunct(last) || ContainsAnyCommaLike(s)) {
+        if (IsClauseOrEndPunct(last) ||
+            ContainsAnyCommaLike(s) ||
+            ContainsStrongSentenceEnd(s)) {
             return false;
         }
 
