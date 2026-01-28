@@ -173,7 +173,7 @@ namespace pdfium {
                         // Start of document / just flushed
                         splitAsHeading = true;
                     } else {
-                        if (HasUnclosedBracket(buffer)) {
+                        if (hasUnclosedBracket) {
                             // Unsafe previous paragraph → must be continuation
                             splitAsHeading = false;
                         } else {
@@ -224,9 +224,9 @@ namespace pdfium {
                 // If the current line completes a strong sentence, append it and flush immediately.
                 if (!buffer.empty() &&
                     !dialogState.is_unclosed() &&
-                    !HasUnclosedBracket(buffer) &&
+                    !hasUnclosedBracket &&
                     EndsWithStrongSentenceEnd(stripped)) {
-                    buffer.append(stripped.begin(), stripped.end()); // buffer now has new value
+                    buffer.append(stripped); // buffer now has new value
                     flush_buffer(); // pushes buffer + clears + resets dialogState
                     continue;
                 }
@@ -269,7 +269,7 @@ namespace pdfium {
 
                     // Start (or continue) the dialog paragraph:
                     // C# uses Append even when buffer already has dialog text.
-                    buffer.append(stripped.begin(), stripped.end());
+                    buffer.append(stripped);
                     dialogState.reset();
                     dialogState.update(stripped);
                     continue;
@@ -298,7 +298,7 @@ namespace pdfium {
                         const bool lineHasBracketIssue = HasUnclosedBracket(stripped); // span/view version
 
                         // Append + update dialog state
-                        buffer.append(stripped.begin(), stripped.end());
+                        buffer.append(stripped);
                         dialogState.update(stripped);
 
                         // Allow flush if:

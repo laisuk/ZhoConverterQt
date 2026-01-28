@@ -40,6 +40,7 @@ namespace pdfium::detail {
     using text::punct::IsBracketTypeBalanced;
     using text::punct::HasUnclosedBracket;
     using text::punct::IsCommaLike;
+    using text::punct::ContainsAnyCommaLike;
     using text::punct::EndsWithColonLike;
     using text::punct::IsDialogCloser;
     using text::punct::IsQuoteCloser;
@@ -672,10 +673,6 @@ namespace pdfium::detail {
         if (!TryGetLastNonWhitespace(s, lastIdx, last))
             return false;
 
-        if (IsClauseOrEndPunct(last)) {
-            return false;
-        }
-
         // Determine dynamic max length:
         //   - CJK/mixed: SHORT_HEADING_MAX_LEN
         //   - pure ASCII: double
@@ -705,6 +702,12 @@ namespace pdfium::detail {
                 !inner.empty() && IsMostlyCjk(inner)
             )
                 return true;
+        }
+
+        // Reject any other clause or End Punct
+        // Reject any short line containing comma-like separators
+        if (IsClauseOrEndPunct(last) || ContainsAnyCommaLike(s)) {
+            return false;
         }
 
         if (len > max_len) {
