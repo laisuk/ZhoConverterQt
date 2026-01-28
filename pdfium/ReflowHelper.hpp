@@ -23,7 +23,6 @@
 
 namespace pdfium {
     namespace detail {
-
         // ------------------------- Core reflow implementation -------------------------
 
         inline std::string ReflowCjkParagraphs(const std::string &utf8Text,
@@ -78,13 +77,13 @@ namespace pdfium {
 
             std::vector<std::u32string> segments;
             std::u32string buffer;
-            DialogState dialog_state;
+            DialogState dialogState;
 
             auto flush_buffer = [&]() {
                 if (!buffer.empty()) {
                     segments.push_back(buffer);
                     buffer.clear();
-                    dialog_state.reset();
+                    dialogState.reset();
                 }
             };
 
@@ -98,15 +97,25 @@ namespace pdfium {
                 // IMPORTANT: collapse may change leading layout; recompute probe
                 stripped_left = LStrip(stripped);
 
+                const bool hasUnclosedBracket = HasUnclosedBracket(buffer);
+
                 // 1) Empty line
                 if (stripped.empty()) {
                     if (!addPdfPageHeader && !buffer.empty()) {
-                        if (char32_t last_char = buffer.back(); !Contains(CLAUSE_OR_END_PUNCT.data(), last_char)) {
-                            // treat as layout gap, skip
+                        // NEW: If dialog is unclosed, or buffer has bracket issues, always treat blank line as soft.
+                        // Never flush mid-dialog / mid-parenthesis due to cross-page artifacts.
+                        if (dialogState.is_unclosed() || hasUnclosedBracket) {
+                            continue;
+                        }
+
+                        // Light rule: only flush on blank line if buffer ends with STRONG sentence end.
+                        // Otherwise, treat as a soft cross-page blank line and keep accumulating.
+                        if (char32_t last{}; TryGetLastNonWhitespace(buffer, last) && !IsStrongSentenceEnd(last)) {
                             continue;
                         }
                     }
 
+                    // End of paragraph → flush buffer (do NOT emit empty segments)
                     flush_buffer();
                     continue;
                 }
@@ -151,117 +160,226 @@ namespace pdfium {
                     continue;
                 }
 
-                // 3b) 弱 heading-like：要先看上一段是否逗號結尾
+                // 3b) Weak heading-like (short heading):
+                //     Only takes effect when the previous paragraph is "safe"
+                //     AND the previous paragraph’s ending looks like a boundary.
+                //     Otherwise, treat as continuation and fall through.
                 if (is_short_heading) {
-                    if (!buffer.empty()) {
-                        // check last non-space char of buffer
-                        if (std::u32string bt = RStrip(buffer); !bt.empty()) {
-                            if (char32_t last = bt.back(); last == U'，' || last == U',' || last == U'、') {
-                                // previous ends with comma → treat as continuation, NOT heading
-                                // fall through; normal rules below will handle merge/split
-                            } else {
-                                // real heading → flush buffer, this line becomes its own segment
-                                flush_buffer();
-                                segments.push_back(stripped);
-                                continue;
-                            }
-                        } else {
-                            // buffer only whitespace → treat as heading
-                            segments.push_back(stripped);
-                            continue;
-                        }
+                    const bool isAllCjk = IsAllCjkIgnoringWhitespace(stripped);
+
+                    bool splitAsHeading = false;
+
+                    if (buffer.empty()) {
+                        // Start of document / just flushed
+                        splitAsHeading = true;
                     } else {
-                        // no previous text → heading on its own
+                        if (HasUnclosedBracket(buffer)) {
+                            // Unsafe previous paragraph → must be continuation
+                            splitAsHeading = false;
+                        } else {
+                            std::size_t prevIdx{};
+                            char32_t last{}, prev{};
+
+                            if (std::size_t lastIdx{};
+                                !TryGetLastTwoNonWhitespace(buffer, lastIdx, last, prevIdx, prev)) {
+                                // Buffer has no last non-ws at all (empty/whitespace-only) → treat like empty
+                                splitAsHeading = true;
+                            } else {
+                                // NOTE: TryGetLastTwoNonWhitespace returns true even if prev doesn't exist.
+                                // We only care about `last` here (same as C# logic).
+
+                                const bool prevEndsWithCommaLike = IsCommaLike(last);
+                                const bool prevEndsWithSentencePunct = IsClauseOrEndPunct(last);
+
+                                const bool currentLooksLikeContinuationMarker =
+                                        isAllCjk ||
+                                        EndsWithColonLike(stripped) ||
+                                        EndsWithAllowedPostfixCloser(stripped);
+
+                                // Comma-ending → continuation
+                                // All-CJK short heading-like + previous not ended → continuation
+                                splitAsHeading =
+                                        !prevEndsWithCommaLike &&
+                                        !(currentLooksLikeContinuationMarker && !prevEndsWithSentencePunct);
+                            }
+                        }
+                    }
+
+                    if (splitAsHeading) {
+                        // If we have a real previous paragraph, flush it first
+                        flush_buffer();
+
+                        // Current line becomes a standalone heading
                         segments.push_back(stripped);
+                        // if stripped is view; otherwise just push_back(stripped)
                         continue;
                     }
+
+                    // else: fall through → normal merge logic below
                 }
 
-                bool current_is_dialog_start = IsDialogStart(stripped);
+                // ------ Current line finalizer ------
+
+                // 7) Finalizer: strong sentence end → flush immediately. Do not remove.
+                // If the current line completes a strong sentence, append it and flush immediately.
+                if (!buffer.empty() &&
+                    !dialogState.is_unclosed() &&
+                    !HasUnclosedBracket(buffer) &&
+                    EndsWithStrongSentenceEnd(stripped)) {
+                    buffer.append(stripped.begin(), stripped.end()); // buffer now has new value
+                    flush_buffer(); // pushes buffer + clears + resets dialogState
+                    continue;
+                }
 
                 // 4) First line of new paragraph
                 if (buffer.empty()) {
                     // First line – just start a new paragraph (dialog or not)
                     buffer = stripped;
-                    dialog_state.reset();
-                    dialog_state.update(stripped);
+                    dialogState.reset();
+                    dialogState.update(stripped);
                     continue;
                 }
 
-                std::u32string &buffer_text = buffer;
+                // *** DIALOG: treat any line that starts with a dialog opener as a new paragraph
 
-                // We already have some text in buffer
-                if (!buffer_text.empty()) {
-                    // 🔸 NEW RULE: If previous line ends with comma,
-                    //     do NOT flush even if this line starts dialog.
-                    //     (comma-ending means the sentence is not finished)
-                    std::u32string trimmed = RStrip(buffer_text);
+                // 🔸 9a) NEW RULE: If previous line ends with comma,
+                //     do NOT flush even if this line starts dialog.
+                //     (comma-ending means the sentence is not finished)
+                if (BeginsWithDialogOpener(stripped)) {
+                    bool shouldFlushPrev = false;
 
-                    if (char32_t last = trimmed.empty() ? U'\0' : trimmed.back();
-                        last == U'，' || last == U',' || last == U'、') {
-                        // fall through → treat as continuation
-                        // do NOT flush here even if current_is_dialog_start
-                    } else if (current_is_dialog_start) {
-                        // *** DIALOG: if this line starts a dialog,
-                        //     flush previous paragraph (only if safe)
-                        flush_buffer();
-                        buffer = stripped;
-                        dialog_state.reset();
-                        dialog_state.update(stripped);
-                        continue;
-                    }
-                } else {
-                    // buffer logically empty, just add new dialog line
-                    if (current_is_dialog_start) {
-                        buffer = stripped;
-                        dialog_state.reset();
-                        dialog_state.update(stripped);
-                        continue;
-                    }
-                }
+                    if (!buffer.empty()) {
+                        // last meaningful char of buffer
+                        if (char32_t last{}; TryGetLastNonWhitespace(buffer, last)) {
+                            const bool isContinuation =
+                                    IsCommaLike(last) ||
+                                    IsCjk(last) ||
+                                    dialogState.is_unclosed() ||
+                                    hasUnclosedBracket;
 
-                // Colon + dialog continuation: "她写了一行字：" + "  「如果连自己都不相信……」"
-                if (!buffer_text.empty()) {
-                    if (char32_t last = buffer_text.back(); last == U'：' || last == U':') {
-                        // ignore leading half/full-width spaces for dialog opener
-                        if (std::u32string after_indent = LStrip(stripped); !after_indent.empty() && Contains(
-                                                                                DIALOG_OPENERS.data(), after_indent[0])) {
-                            buffer += stripped;
-                            dialog_state.update(stripped);
-                            continue;
+                            shouldFlushPrev = !isContinuation;
                         }
                     }
-                }
 
-                // 5) Ends with CJK punctuation → new paragraph if not inside unclosed dialog
-                if (!buffer_text.empty() &&
-                    Contains(CLAUSE_OR_END_PUNCT.data(), buffer_text.back()) &&
-                    !dialog_state.is_unclosed()) {
-                    flush_buffer();
-                    buffer = stripped;
-                    dialog_state.update(stripped);
+                    if (shouldFlushPrev) {
+                        segments.push_back(buffer);
+                        buffer.clear();
+                        // NOTE: we intentionally don't reset dialogState here; we reset below anyway.
+                    }
+
+                    // Start (or continue) the dialog paragraph:
+                    // C# uses Append even when buffer already has dialog text.
+                    buffer.append(stripped.begin(), stripped.end());
+                    dialogState.reset();
+                    dialogState.update(stripped);
                     continue;
                 }
+
+
+                // 🔸 9b) Dialog end line: ends with dialog closer.
+                // Flush when the char before closer is clause/end punctuation,
+                // and bracket safety is satisfied (with a narrow OCR/typo override).
+                {
+                    char32_t lastCh{};
+
+                    if (std::size_t lastIdx{};
+                        TryGetLastNonWhitespace(stripped, lastIdx, lastCh) &&
+                        IsDialogCloser(lastCh)
+                    ) {
+                        // Punctuation right before the closer (e.g., “？” / “。”)
+                        char32_t prevCh{};
+                        const bool punctBeforeCloserIsClauseOrEnd =
+                                TryGetPrevNonWhitespace(stripped, lastIdx, prevCh) &&
+                                IsClauseOrEndPunct(prevCh);
+
+                        // Snapshot bracket safety BEFORE appending current line
+                        const bool bufferHasBracketIssue = hasUnclosedBracket;
+                        // your buffer snapshot checker
+                        const bool lineHasBracketIssue = HasUnclosedBracket(stripped); // span/view version
+
+                        // Append + update dialog state
+                        buffer.append(stripped.begin(), stripped.end());
+                        dialogState.update(stripped);
+
+                        // Allow flush if:
+                        // - dialog is closed after this line
+                        // - punctuation before closer is clause/end
+                        // - and either:
+                        //     (a) buffer has no bracket issue, OR
+                        //     (b) buffer has bracket issue but this line itself is the culprit (OCR/typo)
+                        if (!dialogState.is_unclosed() &&
+                            punctBeforeCloserIsClauseOrEnd &&
+                            (!bufferHasBracketIssue || lineHasBracketIssue)) {
+                            flush_buffer();
+                        }
+
+                        continue;
+                    }
+                }
+                // Colon + dialog continuation: "她写了一行字：" + "  「如果连自己都不相信……」"
+                // if (!buffer_text.empty()) {
+                //     if (char32_t last = buffer_text.back(); last == U'：' || last == U':') {
+                //         // ignore leading half/full-width spaces for dialog opener
+                //         if (std::u32string after_indent = LStrip(stripped);
+                //             !after_indent.empty() && Contains(
+                //                 DIALOG_OPENERS.data(),
+                //                 after_indent[0])
+                //         ) {
+                //             buffer += stripped;
+                //             dialogState.update(stripped);
+                //             continue;
+                //         }
+                //     }
+                // }
+
+                // 10) Paragraph boundary flush checks (post-append / buffer-based)
+                //
+                // NOTE: Dialog safety gate has the highest priority.
+                // If dialog quotes/brackets are not closed, never split the paragraph.
+                //
+                // 10a) Strong / lenient sentence boundary → new paragraph
+                //      (level-controlled, requires bracket safety)
+                //
+                // 10b) Closing CJK bracket boundary → new paragraph
+                //      Handles cases where a paragraph ends with a full-width closing
+                //      bracket / quote (e.g. ）】》」) and should not be merged with the next line.
+                if (!dialogState.is_unclosed() &&
+                    (
+                        (EndsWithSentenceBoundary(buffer, 2) && !hasUnclosedBracket) ||
+                        EndsWithCjkBracketBoundary(buffer)
+                    )) {
+                    flush_buffer();
+                }
+
+                // // 5) Ends with CJK punctuation → new paragraph if not inside unclosed dialog
+                // if (!buffer.empty() &&
+                //     Contains(CLAUSE_OR_END_PUNCT.data(), buffer.back()) &&
+                //     !dialogState.is_unclosed()) {
+                //     flush_buffer();
+                //     buffer = stripped;
+                //     dialogState.update(stripped);
+                //     continue;
+                // }
 
                 // 7) Indentation -> new paragraph
-                if (IsIndented(raw_line32)) {
-                    flush_buffer();
-                    buffer = stripped;
-                    dialog_state.update(stripped);
-                    continue;
-                }
+                // if (IsIndented(raw_line32)) {
+                //     flush_buffer();
+                //     buffer = stripped;
+                //     dialogState.update(stripped);
+                //     continue;
+                // }
 
                 // 8) Chapter-like endings
-                if (IsChapterEnding(buffer_text)) {
-                    flush_buffer();
-                    buffer = stripped;
-                    dialog_state.update(stripped);
-                    continue;
-                }
+                // if (IsChapterEnding(buffer)) {
+                //     flush_buffer();
+                //     buffer = stripped;
+                //     dialogState.update(stripped);
+                //     continue;
+                // }
 
                 // 9) Default: merge (soft line break)
                 buffer += stripped;
-                dialog_state.update(stripped);
+                dialogState.update(stripped);
             }
 
             // Flush last buffer

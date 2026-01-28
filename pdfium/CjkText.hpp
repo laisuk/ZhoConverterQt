@@ -75,6 +75,120 @@ namespace pdfium::text {
         return TryGetLastNonWhitespace(s, idx, last);
     }
 
+    /// Try to get last and previous non-whitespace characters.
+    /// Semantics match C#:
+    /// - returns false only if "last" doesn't exist
+    /// - returns true if "last" exists even when "prev" doesn't (prevIdx = npos)
+    [[nodiscard]]
+    [[gnu::always_inline]] inline bool
+    TryGetLastTwoNonWhitespace(const std::u32string_view s,
+                               std::size_t &lastIdx, char32_t &last,
+                               std::size_t &prevIdx, char32_t &prev) noexcept {
+        lastIdx = prevIdx = static_cast<std::size_t>(-1);
+        last = prev = U'\0';
+
+        if (!TryGetLastNonWhitespace(s, lastIdx, last))
+            return false;
+
+        // Find previous non-ws before lastIdx
+        if (lastIdx == 0) {
+            // found last, but no prev
+            prevIdx = static_cast<std::size_t>(-1);
+            prev = U'\0';
+            return true;
+        }
+
+        for (std::size_t i = lastIdx; i-- > 0;) {
+            const char32_t ch = s[i];
+            if (IsWhitespace(ch))
+                continue;
+
+            prevIdx = i;
+            prev = ch;
+            return true;
+        }
+
+        // found last, but no prev
+        prevIdx = static_cast<std::size_t>(-1);
+        prev = U'\0';
+        return true;
+    }
+
+    /// Try to get the previous non-whitespace char before beforeIndex in a view.
+    /// Returns false if not found.
+    [[nodiscard]]
+    [[gnu::always_inline]] inline bool
+    TryGetPrevNonWhitespace(const std::u32string_view s,
+                            const std::size_t beforeIndex,
+                            std::size_t &prevIndex,
+                            char32_t &prevChar) noexcept {
+        prevIndex = static_cast<std::size_t>(-1);
+        prevChar = U'\0';
+
+        if (s.empty() || beforeIndex == 0)
+            return false;
+
+        // Start from min(beforeIndex-1, s.size()-1)
+        std::size_t i = beforeIndex - 1;
+        if (i >= s.size())
+            i = s.size() - 1;
+
+        for (std::size_t k = i + 1; k-- > 0;) {
+            const char32_t ch = s[k];
+            if (IsWhitespace(ch))
+                continue;
+
+            prevIndex = k;
+            prevChar = ch;
+            return true;
+        }
+
+        return false;
+    }
+
+    /// Try to get the previous non-whitespace char before beforeIndex (char-only).
+    [[nodiscard]]
+    [[gnu::always_inline]] inline bool
+    TryGetPrevNonWhitespace(const std::u32string_view s,
+                            const std::size_t beforeIndex,
+                            char32_t &prevChar) noexcept {
+        std::size_t idx{};
+        return TryGetPrevNonWhitespace(s, beforeIndex, idx, prevChar);
+    }
+
+    [[nodiscard]]
+    [[gnu::always_inline]] inline bool
+    TryGetFirstNonWhitespace(const std::u32string_view s,
+                             std::size_t &firstIdx,
+                             char32_t &first) noexcept {
+        firstIdx = static_cast<std::size_t>(-1);
+        first = U'\0';
+
+        for (std::size_t i = 0; i < s.size(); ++i) {
+            const char32_t ch = s[i];
+            if (IsWhitespace(ch))
+                continue;
+            firstIdx = i;
+            first = ch;
+            return true;
+        }
+        return false;
+    }
+
+    [[nodiscard]]
+    [[gnu::always_inline]] inline std::u32string_view
+    TrimView(const std::u32string_view s) noexcept {
+        std::size_t firstIdx{};
+        if (char32_t first{}; !TryGetFirstNonWhitespace(s, firstIdx, first))
+            return {}; // all whitespace
+
+        std::size_t lastIdx{};
+        char32_t last{};
+        (void) TryGetLastNonWhitespace(s, lastIdx, last); // must succeed if first succeeded
+
+        return s.substr(firstIdx, lastIdx - firstIdx + 1);
+    }
+
     // ---------- CJK / ASCII classifiers (IsCjkXXX) ----------
 
     [[nodiscard]] inline bool IsCjk(const char32_t ch) noexcept {
@@ -93,7 +207,7 @@ namespace pdfium::text {
     }
 
     // Contains any CJK (very simple heuristic: >0x7F)
-    inline bool ContainsCjk(const std::u32string &s) {
+    inline bool ContainsCjk(const std::u32string_view s) noexcept {
         return std::any_of(s.begin(), s.end(),
                            [](const char32_t ch) { return ch > 0x7F; });
     }
@@ -103,12 +217,12 @@ namespace pdfium::text {
     }
 
     // All ASCII?
-    inline bool IsAllAscii(const std::u32string &s) {
+    inline bool IsAllAscii(const std::u32string_view s) noexcept {
         return std::all_of(s.begin(), s.end(), IsAscii);
     }
 
     // Any A-Z / a-z
-    inline bool HasLatinAlpha(const std::u32string &s) {
+    inline bool HasLatinAlpha(const std::u32string_view s) noexcept {
         return std::any_of(s.begin(), s.end(), [](const char32_t ch) {
             return (ch >= U'a' && ch <= U'z') || (ch >= U'A' && ch <= U'Z');
         });
@@ -179,7 +293,8 @@ namespace pdfium::text {
         return hasCjk && hasAscii;
     }
 
-    [[nodiscard]] inline bool IsMostlyCjk(const std::u32string &s) noexcept {
+    [[nodiscard]]
+    inline bool IsMostlyCjk(const std::u32string_view s) noexcept {
         std::size_t cjk = 0;
         std::size_t ascii = 0;
 
@@ -194,7 +309,7 @@ namespace pdfium::text {
                 continue;
             }
 
-            // CJK Unified Ideographs (BMP)
+            // CJK Unified Ideographs
             if (IsCjk(ch)) {
                 ++cjk;
                 continue;
@@ -207,5 +322,88 @@ namespace pdfium::text {
         }
 
         return cjk > 0 && cjk >= ascii;
+    }
+
+    /// Returns true if the span consists entirely of CJK characters.
+    /// Whitespace handling is controlled by allowWhitespace.
+    /// Returns false for empty or whitespace-only spans.
+    [[nodiscard]]
+    [[gnu::always_inline]] inline bool
+    IsAllCjk(const std::u32string_view s, const bool allowWhitespace = false) noexcept {
+        bool seen = false;
+
+        for (const char32_t ch: s) {
+            if (IsWhitespace(ch)) {
+                if (!allowWhitespace)
+                    return false;
+                continue;
+            }
+
+            seen = true;
+
+            if (!IsCjk(ch))
+                return false;
+        }
+
+        return seen;
+    }
+
+    /// Returns true if the span consists entirely of CJK characters,
+    /// ignoring whitespace. Returns false for empty or whitespace-only spans.
+    [[nodiscard]]
+    [[gnu::always_inline]] inline bool
+    IsAllCjkIgnoringWhitespace(const std::u32string_view s) noexcept {
+        return IsAllCjk(s, /*allowWhitespace=*/true);
+    }
+
+    /// Returns true if the span consists entirely of CJK characters,
+    /// and contains no whitespace. Returns false for empty spans.
+    [[nodiscard]]
+    [[gnu::always_inline]] inline bool
+    IsAllCjkNoWhitespace(const std::u32string_view s) noexcept {
+        return IsAllCjk(s, /*allowWhitespace=*/false);
+    }
+
+    /// Returns true if the span contains at least one CJK character.
+    [[nodiscard]]
+    [[gnu::always_inline]] inline bool
+    ContainsAnyCjk(const std::u32string_view s) noexcept {
+        return std::any_of(s.begin(), s.end(),
+                           [](const char32_t ch) noexcept {
+                               return IsCjk(ch);
+                           });
+    }
+
+    // =========================
+    //  Ellipsis
+    // =========================
+
+    [[nodiscard]]
+    [[gnu::always_inline]] inline bool
+    EndsWithEllipsis(const std::u32string_view s) noexcept {
+        if (s.empty())
+            return false;
+
+        // Strong CJK gate: ellipsis only meaningful in CJK context
+        if (!IsMostlyCjk(s))
+            return false;
+
+        // Walk back to last non-whitespace
+        std::size_t i = s.size();
+        while (i > 0 && text::IsWhitespace(s[i - 1]))
+            --i;
+
+        if (i == 0)
+            return false;
+
+        // Single Unicode ellipsis
+        if (s[i - 1] == U'…')
+            return true;
+
+        // OCR case: ASCII "..."
+        return i >= 3 &&
+               s[i - 1] == U'.' &&
+               s[i - 2] == U'.' &&
+               s[i - 3] == U'.';
     }
 } // namespace pdfium::text

@@ -32,13 +32,26 @@ namespace pdfium::detail {
     using text::punct::DIALOG_CLOSERS;
     using text::punct::IsClauseOrEndPunct;
     using text::punct::IsStrongSentenceEnd;
-    using text::punct::is_bracket_opener;
-    using text::punct::is_bracket_closer;
-    using text::punct::is_matching_bracket;
+    using text::punct::EndsWithStrongSentenceEnd;
+    using text::punct::IsBracketOpener;
+    using text::punct::IsBracketCloser;
+    using text::punct::IsMatchingBracket;
+    using text::punct::IsWrappedByMatchingBracket;
+    using text::punct::IsBracketTypeBalanced;
+    using text::punct::HasUnclosedBracket;
+    using text::punct::IsCommaLike;
+    using text::punct::EndsWithColonLike;
+    using text::punct::IsDialogCloser;
+    using text::punct::IsQuoteCloser;
+    using text::punct::BeginsWithDialogOpener;
+    using text::punct::IsAllowedPostfixCloser;
+    using text::punct::EndsWithAllowedPostfixCloser;
 
     // Text helpers
     using text::IsWhitespace;
     using text::TryGetLastNonWhitespace;
+    using text::TryGetLastTwoNonWhitespace;
+    using text::TryGetPrevNonWhitespace;
     using text::IsCjk;
     using text::IsAsciiDigit;
     using text::IsAsciiLetter;
@@ -48,6 +61,9 @@ namespace pdfium::detail {
     using text::IsNeutralAsciiForMixed;
     using text::IsMixedCjkAscii;
     using text::IsMostlyCjk;
+    using text::IsAllCjkIgnoringWhitespace;
+    using text::ContainsAnyCjk;
+    using text::EndsWithEllipsis;
 
     // ---------- UTF-8 <-> UTF-32 helpers (minimal, enough for CJK text) ----------
 
@@ -201,48 +217,74 @@ namespace pdfium::detail {
 
     // ------------------------- Small utility helpers -------------------------
 
-    // Utility: contains
-    inline bool Contains(const std::u32string &s, const char32_t ch) {
-        return std::find(s.begin(), s.end(), ch) != s.end();
-    }
-
     // Utility: startswith "=== " && endswith "==="
-    inline bool IsPageMarker(const std::u32string &s) {
+    // Uses view: no allocation.
+    [[nodiscard]]
+    inline bool IsPageMarker(const std::u32string_view s) noexcept {
         if (s.size() < 7) return false; // "=== x ==="
-        return s.rfind(U"=== ", 0) == 0 && s.size() >= 3 &&
+        return s.rfind(U"=== ", 0) == 0 &&
+               s.size() >= 3 &&
                s[s.size() - 1] == U'=' &&
                s[s.size() - 2] == U'=' &&
                s[s.size() - 3] == U'=';
     }
 
-    // Trim helpers (simple)
-    inline std::u32string RStrip(const std::u32string &s) {
+    // Utility: contains (view-based)
+    [[nodiscard]]
+    inline bool Contains(const std::u32string_view s, const char32_t ch) noexcept {
+        return std::find(s.begin(), s.end(), ch) != s.end();
+    }
+
+    // ------------------------- Trim helpers (view-based, no allocation) -------------------------
+
+    [[nodiscard]]
+    inline std::u32string_view RStripView(const std::u32string_view s) noexcept {
         std::size_t end = s.size();
-        while (end > 0 && (s[end - 1] == U' ' || s[end - 1] == U'\t' || s[end - 1] == U'\r')) {
-            --end;
+        while (end > 0) {
+            if (const char32_t ch = s[end - 1]; ch == U' ' || ch == U'\t' || ch == U'\r')
+                --end;
+            else
+                break;
         }
         return s.substr(0, end);
     }
 
-    inline std::u32string LStrip(const std::u32string &s) {
+    [[nodiscard]]
+    inline std::u32string_view LStripView(const std::u32string_view s) noexcept {
         std::size_t pos = 0;
-        while (pos < s.size() && (s[pos] == U' ' || s[pos] == U'\t' || s[pos] == U'\u3000')) {
-            ++pos;
+        while (pos < s.size()) {
+            if (const char32_t ch = s[pos]; ch == U' ' || ch == U'\t' || ch == U'\u3000')
+                ++pos;
+            else
+                break;
         }
         return s.substr(pos);
     }
 
-    inline std::u32string Strip(const std::u32string &s) {
-        return RStrip(LStrip(s));
+    [[nodiscard]]
+    inline std::u32string_view StripView(const std::u32string_view s) noexcept {
+        return RStripView(LStripView(s));
     }
 
-    // Length in codepoints
-    inline std::size_t Len(const std::u32string &s) { return s.size(); }
+    // If you still want to allocate versions, keep them as wrappers:
+    [[nodiscard]]
+    inline std::u32string RStrip(const std::u32string_view s) { return std::u32string(RStripView(s)); }
 
-    // Contains any char from set
-    inline bool AnyOf(const std::u32string &s, const std::u32string &set) {
+    [[nodiscard]]
+    inline std::u32string LStrip(const std::u32string_view s) { return std::u32string(LStripView(s)); }
+
+    [[nodiscard]]
+    inline std::u32string Strip(const std::u32string_view s) { return std::u32string(StripView(s)); }
+
+    // Length in codepoints (view-based)
+    [[nodiscard]]
+    inline std::size_t Len(const std::u32string_view s) noexcept { return s.size(); }
+
+    // Contains any char from set (view-based)
+    [[nodiscard]]
+    inline bool AnyOf(const std::u32string_view s, const std::u32string_view set) noexcept {
         return std::any_of(s.begin(), s.end(),
-                           [&](const char32_t ch) { return Contains(set, ch); });
+                           [&](const char32_t ch) noexcept { return Contains(set, ch); });
     }
 
     // ------------------------------------------------------------
@@ -315,7 +357,6 @@ namespace pdfium::detail {
     inline std::vector<std::u32string>
     CollapseRepeatedWordSequences(const std::vector<std::u32string> &parts) {
         constexpr int minRepeats = 3; // minimum number of repeats
-        constexpr int maxPhraseLen = 8; // typical heading phrases are short
 
         const std::size_t n = parts.size();
         if (n < static_cast<std::size_t>(minRepeats)) {
@@ -324,6 +365,7 @@ namespace pdfium::detail {
 
         // Scan from left to right for any repeating phrase.
         for (std::size_t start = 0; start < n; ++start) {
+            constexpr int maxPhraseLen = 8;
             for (int phraseLen = 1;
                  phraseLen <= maxPhraseLen && start + static_cast<std::size_t>(phraseLen) <= n;
                  ++phraseLen) {
@@ -495,8 +537,8 @@ namespace pdfium::detail {
     ///   作者 : 東野圭吾
     ///   出版時間　2024-03-12
     ///   ISBN 9787573506078
-    inline bool IsMetadataLine(const std::u32string &line) {
-        const std::u32string s = Strip(line);
+    inline bool IsMetadataLine(const std::u32string_view line) noexcept {
+        const std::u32string s = Strip(line.data());
         if (s.empty())
             return false;
 
@@ -558,7 +600,7 @@ namespace pdfium::detail {
     // ^(?=.{0,50}$)
     // (前言|序章|终章|尾声|后记|尾聲|後記|番外.{0,15}|.{0,10}?第.{0,5}?([章节部卷節回][^分合]).{0,20}?)
     //
-    inline bool IsTitleHeading(const std::u32string &s_left) {
+    inline bool IsTitleHeading(const std::u32string_view s_left) noexcept {
         const std::size_t len = s_left.size();
         if (len == 0 || len > 50)
             return false;
@@ -611,52 +653,27 @@ namespace pdfium::detail {
         return false;
     }
 
-    inline bool IsDialogStart(const std::u32string &line) {
-        const auto s = LStrip(line);
-        if (s.empty()) return false;
-        return DIALOG_OPENERS.find(s[0]) != std::u32string::npos;
-    }
-
-    inline bool HasOpenBracketNoClose(const std::u32string &s) {
-        bool hasOpen = false;
-
-        for (const char32_t ch: s) {
-            if (is_bracket_opener(ch)) {
-                hasOpen = true;
-            } else if (is_bracket_closer(ch)) {
-                return false; // 有任何 close → fail
-            }
-        }
-        return hasOpen;
-    }
-
-    inline bool IsHeadingLike(const std::u32string &raw) {
+    inline bool IsHeadingLike(const std::u32string_view raw) noexcept {
         // Unified spec with C#/Java/Python/Rust
-        const std::u32string s = Strip(raw);
+        const std::u32string s = Strip(raw.data());
         if (s.empty()) return false;
 
         // Keep page markers intact
         if (IsPageMarker(s)) return false;
 
-        // Last char cannot be terminal punctuation
-        const char32_t last = s.back();
-        if (Contains(CLAUSE_OR_END_PUNCT.data(), last)) {
+        // Reject headings with unclosed brackets
+        if (HasUnclosedBracket(s))
             return false;
-        }
 
-        // Cannot have an open bracket without a matching closed one
-        if (HasOpenBracketNoClose(s)) {
+        // Get last meaningful character (robust against whitespace changes)
+        std::size_t lastIdx{};
+        char32_t last{};
+
+        if (!TryGetLastNonWhitespace(s, lastIdx, last))
             return false;
-        }
 
-        // ✅ bracket-wrapped heading shortcut
-        if (s.size() >= 2) {
-            const char32_t first = s.front();
-            if (const char32_t last2 = s.back(); is_matching_bracket(first, last2)) {
-                if (const std::u32string inner = Strip(s.substr(1, s.size() - 2));
-                    !inner.empty() && IsMostlyCjk(inner))
-                    return true;
-            }
+        if (IsClauseOrEndPunct(last)) {
+            return false;
         }
 
         // Determine dynamic max length:
@@ -665,29 +682,55 @@ namespace pdfium::detail {
         const bool all_ascii = IsAllAscii(s);
         const std::size_t max_len =
                 all_ascii || IsMixedCjkAscii(s) ? (SHORT_HEADING_MAX_LEN * 2) : SHORT_HEADING_MAX_LEN;
+        const std::size_t len = s.size();
 
-        if (const std::size_t len = s.size(); len > max_len) {
+        // Short circuit for item title-like: "物品准备："
+        if (text::punct::IsColonLike(last) &&
+            len <= max_len &&
+            lastIdx > 0 && // need at least one char before ':'
+            text::IsAllCjkNoWhitespace(s.substr(0, lastIdx))) {
+            return true;
+        }
+
+        // Allow postfix closer with condition
+        if (IsAllowedPostfixCloser(last) &&
+            !text::punct::ContainsAnyCommaLike(s.substr(0, lastIdx))) // only scan the meaningful prefix
+        {
+            return true;
+        }
+
+        // ✅ bracket-wrapped heading shortcut
+        if (IsWrappedByMatchingBracket(s)) {
+            if (const std::u32string inner = Strip(s.substr(1, s.size() - 2));
+                !inner.empty() && IsMostlyCjk(inner)
+            )
+                return true;
+        }
+
+        if (len > max_len) {
             return false;
         }
 
         // Analyze characters
         bool hasNonAscii = false;
+        bool allAscii = true;
         bool hasLetter = false;
         bool allAsciiDigits = true;
 
         for (const char32_t ch: s) {
             if (ch > 0x7F) {
                 hasNonAscii = true;
+                allAscii = false;
                 allAsciiDigits = false;
                 continue;
             }
 
-            // Check ASCII digits
+            // ASCII digit check
             if (!(ch >= U'0' && ch <= U'9')) {
                 allAsciiDigits = false;
             }
 
-            // Check ASCII letters
+            // ASCII letter check
             if ((ch >= U'a' && ch <= U'z') || (ch >= U'A' && ch <= U'Z')) {
                 hasLetter = true;
             }
@@ -700,13 +743,14 @@ namespace pdfium::detail {
             return true;
         }
 
-        // Rule A: CJK/mixed short line → heading-like
-        if (hasNonAscii && last != U'，' && last != U',') {
+        // Rule A: CJK / mixed short line → heading-like
+        // (but not ending with comma-like punctuation)
+        if (hasNonAscii && !IsCommaLike(last)) {
             return true;
         }
 
         // Rule B: pure ASCII short line with letters → heading-like
-        if (all_ascii && hasLetter) {
+        if (allAscii && hasLetter) {
             return true;
         }
 
@@ -714,7 +758,7 @@ namespace pdfium::detail {
     }
 
     // Indentation: "^\s{2,}" - we approximate: at least 2 leading spaces/full-width spaces
-    inline bool IsIndented(const std::u32string &raw_line) {
+    inline bool IsIndented(const std::u32string_view raw_line) noexcept {
         int count = 0;
         for (const char32_t ch: raw_line) {
             if (ch == U' ' || ch == U'\t' || ch == U'\u3000') {
@@ -728,7 +772,7 @@ namespace pdfium::detail {
     }
 
     // Chapter-like ending: short line ending with 章 / 节 / 部 / 卷 / 節, with trailing brackets
-    inline bool IsChapterEnding(const std::u32string &s) {
+    inline bool IsChapterEnding(const std::u32string_view s) noexcept {
         if (s.size() > 15) return false;
         // strip trailing closing brackets
         std::size_t end = s.size();
@@ -740,7 +784,7 @@ namespace pdfium::detail {
         return true;
     }
 
-    inline bool IsVisualDividerLine(const std::u32string &s) {
+    inline bool IsVisualDividerLine(const std::u32string_view s) noexcept {
         auto is_ws = [](const char32_t ch) {
             // Minimal whitespace set (extend if needed)
             return ch == U' ' || ch == U'\t' || ch == U'\n' || ch == U'\r' || ch == 0x3000;
@@ -773,6 +817,149 @@ namespace pdfium::detail {
 
         return total >= 3;
     }
+
+    // ------ Sentence Boundary start ------ //
+
+    [[nodiscard]]
+    inline bool IsAtEndAllowingClosers(const std::u32string_view s, const std::size_t index) noexcept {
+        for (std::size_t j = index + 1; j < s.size(); ++j) {
+            const char32_t ch = s[j];
+
+            if (IsWhitespace(ch))
+                continue;
+
+            if (IsQuoteCloser(ch) || IsBracketCloser(ch))
+                continue;
+
+            return false;
+        }
+        return true;
+    }
+
+    // Strict: the ASCII punct itself is the last non-whitespace char (level 3 strict rules).
+    [[nodiscard]]
+    inline bool IsOcrCjkAsciiPunctAtLineEnd(const std::u32string_view s, const std::size_t lastNonWsIndex) noexcept {
+        if (lastNonWsIndex == 0)
+            return false;
+
+        // previous char exists (maybe whitespace-free already because lastNonWsIndex is meaningful)
+        return IsCjk(s[lastNonWsIndex - 1]) && IsMostlyCjk(s);
+    }
+
+    // Relaxed "end": after index, only whitespace and closers are allowed.
+    // Needed for patterns like: CJK '.' then closing quote/bracket: “.”」  .）
+    [[nodiscard]]
+    inline bool IsOcrCjkAsciiPunctBeforeClosers(const std::u32string_view s, const std::size_t index) noexcept {
+        if (!IsAtEndAllowingClosers(s, index))
+            return false;
+
+        // Must have a previous *non-whitespace* character
+        char32_t prev{};
+        if (!TryGetPrevNonWhitespace(s, index, prev))
+            return false;
+
+        // Previous meaningful char must be CJK, and the line mostly CJK
+        return IsCjk(prev) && IsMostlyCjk(s);
+    }
+
+    [[nodiscard]]
+    inline bool EndsWithSentenceBoundary(const std::u32string_view s, const int level = 2) noexcept {
+        if (s.empty())
+            return false;
+
+        // last non-whitespace
+        std::size_t lastIdx{};
+        char32_t last{};
+        if (!TryGetLastNonWhitespace(s, lastIdx, last))
+            return false;
+
+        // ---- STRICT rules (level >= 3) ----
+        // 1) Strong sentence end
+        if (IsStrongSentenceEnd(last))
+            return true;
+
+        if (level >= 3) {
+            if ((last == U'.' || last == U':') && IsOcrCjkAsciiPunctAtLineEnd(s, lastIdx))
+                return true;
+        }
+
+        // prev non-whitespace (before last-Non-Ws)
+        std::size_t prevIdx{};
+        char32_t prev{};
+
+        // 2) Quote closers + Allowed postfix closer after strong end
+        if (const bool hasPrev = TryGetPrevNonWhitespace(s, lastIdx, prevIdx, prev);
+            (IsQuoteCloser(last) || IsAllowedPostfixCloser(last)) && hasPrev) {
+            // Strong end immediately before quote closer
+            if (IsStrongSentenceEnd(prev))
+                return true;
+
+            // OCR artifact: “.” where '.' acts like '。' (CJK context)
+            // '.' is not the lastNonWs (quote is), so use the "before closers" version.
+            if (prev == U'.' && IsOcrCjkAsciiPunctBeforeClosers(s, prevIdx))
+                return true;
+        }
+
+        if (level >= 3)
+            return false;
+
+        // ---- LENIENT rules (level == 2) ----
+
+        // 4) NEW: long Mostly-CJK line ending with full-width colon "："
+        // Treat as a weak boundary (common in novels: "他说：" then dialog starts next line)
+        if (last == U'：' && IsMostlyCjk(s))
+            return true;
+
+        // Level 2 (lenient): allow ellipsis as weak boundary
+        if (EndsWithEllipsis(s))
+            return true;
+
+        if (level >= 2)
+            return false;
+
+        // ---- VERY LENIENT rules (level == 1) ----
+        return last == U'；' || last == U'：' || last == U';' || last == U':';
+    }
+
+    // ------ Sentence Boundary end ------ //
+
+    // ------ Bracket Boundary start ------
+
+    [[nodiscard]]
+    inline bool EndsWithCjkBracketBoundary(std::u32string_view s) noexcept {
+        // Equivalent to string.IsNullOrWhiteSpace
+        s = text::TrimView(s);
+        if (s.empty())
+            return false;
+
+        if (s.size() < 2)
+            return false;
+
+        const char32_t open = s.front();
+
+        // 1) Must be one of our known pairs.
+        if (const char32_t close = s.back(); !IsMatchingBracket(open, close))
+            return false;
+
+        // Inner content (exclude the outer bracket pair), trimmed
+        const auto inner = text::TrimView(s.substr(1, s.size() - 2));
+        if (inner.empty())
+            return false;
+
+        // 2) Must be mostly CJK (reject "(test)", "[1.2]", etc.)
+        if (!IsMostlyCjk(inner))
+            return false;
+
+        // ASCII bracket pairs are suspicious → require at least one CJK inside
+        if ((open == U'(' || open == U'[') && !ContainsAnyCjk(inner))
+            return false;
+
+        // 3) Ensure this bracket type is balanced inside the text
+        //    (prevents malformed OCR / premature close)
+        return IsBracketTypeBalanced(s, open);
+    }
+
+    // ------ Bracket Boundary end ------
 
     // Close namespaces opened above
 } // namespace pdfium::detail
