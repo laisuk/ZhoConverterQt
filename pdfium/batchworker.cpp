@@ -7,7 +7,7 @@
 #include <QPlainTextEdit>
 #include <QTextStream>
 
-#include "openccfmmseghelper.hpp"   // adjust include name
+#include "OpenccFmmsegHelper.hpp"   // adjust include name
 #include "filetype_utils.h"
 #include "OfficeConverter.hpp"
 // #include "OfficeConverterMinizip.hpp"

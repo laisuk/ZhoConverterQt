@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1053</width>
+    <width>1127</width>
     <height>716</height>
    </rect>
   </property>
@@ -811,7 +811,10 @@
                <string>Add file(s) to list box</string>
               </property>
               <property name="text">
-               <string>➕</string>
+               <string/>
+              </property>
+              <property name="icon">
+               <iconset theme="QIcon::ThemeIcon::ListAdd"/>
               </property>
              </widget>
             </item>
@@ -827,7 +830,10 @@
                <string>Remove selected list entry(s)</string>
               </property>
               <property name="text">
-               <string>➖</string>
+               <string/>
+              </property>
+              <property name="icon">
+               <iconset theme="QIcon::ThemeIcon::ListRemove"/>
               </property>
              </widget>
             </item>
@@ -1173,8 +1179,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1053</width>
-     <height>22</height>
+     <width>1127</width>
+     <height>20</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -1266,7 +1272,6 @@
  </customwidgets>
  <resources>
   <include location="Resource.qrc"/>
-  <include location="../../Python/OpenccPurepyGui/resource.qrc"/>
  </resources>
  <connections/>
  <buttongroups>
