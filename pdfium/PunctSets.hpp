@@ -29,8 +29,7 @@ namespace pdfium::text::punct {
 
     /// Quote closer (alias of dialog closer).
     [[nodiscard]]
-    [[gnu::always_inline]] inline bool
-    IsQuoteCloser(const char32_t ch) noexcept {
+    [[gnu::always_inline]] inline bool IsQuoteCloser(const char32_t ch) noexcept {
         return IsDialogCloser(ch);
     }
 
@@ -43,8 +42,7 @@ namespace pdfium::text::punct {
     /// Returns true if the line starts with a dialog opener
     /// after skipping leading whitespace and indentation.
     [[nodiscard]]
-    [[gnu::always_inline]] inline bool
-    BeginsWithDialogOpener(const std::u32string_view s) noexcept {
+    [[gnu::always_inline]] inline bool BeginsWithDialogOpener(const std::u32string_view s) noexcept {
         for (const char32_t ch: s) {
             if (IsWhitespace(ch))
                 continue;
@@ -73,8 +71,7 @@ namespace pdfium::text::punct {
     /// Returns true if the string contains any Tier-1 strong sentence ender
     /// (e.g. 。！？!?).
     [[nodiscard]]
-    [[gnu::always_inline]] inline bool
-    ContainsStrongSentenceEnd(const std::u32string_view s) noexcept {
+    [[gnu::always_inline]] inline bool ContainsStrongSentenceEnd(const std::u32string_view s) noexcept {
         return std::any_of(s.begin(), s.end(),
                            [](const char32_t ch) noexcept {
                                return IsStrongSentenceEnd(ch);
@@ -84,8 +81,7 @@ namespace pdfium::text::punct {
     /// Returns true if the string ends with a Tier-1 strong sentence ender
     /// after trimming trailing whitespace.
     [[nodiscard]]
-    [[gnu::always_inline]] inline bool
-    EndsWithStrongSentenceEnd(const std::u32string_view s) noexcept {
+    [[gnu::always_inline]] inline bool EndsWithStrongSentenceEnd(const std::u32string_view s) noexcept {
         char32_t ch{};
         return TryGetLastNonWhitespace(s, ch) &&
                IsStrongSentenceEnd(ch);
@@ -107,8 +103,7 @@ namespace pdfium::text::punct {
     /// Returns true if the string contains any comma-like
     /// separator characters (e.g. ， , 、).
     [[nodiscard]]
-    [[gnu::always_inline]] inline bool
-    ContainsAnyCommaLike(const std::u32string_view s) noexcept {
+    [[gnu::always_inline]] inline bool ContainsAnyCommaLike(const std::u32string_view s) noexcept {
         return std::any_of(s.begin(), s.end(),
                            [](const char32_t ch) noexcept {
                                return IsCommaLike(ch);
@@ -128,8 +123,7 @@ namespace pdfium::text::punct {
     /// Returns true if the string ends with a colon-like character
     /// after trimming trailing whitespace.
     [[nodiscard]]
-    [[gnu::always_inline]] inline bool
-    EndsWithColonLike(const std::u32string_view s) noexcept {
+    [[gnu::always_inline]] inline bool EndsWithColonLike(const std::u32string_view s) noexcept {
         char32_t last{};
         return TryGetLastNonWhitespace(s, last) &&
                IsColonLike(last);
@@ -184,34 +178,35 @@ namespace pdfium::text::punct {
     // Bracket helpers
     // -----------------------------------------------------------------------------
 
-    [[nodiscard]] inline bool IsBracketOpener(char32_t ch) noexcept {
+    [[nodiscard]]
+    [[gnu::always_inline]] inline bool IsBracketOpener(char32_t ch) noexcept {
         return std::any_of(std::begin(BRACKET_PAIRS), std::end(BRACKET_PAIRS),
                            [ch](const auto &p) { return p.first == ch; });
     }
 
-    [[nodiscard]] inline bool IsBracketCloser(char32_t ch) noexcept {
+    [[nodiscard]]
+    [[gnu::always_inline]] inline bool IsBracketCloser(char32_t ch) noexcept {
         return std::any_of(std::begin(BRACKET_PAIRS), std::end(BRACKET_PAIRS),
                            [ch](const auto &p) { return p.second == ch; });
     }
 
-    [[nodiscard]] inline bool IsMatchingBracket(char32_t open, char32_t close) noexcept {
+    [[nodiscard]]
+    [[gnu::always_inline]] inline bool IsMatchingBracket(char32_t open, char32_t close) noexcept {
         return std::any_of(std::begin(BRACKET_PAIRS), std::end(BRACKET_PAIRS),
                            [open, close](const auto &p) { return p.first == open && p.second == close; });
     }
 
     // minLen=3 means at least: open + 1 char + close
     [[nodiscard]]
-    [[gnu::always_inline]] inline bool
-    IsWrappedByMatchingBracket(const std::u32string_view s,
-                               const char32_t lastNonWs,
-                               const std::size_t minLen = 3) noexcept {
+    [[gnu::always_inline]] inline bool IsWrappedByMatchingBracket(const std::u32string_view s,
+                                                                  const char32_t lastNonWs,
+                                                                  const std::size_t minLen = 3) noexcept {
         return s.size() >= minLen && IsMatchingBracket(s.front(), lastNonWs);
     }
 
     [[nodiscard]]
-    [[gnu::always_inline]] inline bool
-    IsWrappedByMatchingBracket(const std::u32string_view s,
-                               const std::size_t minLen = 3) noexcept {
+    [[gnu::always_inline]] inline bool IsWrappedByMatchingBracket(const std::u32string_view s,
+                                                                  const std::size_t minLen = 3) noexcept {
         char32_t last{};
         return TryGetLastNonWhitespace(s, last) &&
                IsWrappedByMatchingBracket(s, last, minLen);
@@ -220,8 +215,7 @@ namespace pdfium::text::punct {
     /// Try to get the matching closer for an opening bracket.
     /// Returns false if the opener is not in the table.
     [[nodiscard]]
-    [[gnu::always_inline]] inline bool
-    TryGetMatchingCloser(const char32_t open, char32_t &close) noexcept {
+    [[gnu::always_inline]] inline bool TryGetMatchingCloser(const char32_t open, char32_t &close) noexcept {
         for (const auto &[key, val]: BRACKET_PAIRS) {
             if (key == open) {
                 close = val;

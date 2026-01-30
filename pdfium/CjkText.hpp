@@ -191,7 +191,8 @@ namespace pdfium::text {
 
     // ---------- CJK / ASCII classifiers (IsCjkXXX) ----------
 
-    [[nodiscard]] inline bool IsCjk(const char32_t ch) noexcept {
+    [[nodiscard]]
+    [[gnu::always_inline]] inline bool IsCjk(const char32_t ch) noexcept {
         const auto c = static_cast<uint32_t>(ch);
 
         // CJK Unified Ideographs Extension A: U+3400–U+4DBF
@@ -207,48 +208,57 @@ namespace pdfium::text {
     }
 
     // Contains any CJK (very simple heuristic: >0x7F)
-    inline bool ContainsCjk(const std::u32string_view s) noexcept {
+    [[nodiscard]]
+    [[gnu::always_inline]] inline bool ContainsCjk(const std::u32string_view s) noexcept {
         return std::any_of(s.begin(), s.end(),
                            [](const char32_t ch) { return ch > 0x7F; });
     }
 
-    inline bool IsAscii(const char32_t ch) {
+    [[nodiscard]]
+    [[gnu::always_inline]] inline bool IsAscii(const char32_t ch) {
         return ch <= 0x7F;
     }
 
     // All ASCII?
-    inline bool IsAllAscii(const std::u32string_view s) noexcept {
+    [[nodiscard]]
+    [[gnu::always_inline]] inline bool IsAllAscii(const std::u32string_view s) noexcept {
         return std::all_of(s.begin(), s.end(), IsAscii);
     }
 
     // Any A-Z / a-z
-    inline bool HasLatinAlpha(const std::u32string_view s) noexcept {
+    [[nodiscard]]
+    [[gnu::always_inline]] inline bool HasLatinAlpha(const std::u32string_view s) noexcept {
         return std::any_of(s.begin(), s.end(), [](const char32_t ch) {
             return (ch >= U'a' && ch <= U'z') || (ch >= U'A' && ch <= U'Z');
         });
     }
 
-    [[nodiscard]] inline bool IsAsciiDigit(const char32_t ch) noexcept {
+    [[nodiscard]]
+    [[gnu::always_inline]] inline bool IsAsciiDigit(const char32_t ch) noexcept {
         return ch >= U'0' && ch <= U'9';
     }
 
-    [[nodiscard]] inline bool IsAsciiLetter(const char32_t ch) noexcept {
+    [[nodiscard]]
+    [[gnu::always_inline]] inline bool IsAsciiLetter(const char32_t ch) noexcept {
         return (ch >= U'A' && ch <= U'Z') || (ch >= U'a' && ch <= U'z');
     }
 
-    [[nodiscard]] inline bool IsAsciiLetterOrDigit(const char32_t ch) noexcept {
+    [[nodiscard]]
+    [[gnu::always_inline]] inline bool IsAsciiLetterOrDigit(const char32_t ch) noexcept {
         return (ch >= U'0' && ch <= U'9') ||
                (ch >= U'a' && ch <= U'z') ||
                (ch >= U'A' && ch <= U'Z');
     }
 
     // Full-width digits: '０'..'９'
-    [[nodiscard]] inline bool IsFullwidthDigit(const char32_t ch) noexcept {
+    [[nodiscard]]
+    [[gnu::always_inline]] inline bool IsFullwidthDigit(const char32_t ch) noexcept {
         return ch >= U'０' && ch <= U'９';
     }
 
     // Neutral ASCII allowed in "mixed CJK + ASCII" lines: space - / : .
-    [[nodiscard]] inline bool IsNeutralAsciiForMixed(const char32_t ch) noexcept {
+    [[nodiscard]]
+    [[gnu::always_inline]] inline bool IsNeutralAsciiForMixed(const char32_t ch) noexcept {
         return ch == U' ' || ch == U'-' || ch == U'/' || ch == U':' || ch == U'.';
     }
 
@@ -259,7 +269,8 @@ namespace pdfium::text {
     // - Allow full-width digits
     // - Non-ASCII must be CJK
     // - Return true only if both CJK and ASCII content appear.
-    [[nodiscard]] inline bool IsMixedCjkAscii(const std::u32string_view s) noexcept {
+    [[nodiscard]]
+    [[gnu::always_inline]] inline bool IsMixedCjkAscii(const std::u32string_view s) noexcept {
         bool hasCjk = false;
         bool hasAscii = false;
 
@@ -294,7 +305,7 @@ namespace pdfium::text {
     }
 
     [[nodiscard]]
-    inline bool IsMostlyCjk(const std::u32string_view s) noexcept {
+    [[gnu::always_inline]] inline bool IsMostlyCjk(const std::u32string_view s) noexcept {
         std::size_t cjk = 0;
         std::size_t ascii = 0;
 
