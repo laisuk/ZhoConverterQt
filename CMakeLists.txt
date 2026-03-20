@@ -30,7 +30,7 @@ if (WIN32)
         include_directories("D:/lib/vcpkg/installed/x64-windows-static-md/include")
         # add_compile_options(/Zc:__cplusplus)  # Ensure __cplusplus is correctly set
     else ()
-        set(CMAKE_PREFIX_PATH "C:/Qt/6.9.3/mingw_64")
+        set(CMAKE_PREFIX_PATH "C:/Qt/6.8.3/mingw_64")
         list(APPEND CMAKE_PREFIX_PATH "D:/lib/vcpkg/installed/x64-mingw-static")
         include_directories("D:/lib/vcpkg/installed/x64-mingw-static/include")
     endif ()
@@ -99,6 +99,7 @@ set(HEADERS
         src/filetype_utils.cpp
         pdfium/PunctSets.hpp
         pdfium/CjkText.hpp
+        src/AboutDialog.cpp
 )
 qt_add_resources(SOURCES Resource.qrc)
 qt_add_executable(ZhoConverterQt

@@ -6,12 +6,16 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1127</width>
+    <width>1000</width>
     <height>716</height>
    </rect>
   </property>
   <property name="windowTitle">
    <string>ZhoConverterQt</string>
+  </property>
+  <property name="windowIcon">
+   <iconset resource="Resource.qrc">
+    <normaloff>:/resource/jianfanicon.ico</normaloff>:/resource/jianfanicon.ico</iconset>
   </property>
   <widget class="QWidget" name="centralWidget">
    <layout class="QVBoxLayout" name="verticalLayout">
@@ -200,18 +204,6 @@
           <string>t2jp (日/舊 -&gt; 日/新)</string>
          </property>
         </item>
-       </widget>
-      </item>
-      <item>
-       <widget class="QCheckBox" name="cbJieba">
-        <property name="font">
-         <font>
-          <pointsize>11</pointsize>
-         </font>
-        </property>
-        <property name="text">
-         <string>Jieba（结巴分词）</string>
-        </property>
        </widget>
       </item>
      </layout>
@@ -1179,7 +1171,7 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1127</width>
+     <width>1000</width>
      <height>22</height>
     </rect>
    </property>
@@ -1212,11 +1204,19 @@
   </widget>
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionExit">
+   <property name="icon">
+    <iconset resource="Resource.qrc">
+     <normaloff>:/resource/exit.png</normaloff>:/resource/exit.png</iconset>
+   </property>
    <property name="text">
     <string>Exit</string>
    </property>
   </action>
   <action name="actionAbout">
+   <property name="icon">
+    <iconset resource="Resource.qrc">
+     <normaloff>:/resource/information.png</normaloff>:/resource/information.png</iconset>
+   </property>
    <property name="text">
     <string>About</string>
    </property>
@@ -1226,7 +1226,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Convert Filename （转换文件名）</string>
+    <string>Convert Filename</string>
    </property>
   </action>
   <action name="actionAddPageHeader">

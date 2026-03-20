@@ -248,42 +248,37 @@ namespace pdfium::text::punct {
         return depth == 0;
     }
 
-    // Assumed to exist (you likely already have these or will add them):
-    //   - bool IsBracketOpener(char32_t);
-    //   - bool IsBracketCloser(char32_t);
-    //   - bool IsMatchingBracket(char32_t open, char32_t close);
-
     [[nodiscard]]
     inline bool HasUnclosedBracket(const std::u32string_view s) noexcept {
         if (s.empty())
             return false;
 
-        std::array<char32_t, 16> small{};
-        std::vector<char32_t> big; // allocated only if nesting > 16
+        std::array<char32_t, 16> smallStack{};
+        std::vector<char32_t> bigStack; // allocated only if nesting > 16
         std::size_t top = 0;
         bool seenBracket = false;
 
         auto push = [&](const char32_t ch) {
-            if (top < small.size()) {
-                small[top++] = ch;
-                return;
+            if (bigStack.empty()) {
+                if (top < smallStack.size()) {
+                    smallStack[top++] = ch;
+                    return;
+                }
+                // First overflow: migrate small -> big
+                bigStack.reserve(32);
+                bigStack.assign(smallStack.begin(), smallStack.end());
             }
-            if (big.empty()) {
-                big.reserve(32);
-                big.assign(small.begin(), small.end());
-            }
-            big.push_back(ch);
+            bigStack.push_back(ch);
             ++top;
         };
 
         auto pop = [&]() -> char32_t {
             // Precondition: top > 0
-            if (top <= small.size()) {
-                return small[--top];
+            if (bigStack.empty()) {
+                return smallStack[--top];
             }
-            // top > small.size() implies big is in use
-            const char32_t ch = big.back();
-            big.pop_back();
+            const char32_t ch = bigStack.back();
+            bigStack.pop_back();
             --top;
             return ch;
         };
@@ -304,7 +299,6 @@ namespace pdfium::text::punct {
             if (top == 0)
                 return true;
 
-            // mismatched closer
             if (const char32_t open = pop(); !IsMatchingBracket(open, ch))
                 return true;
         }

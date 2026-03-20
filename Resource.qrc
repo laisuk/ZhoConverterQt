@@ -7,5 +7,8 @@
         <file>resource/icons8-preview-48.png</file>
         <file>resource/icons8-refresh-48.png</file>
         <file>resource/icons8-start-48.png</file>
+        <file>resource/information.png</file>
+        <file>resource/jianfanicon.ico</file>
+        <file>resource/exit.png</file>
     </qresource>
 </RCC>

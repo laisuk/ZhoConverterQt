@@ -12,6 +12,7 @@
 #include "filetype_utils.h"
 #include "OfficeConverter.hpp"
 // #include "OfficeConverterMinizip.hpp"
+#include "AboutDialog.h"
 #include "ReflowHelper.hpp"
 
 
@@ -46,8 +47,8 @@ MainWindow::MainWindow(QWidget *parent)
 
     connect(m_cancelPdfButton, &QPushButton::clicked,
             this, &MainWindow::onCancelPdfClicked);
-    const auto capi_info = opencc_version_string();
-    ui->statusBar->showMessage(QString("Loaded: opencc-fmmseg ver. %1").arg(capi_info));
+    m_openccVersion = opencc_version_string();
+    ui->statusBar->showMessage(QString("Loaded: opencc-fmmseg version %1").arg(m_openccVersion));
 }
 
 MainWindow::~MainWindow() {
@@ -63,9 +64,53 @@ void MainWindow::on_btnExit_clicked() { this->close(); }
 
 void MainWindow::on_actionExit_triggered() { QApplication::quit(); }
 
+// void MainWindow::on_actionAbout_triggered() {
+//     QMessageBox::about(this, "About",
+//                        "ZhoConverter version 1.0.0 (c) 2025 Laisuk Lai");
+// }
 void MainWindow::on_actionAbout_triggered() {
-    QMessageBox::about(this, "About",
-                       "ZhoConverter version 1.0.0 (c) 2025 Laisuk Lai");
+    AboutInfo info;
+
+    // Prefer central metadata instead of hardcoding
+    info.app_name = QCoreApplication::applicationName();
+    info.version = QCoreApplication::applicationVersion();
+    info.author = "Laisuk Lai";
+    info.year = "2026";
+    info.description =
+            "ZhoConverterQt — OpenCC-based Chinese conversion tool "
+            "with document and PDF processing support.";
+
+    info.website_text = "GitHub";
+    info.website_url = "https://github.com/laisuk/ZhoConverterQt";
+
+    info.license_text = "MIT License";
+    info.license_url = "https://opensource.org/licenses/MIT";
+
+    QString buildType;
+#ifdef NDEBUG
+    buildType = "Release";
+#else
+    buildType = "Debug";
+#endif
+
+    QString platform;
+#ifdef Q_OS_WIN
+    platform = "Windows";
+#elif defined(Q_OS_MAC)
+    platform = "macOS";
+#elif defined(Q_OS_LINUX)
+    platform = "Linux";
+#else
+    platform = "Unknown";
+#endif
+
+    const QString qtVersion = QT_VERSION_STR;
+
+    info.details = QString("Qt: %1\nBuild: %2\nPlatform: %3\nOpencc-Fmmseg: %4")
+            .arg(qtVersion, buildType, platform, m_openccVersion);
+
+    AboutDialog dlg(info, this, windowIcon());
+    dlg.exec();
 }
 
 // MainWindow.cpp
@@ -446,14 +491,14 @@ void MainWindow::main_process(const opencc_config_t &config, const bool is_punct
 
     if (!output.data()) {
         ui->statusBar->showMessage(
-            QString("Conversion failed in %1 ms. (%2)").arg(elapsedMs).arg(config)
+            QString("Conversion failed in %1 ms. (%2)").arg(elapsedMs).arg(opencc_config_id_to_name(config))
         );
         return;
     }
 
     ui->tbDestination->document()->setPlainText(QString::fromUtf8(output));
     ui->statusBar->showMessage(
-        QString("Conversion completed in %1 ms. (%2)").arg(elapsedMs).arg(config)
+        QString("Conversion completed in %1 ms. (%2)").arg(elapsedMs).arg(opencc_config_id_to_name(config))
     );
 }
 

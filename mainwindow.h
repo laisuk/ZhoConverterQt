@@ -124,4 +124,6 @@ private:
     // NEW: batch
     QThread *m_batchThread = nullptr;
     BatchWorker *m_batchWorker = nullptr;
+
+    QString m_openccVersion;
 };
