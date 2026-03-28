@@ -309,7 +309,7 @@ namespace pdfium {
                         //     (b) buffer has bracket issue but this line itself is the culprit (OCR/typo)
                         if (!dialogState.is_unclosed() &&
                             punctBeforeCloserIsClauseOrEnd &&
-                            (!bufferHasBracketIssue || lineHasBracketIssue)) {
+                            (!bufferHasBracketIssue || lineHasBracketIssue || buffer.length() > 120)) {
                             flush_buffer();
                         }
 
