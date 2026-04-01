@@ -306,4 +306,52 @@ namespace pdfium::text::punct {
         // unclosed opener(s)
         return seenBracket && top != 0;
     }
+
+    /// Returns true if the line contains an unclosed dialog quote/bracket.
+    /// This is a same-line local check for heading-like gating only.
+    /// It does not replace incremental DialogState tracking.
+    [[nodiscard]]
+    [[gnu::always_inline]] inline bool HasUnclosedDialogQuote(const std::u32string_view s) noexcept {
+        std::uint8_t balance[4] = {0, 0, 0, 0};
+
+        for (const char32_t ch: s) {
+            switch (ch) {
+                // --- Openers ---
+                case U'“': ++balance[0];
+                    break;
+                case U'‘': ++balance[1];
+                    break;
+                case U'「': ++balance[2];
+                    break;
+                case U'『': ++balance[3];
+                    break;
+
+                // --- Closers ---
+                case U'”':
+                    if (balance[0] > 0) --balance[0];
+                    else return true; // dangling closer
+                    break;
+
+                case U'’':
+                    if (balance[1] > 0) --balance[1];
+                    else return true;
+                    break;
+
+                case U'」':
+                    if (balance[2] > 0) --balance[2];
+                    else return true;
+                    break;
+
+                case U'』':
+                    if (balance[3] > 0) --balance[3];
+                    else return true;
+                    break;
+
+                default:
+                    break;
+            }
+        }
+
+        return balance[0] > 0 || balance[1] > 0 || balance[2] > 0 || balance[3] > 0;
+    }
 } // namespace pdfium::text::punct

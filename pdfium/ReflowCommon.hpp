@@ -20,7 +20,6 @@
 #include <cstddef>
 #include <cstdint>
 #include <string>
-#include <unordered_set>
 #include <vector>
 #include "CjkText.hpp"
 #include "PunctSets.hpp"
@@ -40,6 +39,7 @@ namespace pdfium::detail {
     using text::punct::IsWrappedByMatchingBracket;
     using text::punct::IsBracketTypeBalanced;
     using text::punct::HasUnclosedBracket;
+    using text::punct::HasUnclosedDialogQuote;
     using text::punct::IsCommaLike;
     using text::punct::ContainsAnyCommaLike;
     using text::punct::IsColonLike;
@@ -691,7 +691,7 @@ namespace pdfium::detail {
         if (IsPageMarker(s)) return false;
 
         // Reject headings with unclosed brackets
-        if (HasUnclosedBracket(s))
+        if (HasUnclosedBracket(s) || HasUnclosedDialogQuote(s))
             return false;
 
         // Get last meaningful character (robust against whitespace changes)
