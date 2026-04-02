@@ -1,6 +1,7 @@
 #pragma once
 
 #include <atomic>
+#include <cctype>
 #include <cstdint>
 #include <functional>
 #include <future>
@@ -9,7 +10,7 @@
 #include <string>
 #include <utility>
 #include <algorithm>
-
+// #include <string_view>
 
 // PDFium public headers.
 // Make sure they are in your include path.
@@ -108,12 +109,12 @@ namespace pdfium {
         }
 
         [[nodiscard]] bool IsValid() const noexcept { return handle_ != nullptr; }
-
         [[nodiscard]] FPDF_DOCUMENT Get() const noexcept { return handle_; }
 
         [[nodiscard]] int GetPageCount() const {
             if (!handle_)
                 return 0;
+
             auto &lib = PdfiumLibrary::Instance();
             std::lock_guard<std::mutex> lock(lib.Mutex());
             return FPDF_GetPageCount(handle_);
@@ -177,18 +178,21 @@ namespace pdfium {
         }
 
         [[nodiscard]] bool IsValid() const noexcept { return handle_ != nullptr; }
-
         [[nodiscard]] FPDF_PAGE Get() const noexcept { return handle_; }
 
         [[nodiscard]] double Width() const {
-            if (!handle_) return 0.0;
+            if (!handle_)
+                return 0.0;
+
             auto &lib = PdfiumLibrary::Instance();
             std::lock_guard<std::mutex> lock(lib.Mutex());
             return FPDF_GetPageWidth(handle_);
         }
 
         [[nodiscard]] double Height() const {
-            if (!handle_) return 0.0;
+            if (!handle_)
+                return 0.0;
+
             auto &lib = PdfiumLibrary::Instance();
             std::lock_guard<std::mutex> lock(lib.Mutex());
             return FPDF_GetPageHeight(handle_);
@@ -199,7 +203,7 @@ namespace pdfium {
     };
 
     // ============================================================
-    //  Internal helpers: UTF-16LE → UTF-8 + progress bar
+    //  Internal helpers: UTF-16LE -> UTF-8 + progress bar
     // ============================================================
 
     namespace detail {
@@ -221,24 +225,26 @@ namespace pdfium {
             }
         }
 
-        inline std::string utf16le_to_utf8(const std::u16string &src) {
-            std::string out;
+        inline void utf16le_to_utf8_into(const std::u16string &src, std::string &out) {
+            out.clear();
             out.reserve(src.size() * 3); // rough estimate
 
             for (std::size_t i = 0; i < src.size(); ++i) {
-                if (const std::uint32_t ch = src[i]; ch >= 0xD800 && ch <= 0xDBFF) {
+                const std::uint32_t ch = src[i];
+
+                if (ch >= 0xD800 && ch <= 0xDBFF) {
                     // High surrogate
                     if (i + 1 < src.size()) {
-                        if (const std::uint32_t low = src[i + 1]; low >= 0xDC00 && low <= 0xDFFF) {
+                        const std::uint32_t low = src[i + 1];
+                        if (low >= 0xDC00 && low <= 0xDFFF) {
                             const std::uint32_t cp =
-                                    0x10000 +
-                                    (((ch - 0xD800) << 10) | (low - 0xDC00));
+                                    0x10000 + (((ch - 0xD800) << 10) | (low - 0xDC00));
                             append_utf8_codepoint(out, cp);
                             ++i; // consumed low surrogate
                             continue;
                         }
                     }
-                    // Malformed surrogate: fall back to replacement char
+                    // Malformed surrogate
                     append_utf8_codepoint(out, 0xFFFD);
                 } else if (ch >= 0xDC00 && ch <= 0xDFFF) {
                     // Lone low surrogate
@@ -247,40 +253,44 @@ namespace pdfium {
                     append_utf8_codepoint(out, ch);
                 }
             }
-
-            return out;
         }
 
+        // In-place CRLF/CR -> LF normalization without allocating a second string.
         inline void NormalizeNewlinesInPlace(std::string &s) {
-            std::string out;
-            out.reserve(s.size());
+            std::size_t write = 0;
+            const std::size_t n = s.size();
 
-            for (size_t i = 0; i < s.size(); ++i) {
-                if (const char c = s[i]; c == '\r') {
-                    // skip CR, but convert CRLF / CR to LF
-                    if (i + 1 < s.size() && s[i + 1] == '\n')
-                        ++i;
-                    out.push_back('\n');
+            for (std::size_t read = 0; read < n; ++read) {
+                const char c = s[read];
+                if (c == '\r') {
+                    if (read + 1 < n && s[read + 1] == '\n')
+                        ++read;
+                    s[write++] = '\n';
                 } else {
-                    out.push_back(c);
+                    s[write++] = c;
                 }
             }
 
-            s.swap(out);
+            s.resize(write);
         }
 
-        inline std::string TrimCopy(const std::string &s) {
-            size_t start = 0;
-            size_t end = s.size();
+        // Returns [start, end) trim range without allocating.
+        inline std::pair<std::size_t, std::size_t> TrimRange(const std::string &s) {
+            std::size_t start = 0;
+            std::size_t end = s.size();
 
-            while (start < end && std::isspace(static_cast<unsigned char>(s[start])))
+            while (start < end &&
+                   std::isspace(static_cast<unsigned char>(s[start]))) {
                 ++start;
-            while (end > start && std::isspace(static_cast<unsigned char>(s[end - 1])))
+            }
+
+            while (end > start &&
+                   std::isspace(static_cast<unsigned char>(s[end - 1]))) {
                 --end;
+            }
 
-            return s.substr(start, end - start);
+            return {start, end};
         }
-
 
         // Emoji progress bar:
         // 🟩 = U+1F7E9 = F0 9F 9F A9
@@ -295,7 +305,7 @@ namespace pdfium {
             static constexpr auto WHITE = "\xE2\xAC\x9C";
 
             std::string bar;
-            bar.reserve(width * 4);
+            bar.reserve(static_cast<std::size_t>(width) * 4);
 
             for (int i = 0; i < filled; ++i)
                 bar += GREEN;
@@ -305,10 +315,15 @@ namespace pdfium {
             return bar;
         }
 
-        // Extract all text from a page (UTF-8)
-        inline std::string ExtractPageText(FPDF_PAGE page) {
+        // Extract all text from a page into reusable buffers.
+        inline void ExtractPageText(FPDF_PAGE page,
+                                    std::u16string &utf16Buffer,
+                                    std::string &utf8Out) {
+            utf16Buffer.clear();
+            utf8Out.clear();
+
             if (!page)
-                return {};
+                return;
 
             auto &lib = PdfiumLibrary::Instance();
             std::lock_guard lock(lib.Mutex());
@@ -324,33 +339,39 @@ namespace pdfium {
             // Always keep them as raw, non-const handles.
             FPDF_TEXTPAGE textPage = FPDFText_LoadPage(page);
             if (!textPage)
-                return {};
+                return;
 
             const int nChars = FPDFText_CountChars(textPage);
             if (nChars <= 0) {
                 FPDFText_ClosePage(textPage);
-                return {};
+                return;
             }
 
-            std::u16string buffer(static_cast<std::size_t>(nChars) + 1, u'\0');
+            utf16Buffer.resize(static_cast<std::size_t>(nChars) + 1);
 
             int written = FPDFText_GetText(
                 textPage,
                 0,
                 nChars,
-                reinterpret_cast<unsigned short *>(buffer.data()));
+                reinterpret_cast<unsigned short *>(utf16Buffer.data()));
 
             FPDFText_ClosePage(textPage);
 
             if (written <= 0)
-                return {};
+                return;
 
-            // |written| includes terminating NUL
-            if (written > nChars)
-                written = nChars;
+            // Pdfium returns a count including the terminating NUL.
+            if (written > nChars + 1)
+                written = nChars + 1;
 
-            buffer.resize(static_cast<std::size_t>(written));
-            return utf16le_to_utf8(buffer);
+            const int actualChars = (written > 0) ? (written - 1) : 0;
+            if (actualChars <= 0) {
+                utf16Buffer.clear();
+                return;
+            }
+
+            utf16Buffer.resize(static_cast<std::size_t>(actualChars));
+            utf16le_to_utf8_into(utf16Buffer, utf8Out);
         }
     } // namespace detail
 
@@ -390,7 +411,11 @@ namespace pdfium {
             return {};
 
         std::string result;
-        result.reserve(16 * 1024); // basic reserve; will grow as needed
+        result.reserve(static_cast<std::size_t>(pageCount) * 1024);
+
+        // Reusable per-page buffers
+        std::u16string utf16Buffer;
+        std::string pageText;
 
         for (int i = 0; i < pageCount; ++i) {
             if (cancelFlag &&
@@ -401,7 +426,6 @@ namespace pdfium {
             Page page(doc.Get(), i);
 
             if (addPageHeader) {
-                // Example: === [Page 1/220] ===
                 result += "=== [Page ";
                 result += std::to_string(i + 1);
                 result += "/";
@@ -409,17 +433,22 @@ namespace pdfium {
                 result += "] ===\n\n";
             }
 
-            // Extract text for this page
-            std::string pageText = detail::ExtractPageText(page.Get());
-            detail::NormalizeNewlinesInPlace(pageText); // \r\n and \r -> \n
-            result += detail::TrimCopy(pageText);
+            // Extract text for this page into reusable buffers
+            detail::ExtractPageText(page.Get(), utf16Buffer, pageText);
+            detail::NormalizeNewlinesInPlace(pageText);
+
+            const auto [start, end] = detail::TrimRange(pageText);
+            if (end > start) {
+                result.append(pageText, start, end - start);
+            }
+
             result += "\n\n";
 
-            // Progress callback
             if (progress) {
                 const int percent =
-                        static_cast<int>((static_cast<double>(i + 1) /
-                                          static_cast<double>(pageCount)) * 100.0);
+                        static_cast<int>(
+                            (static_cast<double>(i + 1) / static_cast<double>(pageCount)) * 100.0);
+
                 std::string bar = detail::BuildProgressBar(percent);
                 progress(i, pageCount, percent, bar);
             }
