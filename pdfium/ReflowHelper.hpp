@@ -224,7 +224,7 @@ namespace pdfium {
                 // If the current line completes a strong sentence, append it and flush immediately.
                 if (!buffer.empty() &&
                     !dialogState.is_unclosed() &&
-                    !hasUnclosedBracket &&
+                    (!hasUnclosedBracket || buffer.length() > 120) &&
                     EndsWithStrongSentenceEnd(stripped)) {
                     buffer.append(stripped); // buffer now has new value
                     flush_buffer(); // pushes buffer + clears + resets dialogState
