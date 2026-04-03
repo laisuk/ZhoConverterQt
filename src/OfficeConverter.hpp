@@ -443,7 +443,7 @@ private:
                                                 const opencc_config_t &config,
                                                 const bool punctuation) {
         static const std::regex cellPattern(
-            R"(<c\b(?=[^>]*\bt=(?:"inlineStr"|'inlineStr'))[^>]*>.*?<\/c>)",
+            R"(<c\b[^>]*>[\s\S]*?<\/c>)",
             std::regex::ECMAScript
         );
 
@@ -452,17 +452,33 @@ private:
 
         std::sregex_iterator it(xml.begin(), xml.end(), cellPattern);
 
-        auto last = xml.begin();
+        auto last = xml.cbegin();
 
         for (const std::sregex_iterator end; it != end; ++it) {
             const std::smatch &m = *it;
+            const std::string cellXml = m.str();
 
             out.append(last, m.prefix().second);
-            out.append(convertXlsxInlineStringCell(m.str(), helper, config, punctuation));
+
+            if (const auto tagEnd = cellXml.find('>'); tagEnd == std::string::npos) {
+                out.append(cellXml);
+            } else {
+                const std::string openTag = cellXml.substr(0, tagEnd);
+                const bool isInlineStr =
+                        openTag.find(R"(t="inlineStr")") != std::string::npos ||
+                        openTag.find(R"(t='inlineStr')") != std::string::npos;
+
+                if (isInlineStr) {
+                    out.append(convertXlsxInlineStringCell(cellXml, helper, config, punctuation));
+                } else {
+                    out.append(cellXml);
+                }
+            }
+
             last = m.suffix().first;
         }
 
-        out.append(last, xml.end());
+        out.append(last, xml.cend());
         return out;
     }
 
@@ -471,7 +487,7 @@ private:
                                                    const opencc_config_t &config,
                                                    const bool punctuation) {
         static const std::regex textNodePattern(
-            R"((<t\b[^>]*>)(.*?)(<\/t>))",
+            R"((<t\b[^>]*>)([\s\S]*?)(<\/t>))",
             std::regex::ECMAScript
         );
 
@@ -480,7 +496,7 @@ private:
 
         std::sregex_iterator it(cellXml.begin(), cellXml.end(), textNodePattern);
 
-        auto last = cellXml.begin();
+        auto last = cellXml.cbegin();
 
         for (const std::sregex_iterator end; it != end; ++it) {
             const std::smatch &m = *it;
@@ -504,7 +520,7 @@ private:
             last = m.suffix().first;
         }
 
-        out.append(last, cellXml.end());
+        out.append(last, cellXml.cend());
         return out;
     }
 

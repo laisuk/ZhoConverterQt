@@ -11,8 +11,6 @@
 
 #include <algorithm>
 #include <cctype>
-// #include <cstdint>
-#include <cstring>
 #include <fstream>
 #include <iterator>
 #include <map>
@@ -547,71 +545,90 @@ private:
     }
 
     static std::string convertXlsxInlineStrings(const std::string &xml,
-                                                const OpenccFmmsegHelper &helper,
-                                                const opencc_config_t &config,
-                                                const bool punctuation) {
-        static const std::regex cellPattern(
-            R"(<c\b(?=[^>]*\bt=(?:"inlineStr"|'inlineStr'))[^>]*>.*?<\/c>)",
-            std::regex::ECMAScript
-        );
+                                            const OpenccFmmsegHelper &helper,
+                                            const opencc_config_t &config,
+                                            const bool punctuation) {
+    static const std::regex cellPattern(
+        R"(<c\b[^>]*>[\s\S]*?<\/c>)",
+        std::regex::ECMAScript
+    );
 
-        std::string out;
-        out.reserve(xml.size());
+    std::string out;
+    out.reserve(xml.size());
 
-        std::sregex_iterator it(xml.begin(), xml.end(), cellPattern);
-        auto last = xml.begin();
+    std::sregex_iterator it(xml.begin(), xml.end(), cellPattern);
 
-        for (const std::sregex_iterator end; it != end; ++it) {
-            const std::smatch &m = *it;
-            out.append(last, m.prefix().second);
-            out.append(convertXlsxInlineStringCell(m.str(), helper, config, punctuation));
-            last = m.suffix().first;
-        }
+    auto last = xml.cbegin();
 
-        out.append(last, xml.end());
-        return out;
-    }
+    for (const std::sregex_iterator end; it != end; ++it) {
+        const std::smatch &m = *it;
+        const std::string cellXml = m.str();
 
-    static std::string convertXlsxInlineStringCell(const std::string &cellXml,
-                                                   const OpenccFmmsegHelper &helper,
-                                                   const opencc_config_t &config,
-                                                   const bool punctuation) {
-        static const std::regex textNodePattern(
-            R"((<t\b[^>]*>)(.*?)(<\/t>))",
-            std::regex::ECMAScript
-        );
+        out.append(last, m.prefix().second);
 
-        std::string out;
-        out.reserve(cellXml.size());
+        if (const auto tagEnd = cellXml.find('>'); tagEnd == std::string::npos) {
+            out.append(cellXml);
+        } else {
+            const std::string openTag = cellXml.substr(0, tagEnd);
+            const bool isInlineStr =
+                openTag.find(R"(t="inlineStr")") != std::string::npos ||
+                openTag.find(R"(t='inlineStr')") != std::string::npos;
 
-        std::sregex_iterator it(cellXml.begin(), cellXml.end(), textNodePattern);
-        auto last = cellXml.begin();
-
-        for (const std::sregex_iterator end; it != end; ++it) {
-            const std::smatch &m = *it;
-
-            out.append(last, m.prefix().second);
-
-            const std::string openTag = m[1].str();
-            const std::string innerText = m[2].str();
-            const std::string closeTag = m[3].str();
-
-            if (innerText.empty()) {
-                out.append(m.str());
+            if (isInlineStr) {
+                out.append(convertXlsxInlineStringCell(cellXml, helper, config, punctuation));
             } else {
-                const std::string convertedText =
-                        helper.convert_cfg(innerText, config, punctuation);
-                out.append(openTag);
-                out.append(convertedText);
-                out.append(closeTag);
+                out.append(cellXml);
             }
-
-            last = m.suffix().first;
         }
 
-        out.append(last, cellXml.end());
-        return out;
+        last = m.suffix().first;
     }
+
+    out.append(last, xml.cend());
+    return out;
+}
+
+static std::string convertXlsxInlineStringCell(const std::string &cellXml,
+                                               const OpenccFmmsegHelper &helper,
+                                               const opencc_config_t &config,
+                                               const bool punctuation) {
+    static const std::regex textNodePattern(
+        R"((<t\b[^>]*>)([\s\S]*?)(<\/t>))",
+        std::regex::ECMAScript
+    );
+
+    std::string out;
+    out.reserve(cellXml.size());
+
+    std::sregex_iterator it(cellXml.begin(), cellXml.end(), textNodePattern);
+
+    auto last = cellXml.cbegin();
+
+    for (const std::sregex_iterator end; it != end; ++it) {
+        const std::smatch &m = *it;
+
+        out.append(last, m.prefix().second);
+
+        const std::string openTag = m[1].str();
+        const std::string innerText = m[2].str();
+        const std::string closeTag = m[3].str();
+
+        if (innerText.empty()) {
+            out.append(m.str());
+        } else {
+            const std::string convertedText =
+                helper.convert_cfg(innerText, config, punctuation);
+            out.append(openTag);
+            out.append(convertedText);
+            out.append(closeTag);
+        }
+
+        last = m.suffix().first;
+    }
+
+    out.append(last, cellXml.cend());
+    return out;
+}
 
     static void maskFont(std::string &xml,
                          const std::string &format,
