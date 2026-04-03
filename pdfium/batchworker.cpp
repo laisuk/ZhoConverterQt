@@ -6,16 +6,17 @@
 #include <QFile>
 #include <QPlainTextEdit>
 #include <QTextStream>
+#include <utility>
 
 #include "OpenccFmmsegHelper.hpp"   // adjust include name
 #include "filetype_utils.h"
-#include "OfficeConverter.hpp"
-// #include "OfficeConverterMinizip.hpp"
+// #include "OfficeConverter.hpp"
+#include "OfficeConverterMinizip.hpp"
 
 class QPlainTextEdit;
 
-BatchWorker::BatchWorker(const QStringList &files,
-                         const QString &outDir,
+BatchWorker::BatchWorker(QStringList files,
+                         QString outDir,
                          OpenccFmmsegHelper *converter,
                          const opencc_config_t &config,
                          const bool isPunctuation,
@@ -25,8 +26,8 @@ BatchWorker::BatchWorker(const QStringList &files,
                          const bool compactPdf,
                          QObject *parent)
     : QObject(parent),
-      m_files(files),
-      m_outDir(outDir),
+      m_files(std::move(files)),
+      m_outDir(std::move(outDir)),
       m_converter(converter),
       m_config(config),
       m_isPunctuation(isPunctuation),
@@ -126,7 +127,7 @@ void BatchWorker::processOneFile(const int idx, const int total, const QString &
         }
 
         // We already know QFileInfo exists
-        auto [ok, msg] = OfficeConverter::Convert(
+        auto [ok, msg] = OfficeConverterMinizip::Convert(
             path.toStdString(),
             outPath.toStdString(),
             extLower.toStdString(),

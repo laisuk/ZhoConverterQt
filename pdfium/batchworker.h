@@ -14,8 +14,8 @@ class BatchWorker : public QObject
     Q_OBJECT
 
 public:
-    BatchWorker(const QStringList &files,
-                const QString &outDir,
+    BatchWorker(QStringList files,
+                QString outDir,
                 OpenccFmmsegHelper *converter,
                 const opencc_config_t &config,
                 bool isPunctuation,
