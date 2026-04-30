@@ -14,7 +14,7 @@
    <string>ZhoConverterQt</string>
   </property>
   <property name="windowIcon">
-   <iconset resource="Resource.qrc">
+   <iconset>
     <normaloff>:/resource/jianfanicon.ico</normaloff>:/resource/jianfanicon.ico</iconset>
   </property>
   <widget class="QWidget" name="centralWidget">
@@ -343,7 +343,7 @@
        <enum>QTabWidget::TabShape::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <property name="iconSize">
        <size>
@@ -359,7 +359,7 @@
         </font>
        </property>
        <attribute name="icon">
-        <iconset resource="Resource.qrc">
+        <iconset>
          <normaloff>:/resource/icons8-document-64.png</normaloff>:/resource/icons8-document-64.png</iconset>
        </attribute>
        <attribute name="title">
@@ -546,7 +546,7 @@
                <string/>
               </property>
               <property name="icon">
-               <iconset resource="Resource.qrc">
+               <iconset>
                 <normaloff>:/resource/icons8-refresh-48.png</normaloff>:/resource/icons8-refresh-48.png</iconset>
               </property>
               <property name="iconSize">
@@ -722,7 +722,7 @@
       </widget>
       <widget class="QWidget" name="tabBatch">
        <attribute name="icon">
-        <iconset resource="Resource.qrc">
+        <iconset>
          <normaloff>:/resource/icons8-documents-64.png</normaloff>:/resource/icons8-documents-64.png</iconset>
        </attribute>
        <attribute name="title">
@@ -930,7 +930,7 @@
                <string/>
               </property>
               <property name="icon">
-               <iconset resource="Resource.qrc">
+               <iconset>
                 <normaloff>:/resource/icons8-folder-32.png</normaloff>:/resource/icons8-folder-32.png</iconset>
               </property>
               <property name="iconSize">
@@ -1014,7 +1014,7 @@
            <string>Process</string>
           </property>
           <property name="icon">
-           <iconset resource="Resource.qrc">
+           <iconset>
             <normaloff>:/resource/icons8-start-48.png</normaloff>:/resource/icons8-start-48.png</iconset>
           </property>
           <property name="iconSize">
@@ -1172,7 +1172,7 @@
      <x>0</x>
      <y>0</y>
      <width>1000</width>
-     <height>22</height>
+     <height>20</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -1205,7 +1205,7 @@
   <widget class="QStatusBar" name="statusBar"/>
   <action name="actionExit">
    <property name="icon">
-    <iconset resource="Resource.qrc">
+    <iconset>
      <normaloff>:/resource/exit.png</normaloff>:/resource/exit.png</iconset>
    </property>
    <property name="text">
@@ -1214,7 +1214,7 @@
   </action>
   <action name="actionAbout">
    <property name="icon">
-    <iconset resource="Resource.qrc">
+    <iconset>
      <normaloff>:/resource/information.png</normaloff>:/resource/information.png</iconset>
    </property>
    <property name="text">
@@ -1270,12 +1270,10 @@
    <header location="global">texteditwidget.h</header>
   </customwidget>
  </customwidgets>
- <resources>
-  <include location="Resource.qrc"/>
- </resources>
+ <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup_config"/>
   <buttongroup name="buttonGroup_region"/>
+  <buttongroup name="buttonGroup_config"/>
  </buttongroups>
 </ui>
