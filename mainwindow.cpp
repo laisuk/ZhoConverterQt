@@ -456,9 +456,17 @@ void MainWindow::on_btnProcess_clicked() {
 
 // ----- single text conversion -----
 void MainWindow::main_process(const opencc_config_t &config, const bool is_punctuation) const {
-    const QString input = ui->tbSource->toPlainText();
+    const QTextCursor cursor = ui->tbSource->textCursor();
+    const bool hasSelection = cursor.hasSelection();
+
+    const QString input = hasSelection
+                              ? cursor.selection().toPlainText()
+                              : ui->tbSource->toPlainText();
+
     if (input.isEmpty()) {
-        ui->statusBar->showMessage("Source content is empty");
+        ui->statusBar->showMessage(
+            hasSelection ? "Selected source content is empty" : "Source content is empty"
+        );
         return;
     }
 
@@ -473,14 +481,12 @@ void MainWindow::main_process(const opencc_config_t &config, const bool is_punct
     }
 
     const QByteArray inUtf8 = input.toUtf8();
-    // const QByteArray cfgUtf8 = config.toUtf8();
 
     QElapsedTimer timer;
     timer.start();
 
     const auto output = openccFmmsegHelper.convert_cfg(
         inUtf8.constData(),
-        // cfgUtf8.constData(),
         config,
         is_punctuation
     );
@@ -489,16 +495,25 @@ void MainWindow::main_process(const opencc_config_t &config, const bool is_punct
 
     ui->tbDestination->document()->clear();
 
+    const QString sourceKind = hasSelection ? "Selected text" : "Source text";
+
     if (!output.data()) {
         ui->statusBar->showMessage(
-            QString("Conversion failed in %1 ms. (%2)").arg(elapsedMs).arg(opencc_config_id_to_name(config))
+            QString("%1 conversion failed in %2 ms. (%3)")
+            .arg(sourceKind)
+            .arg(elapsedMs)
+            .arg(opencc_config_id_to_name(config))
         );
         return;
     }
 
     ui->tbDestination->document()->setPlainText(QString::fromUtf8(output));
+
     ui->statusBar->showMessage(
-        QString("Conversion completed in %1 ms. (%2)").arg(elapsedMs).arg(opencc_config_id_to_name(config))
+        QString("%1 conversion completed in %2 ms. (%3)")
+        .arg(sourceKind)
+        .arg(elapsedMs)
+        .arg(opencc_config_id_to_name(config))
     );
 }
 
