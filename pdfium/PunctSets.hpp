@@ -129,6 +129,41 @@ namespace pdfium::text::punct {
                IsColonLike(last);
     }
 
+    // -------------------------
+    // Ellipsis-like punctuation
+    // -------------------------
+
+    /// Returns true if the string ends with an ellipsis-like ending
+    /// after trimming trailing whitespace.
+    ///
+    /// Recognized forms:
+    /// - …
+    /// - ……
+    /// - ...
+    /// - ..
+    [[nodiscard]]
+    [[gnu::always_inline]] inline bool EndsWithEllipsis(const std::u32string_view s) noexcept {
+        std::size_t lastIdx{};
+        char32_t last{};
+
+        if (!TryGetLastNonWhitespace(s, lastIdx, last))
+            return false;
+
+        if (last == U'…')
+            return true;
+
+        return last == U'.' && lastIdx > 0 && s[lastIdx - 1] == U'.';
+    }
+
+    /// Returns true if the string ends like a complete standalone line,
+    /// ignoring trailing whitespace.
+    [[nodiscard]]
+    [[gnu::always_inline]] inline bool EndsWithCompleteStandalone(const std::u32string_view s) noexcept {
+        return EndsWithStrongSentenceEnd(s) ||
+               EndsWithColonLike(s) ||
+               EndsWithEllipsis(s);
+    }
+
     /// Returns true if the character is an allowed postfix closer (used in heading/metadata rules).
     [[nodiscard]]
     [[gnu::always_inline]] inline bool IsAllowedPostfixCloser(const char32_t ch) noexcept {

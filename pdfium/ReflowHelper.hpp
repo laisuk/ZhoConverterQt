@@ -220,32 +220,41 @@ namespace pdfium {
 
                 // ------ Current line finalizer ------
 
-                // 7) Finalizer: strong sentence end → flush immediately. Do not remove.
-                // If the current line completes a strong sentence, append it and flush immediately.
-                if (!buffer.empty() &&
-                    !dialogState.is_unclosed() &&
-                    (!hasUnclosedBracket || buffer.length() > 120) &&
-                    EndsWithStrongSentenceEnd(stripped)) {
-                    buffer.append(stripped); // buffer now has new value
-                    flush_buffer(); // pushes buffer + clears + resets dialogState
-                    continue;
-                }
+                const bool currentIsDialogStart = BeginsWithDialogOpener(stripped);
 
-                // 4) First line of new paragraph
-                if (buffer.empty()) {
-                    // First line – just start a new paragraph (dialog or not)
-                    buffer = stripped;
-                    dialogState.reset();
-                    dialogState.update(stripped);
-                    continue;
-                }
+                std::size_t dialogCloserIdx{};
+                char32_t dialogCloserCh{};
+                const bool strippedEndsWithDialogCloser =
+                        TryGetLastNonWhitespace(stripped, dialogCloserIdx, dialogCloserCh) &&
+                        IsDialogCloser(dialogCloserCh);
+
+                const bool strippedHasUnclosedBracket = HasUnclosedBracket(stripped);
+                const bool strippedHasUnclosedDialogQuote = HasUnclosedDialogQuote(stripped);
+
+                const bool strippedIsCompleteStandalone =
+                        EndsWithStrongSentenceEnd(stripped) ||
+                        EndsWithColonLike(stripped) ||
+                        EndsWithEllipsis(stripped);
 
                 // *** DIALOG: treat any line that starts with a dialog opener as a new paragraph
 
                 // 🔸 9a) NEW RULE: If previous line ends with comma,
                 //     do NOT flush even if this line starts dialog.
                 //     (comma-ending means the sentence is not finished)
-                if (BeginsWithDialogOpener(stripped)) {
+                if (currentIsDialogStart) {
+                    // 9a-0) Complete single-line dialog.
+                    if (strippedEndsWithDialogCloser &&
+                        !strippedHasUnclosedBracket &&
+                        !strippedHasUnclosedDialogQuote) {
+                        if (!buffer.empty()) {
+                            flush_buffer();
+                        }
+
+                        segments.push_back(stripped);
+                        dialogState.reset();
+                        continue;
+                    }
+
                     bool shouldFlushPrev = false;
 
                     if (!buffer.empty()) {
@@ -275,27 +284,45 @@ namespace pdfium {
                     continue;
                 }
 
+                // 7) Finalizer: complete current line → flush immediately.
+                // Exclude dialog closer lines; 9b handles those.
+                // Exclude lines that open an unfinished dialog; state update / 9b handles those.
+                if (!buffer.empty() &&
+                    !strippedEndsWithDialogCloser &&
+                    !strippedHasUnclosedDialogQuote &&
+                    !dialogState.is_unclosed() &&
+                    (!hasUnclosedBracket || buffer.length() > 120) &&
+                    strippedIsCompleteStandalone) {
+                    buffer.append(stripped);
+                    flush_buffer();
+                    continue;
+                }
+
+                if (buffer.empty() &&
+                    !strippedEndsWithDialogCloser &&
+                    !strippedHasUnclosedBracket &&
+                    !strippedHasUnclosedDialogQuote &&
+                    strippedIsCompleteStandalone) {
+                    segments.push_back(stripped);
+                    dialogState.reset();
+                    continue;
+                }
 
                 // 🔸 9b) Dialog end line: ends with dialog closer.
                 // Flush when the char before closer is clause/end punctuation,
                 // and bracket safety is satisfied (with a narrow OCR/typo override).
                 {
-                    char32_t lastCh{};
-
-                    if (std::size_t lastIdx{};
-                        TryGetLastNonWhitespace(stripped, lastIdx, lastCh) &&
-                        IsDialogCloser(lastCh)
-                    ) {
+                    if (strippedEndsWithDialogCloser) {
                         // Punctuation right before the closer (e.g., “？” / “。”)
                         char32_t prevCh{};
                         const bool punctBeforeCloserIsClauseOrEnd =
-                                TryGetPrevNonWhitespace(stripped, lastIdx, prevCh) &&
+                                TryGetPrevNonWhitespace(stripped, dialogCloserIdx, prevCh) &&
                                 IsClauseOrEndPunct(prevCh);
 
                         // Snapshot bracket safety BEFORE appending current line
                         const bool bufferHasBracketIssue = hasUnclosedBracket;
                         // your buffer snapshot checker
-                        const bool lineHasBracketIssue = HasUnclosedBracket(stripped); // span/view version
+                        const bool lineHasBracketIssue = strippedHasUnclosedBracket; // span/view version
 
                         // Append + update dialog state
                         buffer.append(stripped);
@@ -316,6 +343,16 @@ namespace pdfium {
                         continue;
                     }
                 }
+
+                // 4) First line of new paragraph
+                if (buffer.empty()) {
+                    // First line – just start a new paragraph (dialog or not)
+                    buffer = stripped;
+                    dialogState.reset();
+                    dialogState.update(stripped);
+                    continue;
+                }
+
                 // Colon + dialog continuation: "她写了一行字：" + "  「如果连自己都不相信……」"
                 // if (!buffer_text.empty()) {
                 //     if (char32_t last = buffer_text.back(); last == U'：' || last == U':') {
