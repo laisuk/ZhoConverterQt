@@ -250,7 +250,7 @@ namespace pdfium::text {
                (ch >= U'A' && ch <= U'Z');
     }
 
-    // Full-width digits: '０'..'９'
+    // Full-width digits: '０' to '９'
     [[nodiscard]]
     [[gnu::always_inline]] inline bool IsFullwidthDigit(const char32_t ch) noexcept {
         return ch >= U'０' && ch <= U'９';

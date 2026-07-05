@@ -300,6 +300,101 @@ namespace pdfium::detail {
     [[nodiscard]]
     inline std::size_t Len(const std::u32string_view s) noexcept { return s.size(); }
 
+    // ------------------------- Simple list helpers -------------------------
+
+    [[nodiscard]]
+    [[gnu::always_inline]] inline bool IsListClose(const char32_t ch) noexcept {
+        return ch == U')' || ch == U'）' || ch == U'、';
+    }
+
+    [[nodiscard]]
+    [[gnu::always_inline]] inline bool IsSimpleListNumber(const char32_t ch) noexcept {
+        return IsAsciiDigit(ch) ||
+               IsFullwidthDigit(ch) ||
+               (ch >= U'一' && ch <= U'十');
+    }
+
+    /// Returns true for simple ordered/unordered list starters after leading whitespace:
+    /// - "- "
+    /// - "(1)" / "(12)" / "（1）" / "（12）"
+    /// - "1)" / "1）" / "1、" / "1." / "12)" / "12）" / "12、" / "12."
+    /// - "一、" / "十一、" / "十一）"
+    ///
+    /// For dotted forms, require either a following ASCII space or CJK character to avoid
+    /// treating decimal/version-like text such as "1.23" as a list item.
+    [[nodiscard]]
+    inline bool BeginsWithSimpleListStarter(std::u32string_view s) noexcept {
+        s = LStripView(s);
+
+        if (s.size() >= 2 && s[0] == U'-' && s[1] == U' ')
+            return true;
+
+        char32_t chars[4] = {U'\0', U'\0', U'\0', U'\0'};
+        std::size_t len = 0;
+        for (; len < s.size() && len < 4; ++len)
+            chars[len] = s[len];
+
+        // (1) / (12)
+        if (len >= 3 && chars[0] == U'(' && IsSimpleListNumber(chars[1])) {
+            if (chars[2] == U')')
+                return true;
+
+            if (len >= 4 && IsSimpleListNumber(chars[2]) && chars[3] == U')')
+                return true;
+        }
+
+        // （1） / （12）
+        if (len >= 3 && chars[0] == U'（' && IsSimpleListNumber(chars[1])) {
+            if (chars[2] == U'）')
+                return true;
+
+            if (len >= 4 && IsSimpleListNumber(chars[2]) && chars[3] == U'）')
+                return true;
+        }
+
+        // 1) / 1） / 1、 / 1. / 一、 / 十一、
+        if (len >= 2 && IsSimpleListNumber(chars[0])) {
+            if (IsListClose(chars[1]))
+                return true;
+
+            if (chars[1] == U'.')
+                return len >= 3 && (chars[2] == U' ' || IsCjk(chars[2]));
+
+            // 12) / 12） / 12、 / 12. / 十一） / 十一、
+            if (len >= 3 && IsSimpleListNumber(chars[1])) {
+                if (IsListClose(chars[2]))
+                    return true;
+
+                if (chars[2] == U'.')
+                    return len >= 4 && (chars[3] == U' ' || IsCjk(chars[3]));
+            }
+        }
+
+        return false;
+    }
+
+    /// Same as HasUnclosedBracket(), but ignores the synthetic closer in list prefixes
+    /// like "1)" / "12)" / "一）" / "十一）" so the prefix itself does not look like
+    /// a dangling bracket. Parenthesized markers like "(1)" / "（1）" are already balanced.
+    [[nodiscard]]
+    inline bool SimpleListHasUnclosedBracket(std::u32string_view s) noexcept {
+        s = LStripView(s);
+
+        std::size_t start = 0;
+
+        if (s.size() >= 2 && IsSimpleListNumber(s[0])) {
+            if (s[1] == U')' || s[1] == U'）') {
+                start = 2;
+            } else if (s.size() >= 3 &&
+                       IsSimpleListNumber(s[1]) &&
+                       (s[2] == U')' || s[2] == U'）')) {
+                start = 3;
+            }
+        }
+
+        return HasUnclosedBracket(s.substr(start));
+    }
+
     // Contains any char from set (view-based)
     [[nodiscard]]
     inline bool AnyOf(const std::u32string_view s, const std::u32string_view set) noexcept {
@@ -622,9 +717,19 @@ namespace pdfium::detail {
             return false;
 
         // (?!.*[,，])  → reject if contains comma anywhere
-        if (std::find(s_left.begin(), s_left.end(), U',') != s_left.end() ||
-            std::find(s_left.begin(), s_left.end(), U'，') != s_left.end()) {
-            return false;
+        // if (std::find(s_left.begin(), s_left.end(), U',') != s_left.end() ||
+        //     std::find(s_left.begin(), s_left.end(), U'，') != s_left.end()) {
+        //     return false;
+        // }
+
+        // (?!.{20,}[,，])
+        // Reject comma only in the latter part of the candidate heading.
+        // Most genuine chapter titles place any subtitle comma early,
+        // while commas beyond ~20 characters are much more likely to
+        // indicate normal narrative text.
+        for (std::size_t i = 20; i < len; ++i) {
+            if (s_left[i] == U',' || s_left[i] == U'，')
+                return false;
         }
 
         // 1) Fixed title words + 番外.{0,15}

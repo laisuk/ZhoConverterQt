@@ -221,6 +221,7 @@ namespace pdfium {
                 // ------ Current line finalizer ------
 
                 const bool currentIsDialogStart = BeginsWithDialogOpener(stripped);
+                const bool currentIsListStart = BeginsWithSimpleListStarter(stripped);
 
                 std::size_t dialogCloserIdx{};
                 char32_t dialogCloserCh{};
@@ -228,7 +229,11 @@ namespace pdfium {
                         TryGetLastNonWhitespace(stripped, dialogCloserIdx, dialogCloserCh) &&
                         IsDialogCloser(dialogCloserCh);
 
-                const bool strippedHasUnclosedBracket = HasUnclosedBracket(stripped);
+                const bool strippedHasUnclosedBracket =
+                        currentIsListStart
+                            ? SimpleListHasUnclosedBracket(stripped)
+                            : HasUnclosedBracket(stripped);
+
                 const bool strippedHasUnclosedDialogQuote = HasUnclosedDialogQuote(stripped);
 
                 const bool strippedIsCompleteStandalone =
@@ -236,14 +241,15 @@ namespace pdfium {
                         EndsWithColonLike(stripped) ||
                         EndsWithEllipsis(stripped);
 
-                // *** DIALOG: treat any line that starts with a dialog opener as a new paragraph
+                // *** DIALOG/LIST: treat any line that starts with a dialog opener or simple list marker as a new paragraph
 
                 // 🔸 9a) NEW RULE: If previous line ends with comma,
-                //     do NOT flush even if this line starts dialog.
+                //     do NOT flush even if this line starts dialog/list.
                 //     (comma-ending means the sentence is not finished)
-                if (currentIsDialogStart) {
+                if (currentIsDialogStart || currentIsListStart) {
                     // 9a-0) Complete single-line dialog.
-                    if (strippedEndsWithDialogCloser &&
+                    if (currentIsDialogStart &&
+                        strippedEndsWithDialogCloser &&
                         !strippedHasUnclosedBracket &&
                         !strippedHasUnclosedDialogQuote) {
                         if (!buffer.empty()) {
@@ -255,11 +261,26 @@ namespace pdfium {
                         continue;
                     }
 
+                    // 9a-1) Complete single-line simple list.
+                    if (currentIsListStart &&
+                        strippedIsCompleteStandalone &&
+                        !strippedHasUnclosedBracket &&
+                        !strippedHasUnclosedDialogQuote) {
+                        if (!buffer.empty()) {
+                            flush_buffer();
+                        }
+
+                        segments.push_back(stripped);
+                        continue;
+                    }
+
                     bool shouldFlushPrev = false;
 
                     if (!buffer.empty()) {
-                        // last meaningful char of buffer
-                        if (char32_t last{}; TryGetLastNonWhitespace(buffer, last)) {
+                        // Consecutive simple list items: previous item ends here.
+                        if (currentIsListStart && BeginsWithSimpleListStarter(buffer)) {
+                            shouldFlushPrev = true;
+                        } else if (char32_t last{}; TryGetLastNonWhitespace(buffer, last)) {
                             const bool isContinuation =
                                     IsCommaLike(last) ||
                                     IsCjk(last) ||
@@ -273,13 +294,14 @@ namespace pdfium {
                     if (shouldFlushPrev) {
                         segments.push_back(buffer);
                         buffer.clear();
-                        // NOTE: we intentionally don't reset dialogState here; we reset below anyway.
                     }
 
-                    // Start (or continue) the dialog paragraph:
-                    // C# uses Append even when buffer already has dialog text.
                     buffer.append(stripped);
-                    dialogState.reset();
+
+                    if (currentIsDialogStart) {
+                        dialogState.reset();
+                    }
+
                     dialogState.update(stripped);
                     continue;
                 }
