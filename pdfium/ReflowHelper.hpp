@@ -335,10 +335,12 @@ namespace pdfium {
                 // and bracket safety is satisfied (with a narrow OCR/typo override).
                 {
                     if (strippedEndsWithDialogCloser) {
-                        // Punctuation right before the closer (e.g., “？” / “。”)
+                        // Punctuation right before the closer (e.g., “？” / “。”).
+                        // If the closer is on its own line, fall back to the buffer's last char.
                         char32_t prevCh{};
                         const bool punctBeforeCloserIsClauseOrEnd =
-                                TryGetPrevNonWhitespace(stripped, dialogCloserIdx, prevCh) &&
+                                (TryGetPrevNonWhitespace(stripped, dialogCloserIdx, prevCh) ||
+                                 TryGetLastNonWhitespace(buffer, prevCh)) &&
                                 IsClauseOrEndPunct(prevCh);
 
                         // Snapshot bracket safety BEFORE appending current line
