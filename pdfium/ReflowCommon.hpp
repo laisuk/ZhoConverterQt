@@ -326,8 +326,25 @@ namespace pdfium::detail {
     inline bool BeginsWithSimpleListStarter(std::u32string_view s) noexcept {
         s = LStripView(s);
 
-        if (s.size() >= 2 && s[0] == U'-' && s[1] == U' ')
-            return true;
+        if (s.size() >= 2) {
+            switch (s[0]) {
+                case U'-':
+                case U'*':
+                case U'＊': // Fullwidth *
+                case U'•':
+                case U'‧': // U+2027 HYPHENATION POINT, often produced by PDF/OCR as a bullet
+                case U'▪':
+                case U'◦':
+                case U'○':
+                case U'●':
+                case U'※':
+                    if (IsWhitespace(s[1]))
+                        return true;
+                    break;
+                default:
+                    break;
+            }
+        }
 
         char32_t chars[4] = {U'\0', U'\0', U'\0', U'\0'};
         std::size_t len = 0;
@@ -358,7 +375,7 @@ namespace pdfium::detail {
                 return true;
 
             if (chars[1] == U'.')
-                return len >= 3 && (chars[2] == U' ' || IsCjk(chars[2]));
+                return len >= 3 && (IsWhitespace(chars[2]) || IsCjk(chars[2]));
 
             // 12) / 12） / 12、 / 12. / 十一） / 十一、
             if (len >= 3 && IsSimpleListNumber(chars[1])) {
@@ -366,7 +383,7 @@ namespace pdfium::detail {
                     return true;
 
                 if (chars[2] == U'.')
-                    return len >= 4 && (chars[3] == U' ' || IsCjk(chars[3]));
+                    return len >= 4 && (IsWhitespace(chars[3]) || IsCjk(chars[3]));
             }
         }
 

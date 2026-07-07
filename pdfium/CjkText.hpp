@@ -16,6 +16,7 @@ namespace pdfium::text {
         // Common Unicode whitespace
         switch (ch) {
             case 0x00A0: // NO-BREAK SPACE
+            case 0x0085: // NEXT LINE (NEL)
             case 0x1680: // OGHAM SPACE MARK
             case 0x2000: // EN QUAD
             case 0x2001: // EM QUAD
