@@ -140,7 +140,7 @@ namespace pdfium::detail {
     // Title heading patterns (see TITLE_HEADING_REGEX)
     inline constexpr std::u32string_view TITLE_WORDS[] = {
         U"前言", U"序章", U"终章", U"尾声", U"后记",
-        U"番外", U"尾聲", U"後記", U"楔子"
+        U"番外", U"尾聲", U"後記", U"楔子", U"目录", U"目錄"
     };
 
     // Markers like 章 / 节 / 部 / 卷 / 回 etc.
@@ -309,9 +309,11 @@ namespace pdfium::detail {
 
     [[nodiscard]]
     [[gnu::always_inline]] inline bool IsSimpleListNumber(const char32_t ch) noexcept {
+        constexpr std::u32string_view CN_SIMPLE_NUMBERS = U"一二三四五六七八九十";
+
         return IsAsciiDigit(ch) ||
                IsFullwidthDigit(ch) ||
-               (ch >= U'一' && ch <= U'十');
+               Contains(CN_SIMPLE_NUMBERS, ch);
     }
 
     /// Returns true for simple ordered/unordered list starters after leading whitespace:
