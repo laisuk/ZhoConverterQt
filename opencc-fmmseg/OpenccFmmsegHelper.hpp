@@ -7,21 +7,60 @@
 #include <string>
 #include <string_view>
 #include <utility>
+#include <vector>
 
 // RAII convenience wrapper around the opencc-fmmseg C API.
 //
 // This helper owns exactly one native OpenCC instance and releases it with
-// `opencc_delete()` in the destructor. It favors ergonomic C++ defaults over
-// exposing every low-level C contract directly:
-// - Invalid config ids or names fall back to `OPENCC_CONFIG_S2T`.
-// - Empty input returns an empty `std::string` without calling the C API.
-// - Conversion methods return the native result as a `std::string`; if the
-//   underlying C API returns an allocated error string, that message is
-//   returned as ordinary text rather than throwing.
-// - If the underlying C API returns `NULL` (for example allocation failure),
-//   the helper returns an empty `std::string`.
+// `opencc_delete()` in the destructor. It keeps the native API's conversion
+// behavior visible to C++ callers:
+// - Invalid config ids are passed through to the C API.
+// - Config names are preserved as provided so invalid names surface as
+//   `"Invalid config: ..."` instead of silently falling back to `s2t`.
+// - Conversion methods return the native result as a `std::string`; native
+//   error strings are returned as ordinary text rather than throwing.
+// - If the native API returns `NULL` or a buffer conversion call fails, the
+//   helper returns `lastError()` so failures are distinguishable from valid
+//   empty-input results.
 class OpenccFmmsegHelper {
 public:
+    /**
+     * One owned UTF-8 source-target mapping used during immutable
+     * construction.
+     *
+     * Both strings must contain valid UTF-8 and must not contain embedded
+     * NUL bytes.
+     *
+     * @since v0.11.5
+     */
+    struct CustomPair {
+        /** Source dictionary key. */
+        std::string source;
+
+        /** Replacement dictionary value. */
+        std::string target;
+    };
+
+    /**
+     * One owned custom dictionary specification used during construction.
+     *
+     * The wrapper converts these C++ values to the temporary pointer arrays
+     * required by the C API. The resulting native OpenCC instance copies all
+     * dictionary data and remains immutable after construction.
+     *
+     * @since v0.11.5
+     */
+    struct CustomDictSpec {
+        /** One of the `OPENCC_DICT_SLOT_*` constants. */
+        opencc_dict_slot_t slot;
+
+        /** `OPENCC_CUSTOM_DICT_APPEND` or `OPENCC_CUSTOM_DICT_OVERRIDE`. */
+        opencc_custom_dict_mode_t mode;
+
+        /** Source-target mappings to apply to the selected slot. */
+        std::vector<CustomPair> pairs;
+    };
+
     // Creates a new native OpenCC instance.
     //
     // Throws `std::runtime_error` only if `opencc_new()` fails.
@@ -31,6 +70,27 @@ public:
             throw std::runtime_error("Failed to initialize OpenCC instance.");
     }
 
+    /**
+     * Creates an immutable OpenCC instance using the embedded dictionaries
+     * plus the supplied in-memory custom dictionary specifications.
+     *
+     * The input strings and arrays are needed only during this constructor.
+     * The native constructor copies all required data before returning.
+     *
+     * An empty specification vector is equivalent to the default constructor.
+     *
+     * @param specs
+     *     Custom dictionary specifications applied during construction.
+     *
+     * @throws std::runtime_error
+     *     If a slot, mode, pair, or UTF-8 string is invalid, or native
+     *     construction otherwise fails.
+     *
+     * @since v0.11.5
+     */
+    explicit OpenccFmmsegHelper(const std::vector<CustomDictSpec> &specs)
+        : opencc_(createCustomOpencc(specs)) {}
+
     OpenccFmmsegHelper(const OpenccFmmsegHelper &) = delete;
 
     OpenccFmmsegHelper &operator=(const OpenccFmmsegHelper &) = delete;
@@ -38,7 +98,10 @@ public:
     OpenccFmmsegHelper(OpenccFmmsegHelper &&other) noexcept
         : opencc_(std::exchange(other.opencc_, nullptr)),
           configId_(other.configId_),
-          punctuationEnabled_(other.punctuationEnabled_) {
+          punctuationEnabled_(other.punctuationEnabled_),
+          configName_(std::move(other.configName_)),
+          useConfigName_(other.useConfigName_) {
+        other.useConfigName_ = false;
     }
 
     OpenccFmmsegHelper &operator=(OpenccFmmsegHelper &&other) noexcept {
@@ -47,6 +110,9 @@ public:
             opencc_ = std::exchange(other.opencc_, nullptr);
             configId_ = other.configId_;
             punctuationEnabled_ = other.punctuationEnabled_;
+            configName_ = std::move(other.configName_);
+            useConfigName_ = other.useConfigName_;
+            other.useConfigName_ = false;
         }
         return *this;
     }
@@ -54,17 +120,25 @@ public:
     ~OpenccFmmsegHelper() noexcept { cleanup(); }
 
     // Stores the active numeric config for the stateful overloads.
-    // Invalid ids are normalized to `OPENCC_CONFIG_S2T`.
+    // Invalid ids are preserved so the next conversion surfaces the native
+    // `Invalid config: <id>` error instead of silently changing behavior.
     void setConfigId(const opencc_config_t configId) noexcept {
-        configId_ = isValidConfigId(configId) ? configId : OPENCC_CONFIG_S2T;
+        configId_ = configId;
+        configName_.clear();
+        useConfigName_ = false;
     }
 
     [[nodiscard]] opencc_config_t getConfigId() const noexcept { return configId_; }
 
-    // Stores the active config by canonical name for the stateful overloads.
-    // Unknown names are normalized to `OPENCC_CONFIG_S2T`.
+    // Stores the active config name for the stateful overloads.
+    // The exact text is preserved so invalid names surface through the same
+    // error message as the C API.
     void setConfig(const std::string_view cfgName) {
-        configId_ = configNameToId(cfgName);
+        configName_.assign(cfgName.data(), cfgName.size());
+        useConfigName_ = true;
+
+        opencc_config_t parsed = 0;
+        configId_ = lookupConfigId(cfgName, parsed) ? parsed : 0;
     }
 
     // Stores the punctuation-conversion flag for the stateful overloads.
@@ -76,11 +150,6 @@ public:
     // ---------------------------
 
     // Converts using an explicit numeric config.
-    //
-    // Returns an empty string when `input` is empty. Otherwise this returns the
-    // UTF-8 text produced by `opencc_convert_cfg()`. If the native C API
-    // reports an error via an allocated error string, that message is returned
-    // as ordinary text.
     [[nodiscard]] std::string convert_cfg(const std::string_view input,
                                           const opencc_config_t configId,
                                           const bool punctuation = false) const {
@@ -88,19 +157,21 @@ public:
         return convertByCfg(input, configId, punctuation);
     }
 
-    // Converts using the stored config id and punctuation flag.
+    // Converts using the stored config source and punctuation flag.
     [[nodiscard]] std::string convert_cfg(const std::string_view input) const {
         if (input.empty()) return {};
+        if (useConfigName_) {
+            return convertByName(input, configName_, punctuationEnabled_);
+        }
         return convertByCfg(input, configId_, punctuationEnabled_);
     }
 
     // Converts using an explicit config name.
-    // Unknown names are normalized to `OPENCC_CONFIG_S2T`.
     [[nodiscard]] std::string convert(const std::string_view input,
                                       const std::string_view configName,
                                       const bool punctuation = false) const {
         if (input.empty()) return {};
-        return convertByCfg(input, configNameToId(configName), punctuation);
+        return convertByName(input, configName, punctuation);
     }
 
     // Converts using the stored config/punctuation state.
@@ -117,11 +188,10 @@ public:
     // Wraps opencc_convert_cfg_mem_len().
     // This API avoids scanning for '\0' and works directly on byte spans.
     //
-    // ⚠️ Note:
+    // Note:
     // - Not guaranteed to be faster than convert_cfg().
     // - Uses a size-query + write pattern (2 native calls).
     // - Intended for interop / explicit buffer workflows.
-    //
     [[nodiscard]] std::string convert_cfg_mem_len(
         const std::string_view input,
         const opencc_config_t configId,
@@ -132,21 +202,32 @@ public:
     }
 
     // Stateful version (uses stored config/punctuation).
-    // Returns an empty string for empty input or when the native call returns `NULL`.
     [[nodiscard]] std::string convert_cfg_mem_len(const std::string_view input) const {
         if (input.empty()) return {};
+        if (useConfigName_) {
+            opencc_config_t parsed = 0;
+            if (!lookupConfigId(configName_, parsed)) {
+                return invalidConfigMessage(configName_);
+            }
+            return convertByCfgMemLen(input, parsed, punctuationEnabled_);
+        }
         return convertByCfgMemLen(input, configId_, punctuationEnabled_);
     }
 
     // Convenience overload using a config name.
-    // Unknown names are normalized to `OPENCC_CONFIG_S2T`.
     [[nodiscard]] std::string convert_mem_len(
         const std::string_view input,
         const std::string_view configName,
         const bool punctuation = false
     ) const {
         if (input.empty()) return {};
-        return convertByCfgMemLen(input, configNameToId(configName), punctuation);
+
+        opencc_config_t parsed = 0;
+        if (!lookupConfigId(configName, parsed)) {
+            return invalidConfigMessage(configName);
+        }
+
+        return convertByCfgMemLen(input, parsed, punctuation);
     }
 
     // Checks whether the input appears simplified or traditional.
@@ -157,9 +238,38 @@ public:
         return opencc_zho_check(opencc_, tmp.c_str());
     }
 
-    // Returns the current native last-error string.
-    // This mirrors `opencc_last_error()`: when no error is recorded, the result
-    // is typically "No error".
+    // Normalizes CJK Compatibility Ideographs.
+    [[nodiscard]] std::string normalizeCompat(const std::string_view input) const {
+        if (input.empty()) return {};
+        return transformString(input, opencc_normalize_compat);
+    }
+
+    // Applies the extended compatibility normalization pipeline.
+    [[nodiscard]] std::string normalizeCompatExtended(const std::string_view input) const {
+        if (input.empty()) return {};
+        return transformString(input, opencc_normalize_compat_extended);
+    }
+
+    // Applies the built-in DeTofu display-compatibility fallback.
+    [[nodiscard]] std::string detofu(
+        const std::string_view input,
+        const opencc_detofu_level_t level = OPENCC_DETOFU_EXT_B
+    ) const {
+        if (input.empty()) return {};
+
+        const std::string in(input);
+        char *output = opencc_detofu(opencc_, in.c_str(), level);
+        if (!output) return takeLastErrorText();
+
+        std::string result(output);
+        opencc_string_free(output);
+        return result;
+    }
+
+    // Returns the calling thread's native last-error string. Call this on the
+    // same thread immediately after a failed C API call. The C API returns an
+    // independent allocation, which this helper releases with
+    // `opencc_error_free()` after copying; no error produces "No error".
     [[nodiscard]] static std::string lastError() {
         char *err = opencc_last_error();
         if (!err) return {};
@@ -168,20 +278,21 @@ public:
         return result;
     }
 
-    // Clears the native last-error state.
+    // Clears only the calling thread's native last-error state.
     static void clearLastError() noexcept {
         opencc_clear_last_error();
     }
 
-    // Converts a config name to a numeric id using the helper's forgiving
-    // normalization rules. Unknown names fall back to `OPENCC_CONFIG_S2T`.
+    // Converts a config name to a numeric id.
+    // Returns 0 when the name is invalid.
     [[nodiscard]] static opencc_config_t
     config_name_to_id(const std::string_view name) noexcept {
-        return configNameToId(name);
+        opencc_config_t id = 0;
+        return lookupConfigId(name, id) ? id : 0;
     }
 
     // Converts a numeric config id to its canonical lowercase name.
-    // Unknown ids fall back to "s2t".
+    // Returns an empty view for invalid ids.
     [[nodiscard]] static std::string_view
     config_id_to_name(const opencc_config_t configId) noexcept {
         return configIdToName(configId);
@@ -191,8 +302,60 @@ private:
     void *opencc_ = nullptr;
     opencc_config_t configId_ = OPENCC_CONFIG_S2T;
     bool punctuationEnabled_ = false;
+    std::string configName_;
+    bool useConfigName_ = false;
 
-    // NOLINTNEXTLINE(readability-non-const-parameter)
+    [[nodiscard]] static void *createCustomOpencc(
+        const std::vector<CustomDictSpec> &specs
+    ) {
+        std::vector<std::vector<opencc_custom_pair_t>> ffiPairArrays;
+        ffiPairArrays.reserve(specs.size());
+
+        for (const CustomDictSpec &spec : specs) {
+            std::vector<opencc_custom_pair_t> ffiPairs;
+            ffiPairs.reserve(spec.pairs.size());
+
+            for (const CustomPair &pair : spec.pairs) {
+                ffiPairs.push_back({
+                    pair.source.c_str(),
+                    pair.target.c_str(),
+                });
+            }
+
+            ffiPairArrays.push_back(std::move(ffiPairs));
+        }
+
+        std::vector<opencc_custom_dict_spec_t> ffiSpecs;
+        ffiSpecs.reserve(specs.size());
+
+        for (std::size_t i = 0; i < specs.size(); ++i) {
+            const CustomDictSpec &spec = specs[i];
+            const auto &ffiPairs = ffiPairArrays[i];
+
+            ffiSpecs.push_back({
+                spec.slot,
+                spec.mode,
+                ffiPairs.empty() ? nullptr : ffiPairs.data(),
+                ffiPairs.size(),
+            });
+        }
+
+        void *instance = opencc_new_custom(
+            ffiSpecs.empty() ? nullptr : ffiSpecs.data(),
+            ffiSpecs.size()
+        );
+
+        if (!instance) {
+            std::string error = lastError();
+            if (error.empty()) {
+                error = "Failed to initialize custom OpenCC instance.";
+            }
+            throw std::runtime_error(error);
+        }
+
+        return instance;
+    }
+
     static void cleanupOpencc(void *p) noexcept {
         if (p) opencc_delete(p);
     }
@@ -202,56 +365,31 @@ private:
         opencc_ = nullptr;
     }
 
-    [[nodiscard]] static bool isValidConfigId(const opencc_config_t cfg) noexcept {
-        return cfg >= OPENCC_CONFIG_S2T && cfg <= OPENCC_CONFIG_T2JP;
-    }
-
-    [[nodiscard]] static opencc_config_t configNameToId(const std::string_view s) {
-        std::string t;
-        t.reserve(s.size());
-        for (const unsigned char ch: s)
-            t.push_back(static_cast<char>(std::tolower(ch)));
-
-        if (t == "s2t") return OPENCC_CONFIG_S2T;
-        if (t == "s2tw") return OPENCC_CONFIG_S2TW;
-        if (t == "s2twp") return OPENCC_CONFIG_S2TWP;
-        if (t == "s2hk") return OPENCC_CONFIG_S2HK;
-        if (t == "t2s") return OPENCC_CONFIG_T2S;
-        if (t == "t2tw") return OPENCC_CONFIG_T2TW;
-        if (t == "t2twp") return OPENCC_CONFIG_T2TWP;
-        if (t == "t2hk") return OPENCC_CONFIG_T2HK;
-        if (t == "tw2s") return OPENCC_CONFIG_TW2S;
-        if (t == "tw2sp") return OPENCC_CONFIG_TW2SP;
-        if (t == "tw2t") return OPENCC_CONFIG_TW2T;
-        if (t == "tw2tp") return OPENCC_CONFIG_TW2TP;
-        if (t == "hk2s") return OPENCC_CONFIG_HK2S;
-        if (t == "hk2t") return OPENCC_CONFIG_HK2T;
-        if (t == "jp2t") return OPENCC_CONFIG_JP2T;
-        if (t == "t2jp") return OPENCC_CONFIG_T2JP;
-
-        return OPENCC_CONFIG_S2T;
-    }
-
-    [[nodiscard]] static std::string_view configIdToName(const opencc_config_t id) {
-        switch (id) {
-            case OPENCC_CONFIG_S2T: return "s2t";
-            case OPENCC_CONFIG_S2TW: return "s2tw";
-            case OPENCC_CONFIG_S2TWP: return "s2twp";
-            case OPENCC_CONFIG_S2HK: return "s2hk";
-            case OPENCC_CONFIG_T2S: return "t2s";
-            case OPENCC_CONFIG_T2TW: return "t2tw";
-            case OPENCC_CONFIG_T2TWP: return "t2twp";
-            case OPENCC_CONFIG_T2HK: return "t2hk";
-            case OPENCC_CONFIG_TW2S: return "tw2s";
-            case OPENCC_CONFIG_TW2SP: return "tw2sp";
-            case OPENCC_CONFIG_TW2T: return "tw2t";
-            case OPENCC_CONFIG_TW2TP: return "tw2tp";
-            case OPENCC_CONFIG_HK2S: return "hk2s";
-            case OPENCC_CONFIG_HK2T: return "hk2t";
-            case OPENCC_CONFIG_JP2T: return "jp2t";
-            case OPENCC_CONFIG_T2JP: return "t2jp";
-            default: return "s2t";
+    [[nodiscard]] static bool lookupConfigId(
+        const std::string_view name,
+        opencc_config_t &outId
+    ) noexcept {
+        const std::string owned(name);
+        opencc_config_t parsed = 0;
+        const bool ok = opencc_config_name_to_id(owned.c_str(), &parsed);
+        if (ok) {
+            outId = parsed;
         }
+        return ok;
+    }
+
+    [[nodiscard]] static std::string_view configIdToName(const opencc_config_t id) noexcept {
+        const char *name = opencc_config_id_to_name(id);
+        if (!name) return {};
+        return name;
+    }
+
+    [[nodiscard]] static std::string invalidConfigMessage(const std::string_view configName) {
+        return std::string("Invalid config: ") + std::string(configName);
+    }
+
+    [[nodiscard]] static std::string takeLastErrorText() {
+        return lastError();
     }
 
     // Low-level bridge used by the string-returning conversion helpers.
@@ -261,7 +399,22 @@ private:
                                            const bool punctuation) const {
         const std::string in(input);
         char *output = opencc_convert_cfg(opencc_, in.c_str(), cfg, punctuation);
-        if (!output) return {};
+        if (!output) return takeLastErrorText();
+
+        std::string result(output);
+        opencc_string_free(output);
+        return result;
+    }
+
+    // String-config bridge that preserves the exact config text, including
+    // invalid names, so the wrapper surfaces the same message as the C API.
+    [[nodiscard]] std::string convertByName(const std::string_view input,
+                                            const std::string_view configName,
+                                            const bool punctuation) const {
+        const std::string in(input);
+        const std::string cfg(configName);
+        char *output = opencc_convert(opencc_, in.c_str(), cfg.c_str(), punctuation);
+        if (!output) return takeLastErrorText();
 
         std::string result(output);
         opencc_string_free(output);
@@ -269,8 +422,8 @@ private:
     }
 
     // Low-level bridge for the explicit-length buffer API.
-    // The helper performs a size query followed by a write call and returns an
-    // empty string if either native step fails.
+    // The helper performs a size query followed by a write call and returns the
+    // native last-error text if either native step fails.
     [[nodiscard]] std::string convertByCfgMemLen(
         const std::string_view input,
         const opencc_config_t cfg,
@@ -280,7 +433,6 @@ private:
 
         size_t required = 0;
 
-        // 1) Query required output size (includes trailing '\0')
         const bool ok_query = opencc_convert_cfg_mem_len(
             opencc_,
             input.data(),
@@ -292,14 +444,12 @@ private:
             &required);
 
         if (!ok_query || required == 0) {
-            return {};
+            return takeLastErrorText();
         }
 
-        // 2) Allocate output buffer (RAII, no raw malloc)
         std::string output;
-        output.resize(required); // includes '\0'
+        output.resize(required);
 
-        // 3) Perform conversion into buffer
         const bool ok_write = opencc_convert_cfg_mem_len(
             opencc_,
             input.data(),
@@ -311,12 +461,25 @@ private:
             &required);
 
         if (!ok_write || required == 0) {
-            return {};
+            return takeLastErrorText();
         }
 
-        // 4) Remove trailing '\0' before returning
         output.resize(required - 1);
-
         return output;
+    }
+
+    using StringTransformFn = char *(*)(const void *, const char *);
+
+    [[nodiscard]] std::string transformString(
+        const std::string_view input,
+        const StringTransformFn fn
+    ) const {
+        const std::string in(input);
+        char *output = fn(opencc_, in.c_str());
+        if (!output) return takeLastErrorText();
+
+        std::string result(output);
+        opencc_string_free(output);
+        return result;
     }
 };

@@ -64,6 +64,10 @@ find_package(libzip CONFIG REQUIRED)
 find_package(minizip-ng CONFIG REQUIRED)
 find_package(ZLIB REQUIRED)
 
+if (NOT WIN32)
+    find_package(Iconv REQUIRED)
+endif ()
+
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/src)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/opencc-fmmseg)
 include_directories(${CMAKE_CURRENT_SOURCE_DIR}/pdfium)
@@ -120,6 +124,10 @@ target_link_libraries(ZhoConverterQt
         Qt::Gui
         Qt::Widgets
 )
+
+if (NOT WIN32)
+    target_link_libraries(ZhoConverterQt PRIVATE Iconv::Iconv)
+endif ()
 if (MSVC)
     #	target_link_libraries(ZhoConverterQt PRIVATE zip zlib)
     target_link_libraries(ZhoConverterQt PRIVATE libzip::zip)

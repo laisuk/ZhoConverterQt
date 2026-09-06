@@ -21,6 +21,8 @@ public:
 
     ~MainWindow() override;
 
+    bool eventFilter(QObject *watched, QEvent *event) override;
+
 private slots:
     void on_btnExit_clicked();
 
@@ -38,7 +40,7 @@ private slots:
 
     void on_cbTWCN_stateChanged(int state) const;
 
-    void on_btnPaste_clicked() const;
+    void on_btnPaste_clicked();
 
     void on_btnProcess_clicked();
 
@@ -66,7 +68,7 @@ private slots:
 
     void on_btnPreviewClear_clicked() const;
 
-    void on_btnClearTbSource_clicked() const;
+    void on_btnClearTbSource_clicked();
 
     void on_btnClearTbDestination_clicked() const;
 
@@ -86,12 +88,16 @@ private slots:
 
     // Batch handlers
     void onBatchProgress(int current, int total) const;
+
     void onBatchError(const QString &msg) const;
+
     void onBatchFinished(bool cancelled) const;
+
     void onBatchThreadFinished();
 
     // Helper
     void startBatchProcess(const opencc_config_t &config, bool isPunctuation);
+
     void cleanupBatchThread();
 
 private:
@@ -111,6 +117,17 @@ private:
 
     [[nodiscard]] opencc_config_t getCurrentConfigId() const;
 
+    bool loadTextFile(const QString &filePath,
+                      const QString &encoding = QStringLiteral("UTF-8"),
+                      bool showErrorDialog = false,
+                      bool strictDecoding = false);
+
+    void showEncodingMenu();
+
+    void reloadCurrentTextFile(const QString &encoding);
+
+    static bool isEncodingSelectableFile(const QString &filePath);
+
     // void *openccInstance = nullptr;
     OpenccFmmsegHelper openccFmmsegHelper;
 
@@ -126,4 +143,5 @@ private:
     BatchWorker *m_batchWorker = nullptr;
 
     QString m_openccVersion;
+    QString m_currentTextEncoding = QStringLiteral("UTF-8");
 };

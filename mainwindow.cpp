@@ -3,9 +3,21 @@
 #include "QFileDialog"
 #include "QSaveFile"
 #include "QMessageBox"
+#include <QFileInfo>
+#include <QMenu>
+#include <QMouseEvent>
+#include <QSet>
+#include <QStringDecoder>
 #include <QThread>
 #include <QTextDocumentFragment>
 #include <string>
+
+#ifdef Q_OS_WIN
+#include <windows.h>
+#else
+#include <cerrno>
+#include <iconv.h>
+#endif
 // #include "opencc_fmmseg_capi.h"
 #include "zhoutilities.h"
 #include "draglistwidget.h"
@@ -16,6 +28,201 @@
 #include "ReflowHelper.hpp"
 
 
+namespace {
+    QString stripBom(QString text) {
+        if (!text.isEmpty() && text.front() == QChar::ByteOrderMark)
+            text.remove(0, 1);
+        return text;
+    }
+
+    QString decodeUtf(const QByteArray &bytes,
+                      const QStringDecoder::Encoding encoding,
+                      bool *ok) {
+        QStringDecoder decoder(encoding);
+        QString text = decoder.decode(bytes);
+
+        if (decoder.hasError()) {
+            if (ok)
+                *ok = false;
+            return {};
+        }
+
+        if (ok)
+            *ok = true;
+
+        return stripBom(std::move(text));
+    }
+
+#ifdef Q_OS_WIN
+
+    QString decodeWindowsCodePage(const QByteArray &bytes,
+                                  const UINT codePage,
+                                  bool *ok) {
+        if (bytes.isEmpty()) {
+            if (ok)
+                *ok = true;
+            return {};
+        }
+
+        const int required = MultiByteToWideChar(
+            codePage,
+            MB_ERR_INVALID_CHARS,
+            bytes.constData(),
+            static_cast<int>(bytes.size()),
+            nullptr,
+            0);
+
+        if (required <= 0) {
+            if (ok)
+                *ok = false;
+            return {};
+        }
+
+        QString text(required, Qt::Uninitialized);
+
+        const int written = MultiByteToWideChar(
+            codePage,
+            MB_ERR_INVALID_CHARS,
+            bytes.constData(),
+            static_cast<int>(bytes.size()),
+            reinterpret_cast<wchar_t *>(text.data()),
+            required);
+
+        if (written <= 0) {
+            if (ok)
+                *ok = false;
+            return {};
+        }
+
+        text.resize(written);
+
+        if (ok)
+            *ok = true;
+
+        return stripBom(std::move(text));
+    }
+
+#else
+
+    QString decodeIconv(const QByteArray &bytes,
+                        const char *fromEncoding,
+                        bool *ok) {
+        iconv_t cd = iconv_open("UTF-8", fromEncoding);
+        if (cd == reinterpret_cast<iconv_t>(-1)) {
+            if (ok)
+                *ok = false;
+            return {};
+        }
+
+        const char *inputConst = bytes.constData();
+        std::size_t inputLeft = static_cast<std::size_t>(bytes.size());
+
+        QByteArray output;
+        output.resize(qMax(bytes.size() * 4, 64));
+
+        char *outputPtr = output.data();
+        std::size_t outputLeft = static_cast<std::size_t>(output.size());
+
+        while (inputLeft > 0) {
+            char *inputPtr = const_cast<char *>(inputConst);
+
+            const std::size_t result =
+                    iconv(cd, &inputPtr, &inputLeft, &outputPtr, &outputLeft);
+
+            inputConst = inputPtr;
+
+            if (result != static_cast<std::size_t>(-1))
+                continue;
+
+            if (errno == E2BIG) {
+                const qsizetype used =
+                        static_cast<qsizetype>(outputPtr - output.data());
+
+                output.resize(output.size() * 2);
+                outputPtr = output.data() + used;
+                outputLeft =
+                        static_cast<std::size_t>(output.size() - used);
+                continue;
+            }
+
+            iconv_close(cd);
+
+            if (ok)
+                *ok = false;
+            return {};
+        }
+
+        iconv_close(cd);
+
+        output.resize(
+            static_cast<qsizetype>(outputPtr - output.data()));
+
+        QStringDecoder decoder(QStringDecoder::Utf8);
+        QString text = decoder.decode(output);
+
+        if (decoder.hasError()) {
+            if (ok)
+                *ok = false;
+            return {};
+        }
+
+        if (ok)
+            *ok = true;
+
+        return stripBom(std::move(text));
+    }
+
+#endif
+
+    QString decodeTextBytes(const QByteArray &bytes,
+                            const QString &encoding,
+                            bool *ok) {
+        if (encoding.compare(QStringLiteral("UTF-8"),
+                             Qt::CaseInsensitive) == 0)
+            return decodeUtf(bytes, QStringDecoder::Utf8, ok);
+
+        if (encoding.compare(QStringLiteral("UTF-16LE"),
+                             Qt::CaseInsensitive) == 0)
+            return decodeUtf(bytes, QStringDecoder::Utf16LE, ok);
+
+        if (encoding.compare(QStringLiteral("UTF-16BE"),
+                             Qt::CaseInsensitive) == 0)
+            return decodeUtf(bytes, QStringDecoder::Utf16BE, ok);
+
+#ifdef Q_OS_WIN
+        if (encoding.compare(QStringLiteral("GB18030"),
+                             Qt::CaseInsensitive) == 0)
+            return decodeWindowsCodePage(bytes, 54936, ok);
+
+        if (encoding.compare(QStringLiteral("Big5"),
+                             Qt::CaseInsensitive) == 0)
+            return decodeWindowsCodePage(bytes, 950, ok);
+
+        // Windows has no separate Big5-HKSCS code page exposed here.
+        // CP950 is used as the native fallback without adding dependencies.
+        if (encoding.compare(QStringLiteral("Big5-HKSCS"),
+                             Qt::CaseInsensitive) == 0)
+            return decodeWindowsCodePage(bytes, 950, ok);
+#else
+        if (encoding.compare(QStringLiteral("GB18030"),
+                             Qt::CaseInsensitive) == 0)
+            return decodeIconv(bytes, "GB18030", ok);
+
+        if (encoding.compare(QStringLiteral("Big5"),
+                             Qt::CaseInsensitive) == 0)
+            return decodeIconv(bytes, "BIG5", ok);
+
+        if (encoding.compare(QStringLiteral("Big5-HKSCS"),
+                             Qt::CaseInsensitive) == 0)
+            return decodeIconv(bytes, "BIG5-HKSCS", ok);
+#endif
+
+        if (ok)
+            *ok = false;
+        return {};
+    }
+} // namespace
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindowClass()) {
     ui->setupUi(this);
@@ -24,17 +231,26 @@ MainWindow::MainWindow(QWidget *parent)
     // opencc_set_parallel(openccInstance, false);
     connect(ui->tbSource, &TextEditWidget::fileDropped, this,
             [this](const QString &path) {
-                refreshFromSource();
                 if (path.isEmpty()) {
+                    m_currentTextEncoding = QStringLiteral("UTF-8");
+                    refreshFromSource();
                     ui->statusBar->showMessage("Text contents dropped");
+                    return;
                 }
+
+                if (isPdf(path)) {
+                    ui->statusBar->showMessage(tr("Opening PDF: %1").arg(path));
+                    startPdfExtraction(path);
+                    return;
+                }
+
+                loadTextFile(path);
             });
 
-    connect(ui->tbSource, &TextEditWidget::pdfDropped, this,
-            [this](const QString &path) {
-                // Start PDF extraction in worker thread
-                startPdfExtraction(path);
-            });
+    ui->lblFileName->installEventFilter(this);
+    ui->lblFileName->setCursor(Qt::PointingHandCursor);
+    ui->lblFileName->setToolTip(
+        tr("Click to reload the current text file using a different encoding."));
 
     // --- Status-bar Cancel button ---
     m_cancelPdfButton = new QPushButton(tr("Cancel"), this);
@@ -112,6 +328,163 @@ void MainWindow::on_actionAbout_triggered() {
     AboutDialog dlg(info, this, windowIcon());
     dlg.exec();
 }
+
+bool MainWindow::eventFilter(QObject *watched, QEvent *event) {
+    if (watched == ui->lblFileName &&
+        event->type() == QEvent::MouseButtonPress) {
+        if (const auto *mouseEvent = dynamic_cast<QMouseEvent *>(event); mouseEvent->button() == Qt::LeftButton) {
+            showEncodingMenu();
+            return true;
+        }
+    }
+
+    return QMainWindow::eventFilter(watched, event);
+}
+
+bool MainWindow::loadTextFile(const QString &filePath,
+                              const QString &encoding,
+                              const bool showErrorDialog,
+                              const bool strictDecoding) {
+    const auto reportError =
+            [this, showErrorDialog, &filePath, &encoding](const QString &detail) {
+        const QString message =
+                tr("Failed to load %1 using %2:\n%3")
+                .arg(filePath, encoding, detail);
+
+        ui->statusBar->showMessage(message, 8000);
+
+        if (showErrorDialog) {
+            QMessageBox::critical(
+                this,
+                tr("Encoding Error"),
+                message);
+        }
+    };
+
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly)) {
+        reportError(file.errorString());
+        return false;
+    }
+
+    const QByteArray bytes = file.readAll();
+    if (file.error() != QFileDevice::NoError) {
+        reportError(file.errorString());
+        return false;
+    }
+
+    bool decoded = false;
+    QString contents = decodeTextBytes(bytes, encoding, &decoded);
+
+    if (!decoded) {
+        if (strictDecoding) {
+            reportError(
+                tr("The file contains invalid byte sequences for this encoding, "
+                    "or the encoding is unavailable on this platform."));
+            return false;
+        }
+
+        // Initial Open/Drop must still load the file so the user can click
+        // the filename and choose the correct encoding. QString::fromUtf8()
+        // replaces malformed byte sequences but does not modify the file.
+        contents = QString::fromUtf8(bytes);
+    }
+
+    ui->tbSource->document()->setPlainText(contents);
+    ui->tbSource->contentFilename = filePath;
+    m_currentTextEncoding = encoding;
+
+    const int textCode = openccFmmsegHelper.zhoCheck(contents.toStdString());
+    update_tbSource_info(textCode);
+
+    if (decoded) {
+        ui->statusBar->showMessage(
+            tr("Loaded as %1: %2").arg(encoding, filePath));
+    } else {
+        ui->statusBar->showMessage(
+            tr("Loaded with UTF-8 replacement characters. "
+                "Click the filename to choose the correct encoding: %1")
+            .arg(filePath));
+    }
+
+    return true;
+}
+
+void MainWindow::showEncodingMenu() {
+    const QString filePath = ui->tbSource->contentFilename;
+    if (filePath.isEmpty())
+        return;
+
+    if (!isEncodingSelectableFile(filePath)) {
+        ui->statusBar->showMessage(
+            tr("Encoding selection is only available for plain text files."));
+        return;
+    }
+
+    struct EncodingChoice {
+        const char *label;
+        const char *codec;
+    };
+
+    static constexpr EncodingChoice encodings[] = {
+        {.label = "UTF-8", .codec = "UTF-8"},
+        {.label = "GB18030 / GBK", .codec = "GB18030"},
+        {.label = "Big5 / CP950", .codec = "Big5"},
+#ifdef Q_OS_WIN
+        {.label = "Big5-HKSCS (CP950 fallback)", .codec = "Big5-HKSCS"},
+#else
+        {"Big5-HKSCS", "Big5-HKSCS"},
+#endif
+        {.label = "UTF-16 LE", .codec = "UTF-16LE"},
+        {.label = "UTF-16 BE", .codec = "UTF-16BE"},
+    };
+
+    QMenu menu(this);
+
+    for (const auto &[label, codec]: encodings) {
+        QAction *action = menu.addAction(QString::fromLatin1(label));
+        action->setCheckable(true);
+
+        const QString codecName = QString::fromLatin1(codec);
+        action->setChecked(
+            codecName.compare(m_currentTextEncoding, Qt::CaseInsensitive) == 0);
+        action->setData(codecName);
+    }
+
+    const QPoint pos =
+            ui->lblFileName->mapToGlobal(ui->lblFileName->rect().bottomLeft());
+
+    if (const QAction *selected = menu.exec(pos))
+        reloadCurrentTextFile(selected->data().toString());
+}
+
+void MainWindow::reloadCurrentTextFile(const QString &encoding) {
+    const QString filePath = ui->tbSource->contentFilename;
+    if (filePath.isEmpty())
+        return;
+
+    loadTextFile(filePath, encoding, true, true);
+}
+
+bool MainWindow::isEncodingSelectableFile(const QString &filePath) {
+    if (isPdf(filePath))
+        return false;
+
+    const QString suffix = QFileInfo(filePath).suffix().toLower();
+
+    static const QSet<QString> documentSuffixes = {
+        QStringLiteral("docx"),
+        QStringLiteral("xlsx"),
+        QStringLiteral("pptx"),
+        QStringLiteral("odt"),
+        QStringLiteral("ods"),
+        QStringLiteral("odp"),
+        QStringLiteral("epub"),
+    };
+
+    return !documentSuffixes.contains(suffix);
+}
+
 
 // MainWindow.cpp
 void MainWindow::startPdfExtraction(const QString &filePath) {
@@ -211,6 +584,7 @@ void MainWindow::onPdfExtractionFinished(const QString &text) {
         }
 
         ui->tbSource->contentFilename = m_currentPdfFilePath;
+        m_currentTextEncoding = QStringLiteral("UTF-8");
 
         // Run your language detection / info update
         const int text_code = ZhoCheck(text.toStdString());
@@ -232,6 +606,7 @@ void MainWindow::onPdfExtractionCancelled(const QString &partialText) {
     if (!partialText.isEmpty()) {
         ui->tbSource->document()->setPlainText(partialText);
         ui->tbSource->contentFilename = m_currentPdfFilePath;
+        m_currentTextEncoding = QStringLiteral("UTF-8");
 
         const int text_code = ZhoCheck(partialText.toStdString());
         update_tbSource_info(text_code);
@@ -415,7 +790,7 @@ void MainWindow::on_cbTWCN_stateChanged(const int state) const {
     }
 }
 
-void MainWindow::on_btnPaste_clicked() const {
+void MainWindow::on_btnPaste_clicked() {
     if (QGuiApplication::clipboard()->text().isEmpty() ||
         QGuiApplication::clipboard()->text().isNull()) {
         ui->statusBar->showMessage("Clipboard empty");
@@ -427,7 +802,8 @@ void MainWindow::on_btnPaste_clicked() const {
     try {
         text = QGuiApplication::clipboard()->text();
         ui->tbSource->document()->setPlainText(text);
-        ui->tbSource->contentFilename = "";
+        ui->tbSource->contentFilename.clear();
+        m_currentTextEncoding = QStringLiteral("UTF-8");
         ui->statusBar->showMessage("Clipboard contents pasted.");
     } catch (...) {
         ui->statusBar->showMessage("Clipboard error.");
@@ -647,25 +1023,8 @@ void MainWindow::on_btnOpenFile_clicked() {
         return;
     }
 
-    // ----- Otherwise: open as text -----
-    QFile file(file_name);
-
-    if (!file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-        ui->statusBar->showMessage(tr("Error opening file: %1").arg(file.errorString()));
-        return;
-    }
-
-    QTextStream in(&file);
-    const QString file_content = in.readAll();
-    file.close();
-
-    ui->tbSource->document()->setPlainText(file_content);
-    ui->tbSource->contentFilename = file_name;
-
-    ui->statusBar->showMessage(QStringLiteral("File: %1").arg(file_name));
-
-    const int text_code = ZhoCheck(file_content.toStdString());
-    update_tbSource_info(text_code);
+    // ----- Otherwise: load through the single text-file loader -----
+    loadTextFile(file_name);
 }
 
 bool MainWindow::isPdf(const QString &path) {
@@ -911,8 +1270,10 @@ void MainWindow::on_btnPreviewClear_clicked() const {
     ui->statusBar->showMessage("Preview contents cleared");
 }
 
-void MainWindow::on_btnClearTbSource_clicked() const {
+void MainWindow::on_btnClearTbSource_clicked() {
     ui->tbSource->clear();
+    ui->tbSource->contentFilename.clear();
+    m_currentTextEncoding = QStringLiteral("UTF-8");
     ui->lblSourceCode->setText("");
     ui->lblFileName->setText("");
     ui->statusBar->showMessage("Source contents cleared");
