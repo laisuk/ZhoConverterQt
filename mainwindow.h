@@ -118,9 +118,9 @@ private:
     [[nodiscard]] opencc_config_t getCurrentConfigId() const;
 
     bool loadTextFile(const QString &filePath,
-                      const QString &encoding = QStringLiteral("UTF-8"),
-                      bool showErrorDialog = false,
-                      bool strictDecoding = false);
+                  const QString &encoding = QStringLiteral("Auto"),
+                  bool showErrorDialog = false,
+                  bool strictDecoding = false);
 
     void showEncodingMenu();
 
@@ -144,4 +144,5 @@ private:
 
     QString m_openccVersion;
     QString m_currentTextEncoding = QStringLiteral("UTF-8");
+    bool m_textEncodingWasAutoDetected = false;
 };

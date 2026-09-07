@@ -12,6 +12,8 @@
 #include <QTextDocumentFragment>
 #include <string>
 
+#include "EncodingDetector.h"
+
 #ifdef Q_OS_WIN
 #include <windows.h>
 #else
@@ -221,7 +223,41 @@ namespace {
             *ok = false;
         return {};
     }
-} // namespace
+}
+
+namespace {
+    QString codecNameForDetectedEncoding(const EncodingDetector::Encoding encoding) {
+        using Encoding = EncodingDetector::Encoding;
+
+        switch (encoding) {
+            case Encoding::Ascii:
+            case Encoding::Utf8:
+            case Encoding::Utf8Bom:
+                return QStringLiteral("UTF-8");
+
+            case Encoding::Utf16LE:
+            case Encoding::Utf16LEBom:
+                return QStringLiteral("UTF-16LE");
+
+            case Encoding::Utf16BE:
+            case Encoding::Utf16BEBom:
+                return QStringLiteral("UTF-16BE");
+
+            case Encoding::Big5:
+                return QStringLiteral("Big5");
+
+            case Encoding::Gb18030:
+                return QStringLiteral("GB18030");
+
+            case Encoding::ShiftJis:
+                return QStringLiteral("Shift-JIS");
+
+            case Encoding::Unknown:
+            default:
+                return {};
+        }
+    }
+} // namespace// namespace
 
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindowClass()) {
@@ -342,11 +378,14 @@ bool MainWindow::eventFilter(QObject *watched, QEvent *event) {
 }
 
 bool MainWindow::loadTextFile(const QString &filePath,
-                              const QString &encoding,
+                              const QString &requestedEncoding,
                               const bool showErrorDialog,
                               const bool strictDecoding) {
+    QString actualEncoding = requestedEncoding;
+
     const auto reportError =
-            [this, showErrorDialog, &filePath, &encoding](const QString &detail) {
+            [this, showErrorDialog, &filePath](const QString &encoding,
+                                               const QString &detail) {
         const QString message =
                 tr("Failed to load %1 using %2:\n%3")
                 .arg(filePath, encoding, detail);
@@ -363,47 +402,107 @@ bool MainWindow::loadTextFile(const QString &filePath,
 
     QFile file(filePath);
     if (!file.open(QIODevice::ReadOnly)) {
-        reportError(file.errorString());
+        reportError(
+            requestedEncoding,
+            file.errorString());
         return false;
     }
 
-    const QByteArray bytes = file.readAll();
+    QByteArray bytes = file.readAll();
+
     if (file.error() != QFileDevice::NoError) {
-        reportError(file.errorString());
+        reportError(
+            requestedEncoding,
+            file.errorString());
         return false;
     }
+
+    // ------------------------------------------------------------
+    // Auto detection
+    // ------------------------------------------------------------
+
+    const bool autoDetect =
+            requestedEncoding.compare(
+                QStringLiteral("Auto"),
+                Qt::CaseInsensitive) == 0;
+
+    if (autoDetect) {
+        const auto [encoding, bomSize] = EncodingDetector::detect(bytes);
+
+        actualEncoding =
+                codecNameForDetectedEncoding(encoding);
+
+        if (actualEncoding.isEmpty()) {
+            // Detector knows only that this is some legacy 8-bit
+            // encoding. Until uchardet is added, preserve the old
+            // fallback behaviour.
+            actualEncoding = QStringLiteral("UTF-8");
+        }
+
+        // Remove BOM before decoding.
+        if (bomSize > 0)
+            bytes.remove(0, bomSize);
+    }
+
+    // ------------------------------------------------------------
+    // Decode
+    // ------------------------------------------------------------
 
     bool decoded = false;
-    QString contents = decodeTextBytes(bytes, encoding, &decoded);
+
+    QString contents =
+            decodeTextBytes(
+                bytes,
+                actualEncoding,
+                &decoded);
 
     if (!decoded) {
         if (strictDecoding) {
             reportError(
+                actualEncoding,
                 tr("The file contains invalid byte sequences for this encoding, "
                     "or the encoding is unavailable on this platform."));
             return false;
         }
 
-        // Initial Open/Drop must still load the file so the user can click
-        // the filename and choose the correct encoding. QString::fromUtf8()
-        // replaces malformed byte sequences but does not modify the file.
+        // Initial Open/Drop must still load the file so the user can
+        // click the filename and choose the correct encoding.
         contents = QString::fromUtf8(bytes);
     }
 
+    // ------------------------------------------------------------
+    // Update editor state
+    // ------------------------------------------------------------
+
     ui->tbSource->document()->setPlainText(contents);
     ui->tbSource->contentFilename = filePath;
-    m_currentTextEncoding = encoding;
 
-    const int textCode = openccFmmsegHelper.zhoCheck(contents.toStdString());
+    m_currentTextEncoding = actualEncoding;
+    m_textEncodingWasAutoDetected = autoDetect;
+
+    const int textCode =
+            openccFmmsegHelper.zhoCheck(
+                contents.toStdString());
+
     update_tbSource_info(textCode);
 
     if (decoded) {
-        ui->statusBar->showMessage(
-            tr("Loaded as %1: %2").arg(encoding, filePath));
+        if (requestedEncoding.compare(
+                QStringLiteral("Auto"),
+                Qt::CaseInsensitive) == 0) {
+            ui->statusBar->showMessage(
+                tr("Auto-detected %1: %2")
+                .arg(actualEncoding, filePath));
+        } else {
+            ui->statusBar->showMessage(
+                tr("Loaded as %1: %2")
+                .arg(actualEncoding, filePath));
+        }
     } else {
         ui->statusBar->showMessage(
-            tr("Loaded with UTF-8 replacement characters. "
-                "Click the filename to choose the correct encoding: %1")
+            tr("Encoding could not be identified automatically. "
+                "Loaded with UTF-8 replacement characters; "
+                "click the filename to choose a supported encoding: %1")
             .arg(filePath));
     }
 
@@ -427,13 +526,14 @@ void MainWindow::showEncodingMenu() {
     };
 
     static constexpr EncodingChoice encodings[] = {
+        {.label = "Auto Detect", .codec = "Auto"},
         {.label = "UTF-8", .codec = "UTF-8"},
         {.label = "GB18030 / GBK", .codec = "GB18030"},
         {.label = "Big5 / CP950", .codec = "Big5"},
 #ifdef Q_OS_WIN
         {.label = "Big5-HKSCS (CP950 fallback)", .codec = "Big5-HKSCS"},
 #else
-        {"Big5-HKSCS", "Big5-HKSCS"},
+        {.label = "Big5-HKSCS", .codec = "Big5-HKSCS"},
 #endif
         {.label = "UTF-16 LE", .codec = "UTF-16LE"},
         {.label = "UTF-16 BE", .codec = "UTF-16BE"},
