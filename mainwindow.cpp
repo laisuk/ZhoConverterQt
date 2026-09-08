@@ -847,18 +847,38 @@ opencc_config_t MainWindow::getCurrentConfigId() const {
     }
 
     if (ui->rbS2t->isChecked()) {
-        if (ui->rbStd->isChecked()) return OPENCC_CONFIG_S2T;
-        if (ui->rbHK->isChecked()) return OPENCC_CONFIG_S2HK;
+        if (ui->rbHK->isChecked()) {
+            return ui->cbTWCN->isChecked()
+                       ? OPENCC_CONFIG_S2HKP
+                       : OPENCC_CONFIG_S2HK;
+        }
+
+        if (ui->rbStd->isChecked()) {
+            return OPENCC_CONFIG_S2T;
+        }
+
         return ui->cbTWCN->isChecked()
                    ? OPENCC_CONFIG_S2TWP
                    : OPENCC_CONFIG_S2TW;
-    } else {
-        if (ui->rbStd->isChecked()) return OPENCC_CONFIG_T2S;
-        if (ui->rbHK->isChecked()) return OPENCC_CONFIG_HK2S;
+    }
+
+    if (ui->rbT2s->isChecked()) {
+        if (ui->rbHK->isChecked()) {
+            return ui->cbTWCN->isChecked()
+                       ? OPENCC_CONFIG_HK2SP
+                       : OPENCC_CONFIG_HK2S;
+        }
+
+        if (ui->rbStd->isChecked()) {
+            return OPENCC_CONFIG_T2S;
+        }
+
         return ui->cbTWCN->isChecked()
                    ? OPENCC_CONFIG_TW2SP
                    : OPENCC_CONFIG_TW2S;
     }
+
+    return OPENCC_CONFIG_S2TW;
 }
 
 void MainWindow::on_tabWidget_currentChanged(const int index) const {
@@ -877,15 +897,22 @@ void MainWindow::on_tabWidget_currentChanged(const int index) const {
 }
 
 void MainWindow::on_rbStd_clicked() const {
-    ui->cbTWCN->setCheckState(Qt::Unchecked);
+    // ui->cbTWCN->setCheckState(Qt::Unchecked);
+    ui->cbTWCN->setEnabled(false);
 }
 
-void MainWindow::on_rbHK_clicked() const { ui->cbTWCN->setCheckState(Qt::Unchecked); }
+void MainWindow::on_rbHK_clicked() const {
+    ui->cbTWCN->setEnabled(true);
+    // ui->cbTWCN->setCheckState(Qt::Unchecked);
+}
 
-void MainWindow::on_rbZHTW_clicked() const { ui->cbTWCN->setCheckState(Qt::Checked); }
+void MainWindow::on_rbZHTW_clicked() const {
+    ui->cbTWCN->setEnabled(true);
+    // ui->cbTWCN->setCheckState(Qt::Checked);
+}
 
 void MainWindow::on_cbTWCN_stateChanged(const int state) const {
-    if (state) {
+    if (state && ui->rbStd->isChecked()) {
         ui->rbZHTW->setChecked(true);
     }
 }

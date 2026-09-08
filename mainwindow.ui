@@ -146,6 +146,11 @@
         </item>
         <item>
          <property name="text">
+          <string>s2hkp (简 -&gt; 繁/港/惯)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
           <string>t2s (繁 -&gt; 简)</string>
          </property>
         </item>
@@ -162,6 +167,11 @@
         <item>
          <property name="text">
           <string>t2hk (繁 -&gt; 繁/港)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>t2hkp (繁 -&gt; 繁/港/惯)</string>
          </property>
         </item>
         <item>
@@ -191,7 +201,17 @@
         </item>
         <item>
          <property name="text">
+          <string>hk2sp (繁/港/惯 -&gt; 简)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
           <string>hk2t (繁/港 -&gt; 繁)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>hk2tp (繁/港/惯 -&gt; 繁)</string>
          </property>
         </item>
         <item>
@@ -305,7 +325,7 @@
            <string>Additional Mainland China and Taiwan idioms conversion</string>
           </property>
           <property name="text">
-           <string>ZH / TW Idioms （中台惯用语）</string>
+           <string>Regional Terms （地区用语）</string>
           </property>
          </widget>
         </item>
@@ -1036,7 +1056,7 @@
          <number>3</number>
         </property>
         <item>
-         <spacer name="horizontalSpacer">
+         <spacer name="horizontalSpacer_2">
           <property name="orientation">
            <enum>Qt::Orientation::Horizontal</enum>
           </property>
@@ -1114,7 +1134,7 @@
        </layout>
       </item>
       <item row="0" column="0">
-       <layout class="QHBoxLayout" name="horizontalLayout_Action1" stretch="0,1">
+       <layout class="QHBoxLayout" name="horizontalLayout_Action1" stretch="0,1,0">
         <property name="spacing">
          <number>5</number>
         </property>
@@ -1142,7 +1162,7 @@
         <item>
          <widget class="QLabel" name="lblFileName">
           <property name="sizePolicy">
-           <sizepolicy hsizetype="Expanding" vsizetype="Preferred">
+           <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
@@ -1159,6 +1179,19 @@
            <number>1</number>
           </property>
          </widget>
+        </item>
+        <item>
+         <spacer name="horizontalSpacer_1">
+          <property name="orientation">
+           <enum>Qt::Orientation::Horizontal</enum>
+          </property>
+          <property name="sizeHint" stdset="0">
+           <size>
+            <width>40</width>
+            <height>20</height>
+           </size>
+          </property>
+         </spacer>
         </item>
        </layout>
       </item>
