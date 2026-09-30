@@ -52,6 +52,10 @@ private slots:
 
     void on_btnReflow_clicked() const;
 
+    void on_btnNormCompat_clicked() const;
+
+    void on_btnDeTofu_clicked() const;
+
     void on_btnSaveAs_clicked();
 
     void on_tbSource_textChanged() const;

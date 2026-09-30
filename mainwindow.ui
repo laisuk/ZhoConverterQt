@@ -224,6 +224,26 @@
           <string>t2jp (日/舊 -&gt; 日/新)</string>
          </property>
         </item>
+        <item>
+         <property name="text">
+          <string>s2seal (简 -&gt; 小篆)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>t2seal (繁 -&gt; 小篆)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>seal2s (小篆 -&gt; 简)</string>
+         </property>
+        </item>
+        <item>
+         <property name="text">
+          <string>seal2t (小篆 -&gt; 繁)</string>
+         </property>
+        </item>
        </widget>
       </item>
      </layout>
@@ -363,7 +383,7 @@
        <enum>QTabWidget::TabShape::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <property name="iconSize">
        <size>
@@ -395,7 +415,7 @@
            <widget class="TextEditWidget" name="tbSource">
             <property name="font">
              <font>
-              <family>Noto Sans SC</family>
+              <family>Microsoft YaHei</family>
               <pointsize>13</pointsize>
               <bold>false</bold>
              </font>
@@ -415,13 +435,16 @@
            <widget class="QPlainTextEdit" name="tbDestination">
             <property name="font">
              <font>
-              <family>Noto Sans SC</family>
+              <family>Microsoft YaHei</family>
               <pointsize>13</pointsize>
               <bold>false</bold>
              </font>
             </property>
             <property name="acceptDrops">
              <bool>false</bool>
+            </property>
+            <property name="toolTip">
+             <string>CJK text Tofu fallback</string>
             </property>
             <property name="frameShape">
              <enum>QFrame::Shape::Box</enum>
@@ -578,6 +601,34 @@
              </widget>
             </item>
             <item>
+             <widget class="QPushButton" name="btnNormCompat">
+              <property name="maximumSize">
+               <size>
+                <width>30</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <pointsize>10</pointsize>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="toolTip">
+               <string>Normalize compatibility CJK text</string>
+              </property>
+              <property name="text">
+               <string>N</string>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>18</width>
+                <height>18</height>
+               </size>
+              </property>
+             </widget>
+            </item>
+            <item>
              <widget class="QPushButton" name="btnClearTbSource">
               <property name="maximumSize">
                <size>
@@ -627,7 +678,7 @@
            </layout>
           </item>
           <item>
-           <layout class="QHBoxLayout" name="horizontalLayout_Destination" stretch="0,1,0,0">
+           <layout class="QHBoxLayout" name="horizontalLayout_Destination" stretch="0,1,0,0,0">
             <property name="rightMargin">
              <number>3</number>
             </property>
@@ -687,6 +738,31 @@
               </property>
               <property name="margin">
                <number>1</number>
+              </property>
+             </widget>
+            </item>
+            <item>
+             <widget class="QPushButton" name="btnDeTofu">
+              <property name="maximumSize">
+               <size>
+                <width>30</width>
+                <height>16777215</height>
+               </size>
+              </property>
+              <property name="font">
+               <font>
+                <pointsize>10</pointsize>
+                <bold>true</bold>
+               </font>
+              </property>
+              <property name="text">
+               <string>豆</string>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>18</width>
+                <height>18</height>
+               </size>
               </property>
              </widget>
             </item>
@@ -1205,7 +1281,7 @@
      <x>0</x>
      <y>0</y>
      <width>1077</width>
-     <height>26</height>
+     <height>33</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">

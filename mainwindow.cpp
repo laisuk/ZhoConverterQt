@@ -1010,7 +1010,24 @@ void MainWindow::main_process(const opencc_config_t &config, const bool is_punct
         return;
     }
 
+    /*
+    auto dumpFont = [](const char *tag, QPlainTextEdit *edit) {
+        const QFont &widgetFont = edit->font();
+        const QFont docFont = edit->document()->defaultFont();
+
+        qDebug() << tag
+                << "widget =" << widgetFont.family()
+                << widgetFont.pointSizeF()
+                << "| document =" << docFont.family()
+                << docFont.pointSizeF();
+    };
+
+    dumpFont("BEFORE", ui->tbDestination);
+    */
+
     ui->tbDestination->document()->setPlainText(QString::fromUtf8(output));
+
+    // dumpFont("AFTER", ui->tbDestination);
 
     ui->statusBar->showMessage(
         QString("%1 conversion completed in %2 ms. (%3)")
@@ -1227,6 +1244,100 @@ void MainWindow::on_btnReflow_clicked() const {
     ui->statusBar->showMessage(tr("✅ Text reflow complete."));
 }
 
+void MainWindow::on_btnNormCompat_clicked() const {
+    auto *edit = ui->tbSource;
+    QTextCursor cursor = edit->textCursor();
+    const bool hasSelection = cursor.hasSelection();
+
+    QString src;
+    if (hasSelection) {
+        // Only normalize the selected range
+        src = cursor.selection().toPlainText();
+    } else {
+        // Normalize the whole document
+        src = edit->toPlainText();
+    }
+
+    if (src.trimmed().isEmpty()) {
+        ui->statusBar->showMessage(tr("Source text is empty. Nothing to normalize."));
+        return;
+    }
+
+    // Convert to UTF-8 std::string
+    const QByteArray utf8 = src.toUtf8();
+    const std::string input(utf8.constData(),
+                            static_cast<std::size_t>(utf8.size()));
+
+    const std::string normalized = openccFmmsegHelper.normalizeCompatExtended(input);
+
+    // Back to QString
+    const QString out = QString::fromUtf8(normalized.c_str(),
+                                          static_cast<int>(normalized.size()));
+
+    // ✅ Replace text via QTextCursor so undo history is preserved
+    if (auto *doc = edit->document(); doc->isUndoRedoEnabled()) {
+        if (hasSelection) {
+            // Normalize only selection → one undo step
+            cursor.beginEditBlock();
+            cursor.insertText(out); // replaces the selection
+            cursor.endEditBlock();
+            edit->setTextCursor(cursor);
+        } else {
+            // No selection → normalize entire document → one undo step
+            QTextCursor docCursor(doc);
+            docCursor.beginEditBlock();
+            docCursor.select(QTextCursor::Document); // select all existing text
+            docCursor.insertText(out); // replace with normalized text
+            docCursor.endEditBlock();
+        }
+    } else {
+        // Fallback (if ever disable undo somewhere else)
+        if (hasSelection) {
+            cursor.insertText(out);
+            edit->setTextCursor(cursor);
+        } else {
+            edit->setPlainText(out);
+        }
+    }
+
+    ui->statusBar->showMessage(tr("✅ Text normalized complete."));
+}
+
+void MainWindow::on_btnDeTofu_clicked() const {
+    auto *edit = ui->tbDestination;
+
+    const QString src = edit->toPlainText();
+
+    if (src.trimmed().isEmpty()) {
+        ui->statusBar->showMessage(tr("Source text is empty. Nothing to fallback."));
+        return;
+    }
+
+    // Convert to UTF-8 std::string
+    const QByteArray utf8 = src.toUtf8();
+    const std::string input(utf8.constData(),
+                            static_cast<std::size_t>(utf8.size()));
+
+    const std::string fallback = openccFmmsegHelper.detofu(input);
+
+    // Back to QString
+    const QString out = QString::fromUtf8(fallback.c_str(),
+                                          static_cast<int>(fallback.size()));
+
+    // ✅ Replace text via QTextCursor so undo history is preserved
+    if (auto *doc = edit->document(); doc->isUndoRedoEnabled()) {
+        // No selection → deTofu entire document → one undo step
+        QTextCursor docCursor(doc);
+        docCursor.beginEditBlock();
+        docCursor.select(QTextCursor::Document); // select all existing text
+        docCursor.insertText(out); // replace with deTofu-ed text
+        docCursor.endEditBlock();
+    } else {
+        edit->setPlainText(out);
+    }
+
+    ui->statusBar->showMessage(tr("✅ Text deTofu complete."));
+}
 
 void MainWindow::on_btnSaveAs_clicked() {
     // Determine which text box to save
