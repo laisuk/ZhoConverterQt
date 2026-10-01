@@ -1,12 +1,23 @@
 cmake_minimum_required(VERSION 3.16)
+# Select the dependency SDK before compiler detection.
 if (WIN32)
-    set(CMAKE_TOOLCHAIN_FILE "D:/lib/vcpkg/scripts/buildsystems/vcpkg.cmake")
-    if (MSVC)
-        set(VCPKG_TARGET_TRIPLET "x64-windows-static-md" CACHE STRING "" FORCE)
-        set(VCPKG_HOST_TRIPLET "x64-windows-static-md" CACHE STRING "" FORCE)
+    set(_zho_mingw_default ON)
+    if (CMAKE_GENERATOR MATCHES "Visual Studio" OR
+            CMAKE_CXX_COMPILER MATCHES "cl([.]exe)?$" OR
+            VCPKG_TARGET_TRIPLET MATCHES "^x64-windows")
+        set(_zho_mingw_default OFF)
+    endif ()
+    option(ZHO_USE_BUNDLED_MINGW "Use the repository MinGW dependency SDK" ${_zho_mingw_default})
+    if (ZHO_USE_BUNDLED_MINGW)
+        set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/windows/scripts/buildsystems/vcpkg.cmake"
+                CACHE FILEPATH "Dependency toolchain")
+        set(VCPKG_TARGET_TRIPLET "x64-mingw-static" CACHE STRING "Dependency triplet")
+        set(VCPKG_HOST_TRIPLET "x64-mingw-static" CACHE STRING "Host triplet")
     else ()
-        set(VCPKG_TARGET_TRIPLET "x64-mingw-static" CACHE STRING "" FORCE)
-        set(VCPKG_HOST_TRIPLET "x64-mingw-static" CACHE STRING "" FORCE)
+        set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/windows-msvc/scripts/buildsystems/vcpkg.cmake"
+                CACHE FILEPATH "Dependency toolchain")
+        set(VCPKG_TARGET_TRIPLET "x64-windows-static-md" CACHE STRING "Dependency triplet")
+        set(VCPKG_HOST_TRIPLET "x64-windows-static-md" CACHE STRING "Host triplet")
     endif ()
 elseif (UNIX)
     set(CMAKE_TOOLCHAIN_FILE "/home/bryan/lib/vcpkg/scripts/buildsystems/vcpkg.cmake")
@@ -16,26 +27,40 @@ endif ()
 
 project(ZhoConverterQt LANGUAGES CXX)
 
+if (WIN32 AND ZHO_USE_BUNDLED_MINGW AND NOT MINGW)
+    message(FATAL_ERROR "The bundled SDK requires MinGW. Configure MSVC with -DZHO_USE_BUNDLED_MINGW=OFF in a fresh build directory.")
+endif ()
+if (WIN32 AND NOT ZHO_USE_BUNDLED_MINGW AND NOT MSVC)
+    message(FATAL_ERROR "The MSVC SDK requires MSVC. Configure MinGW with -DZHO_USE_BUNDLED_MINGW=ON in a fresh build directory.")
+endif ()
+if (WIN32 AND NOT CMAKE_SIZEOF_VOID_P EQUAL 8)
+    message(FATAL_ERROR "The bundled Windows SDKs require an x64 build.")
+endif ()
+if (MSVC)
+    # Match x64-windows-static-md and the standard Qt MSVC runtime.
+    set(CMAKE_MSVC_RUNTIME_LIBRARY "MultiThreaded$<$<CONFIG:Debug>:Debug>DLL")
+    add_compile_options(/utf-8)
+endif ()
+
 include(qt.cmake)
 
-set(CMAKE_CXX_STANDARD 17)
+# Encoding tables and detector results use C++20 designated initializers.
+set(CMAKE_CXX_STANDARD 20)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "Install path" FORCE)
 
 if (WIN32)
     if (MSVC)
         set(CMAKE_PREFIX_PATH "C:/QT/6.8.3/MSVC2022_64")
-        list(APPEND CMAKE_PREFIX_PATH "D:/lib/vcpkg/installed/x64-windows-static-md")
-        link_directories("D:/lib/boost_1_88_0/stage/lib")
-        include_directories("D:/lib/vcpkg/installed/x64-windows-static-md/include")
+        list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/windows-msvc/installed/x64-windows-static-md")
+        include_directories("${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/windows-msvc/installed/x64-windows-static-md/include")
         # add_compile_options(/Zc:__cplusplus)  # Ensure __cplusplus is correctly set
     else ()
         set(CMAKE_PREFIX_PATH "C:/Qt/6.8.3/mingw_64")
-        list(APPEND CMAKE_PREFIX_PATH "D:/lib/vcpkg/installed/x64-mingw-static")
-        include_directories("D:/lib/vcpkg/installed/x64-mingw-static/include")
+        list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/windows/installed/x64-mingw-static")
+        include_directories("${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/windows/installed/x64-mingw-static/include")
     endif ()
-    # Include for Boost C Library
-    include_directories("D:/lib/boost_1_88_0")
+
 
 elseif (APPLE)
     set(CMAKE_PREFIX_PATH "/Users/bryan/Qt/6.8.3/macos")
@@ -201,6 +226,22 @@ target_link_libraries(ZhoConverterQt PRIVATE
         uchardet_trimmed
 )
 
+if (WIN32)
+    # The repository DLLs are needed both for local runs and installed builds.
+    add_custom_command(TARGET ZhoConverterQt POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "${CMAKE_CURRENT_SOURCE_DIR}/opencc-fmmseg/opencc_fmmseg_capi.dll"
+            "${CMAKE_CURRENT_SOURCE_DIR}/pdfium/pdfium.dll"
+            "$<TARGET_FILE_DIR:ZhoConverterQt>"
+            VERBATIM
+    )
+    # Nowide conversions are inline; suppress its MSVC compiled-library auto-link.
+    target_compile_definitions(ZhoConverterQt PRIVATE BOOST_NOWIDE_NO_LIB)
+    # Only the Regex and Nowide conversion headers are used by this app.
+    target_include_directories(ZhoConverterQt PRIVATE
+            "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/windows/boost_1_88_0")
+endif ()
+
 # Install the application binary
 install(TARGETS ZhoConverterQt
         RUNTIME DESTINATION bin
@@ -211,6 +252,7 @@ install(TARGETS ZhoConverterQt
 if (WIN32)
     install(FILES
             "${CMAKE_CURRENT_SOURCE_DIR}/opencc-fmmseg/opencc_fmmseg_capi.dll"
+            "${CMAKE_CURRENT_SOURCE_DIR}/pdfium/pdfium.dll"
             DESTINATION bin
     )
 elseif (APPLE)

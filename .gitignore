@@ -363,3 +363,11 @@ MigrationBackup/
 FodyWeavers.xsd
 
 .idea/
+
+# Track complete exported dependency SDKs, including debug libraries and tools.
+!/vcpkg/
+!/vcpkg/windows/
+!/vcpkg/windows/**
+
+!/vcpkg/windows-msvc/
+!/vcpkg/windows-msvc/**
