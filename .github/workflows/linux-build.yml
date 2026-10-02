@@ -87,6 +87,8 @@ jobs:
       
           cmake --build "$RUNNER_TEMP/minizip-ng/build" --parallel
           cmake --install "$RUNNER_TEMP/minizip-ng/build"
+          
+          find "$RUNNER_TEMP/minizip-install" -type f | sort
 
       - name: Configure
         run: |
@@ -94,7 +96,8 @@ jobs:
             -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
-            -DVCPKG_TARGET_TRIPLET=x64-linux
+            -DVCPKG_TARGET_TRIPLET=x64-linux \
+            -DCMAKE_PREFIX_PATH="$QT_ROOT/$QT_VERSION/gcc_64;$RUNNER_TEMP/minizip-install"
 
       - name: Build
         run: |
