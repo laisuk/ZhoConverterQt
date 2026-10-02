@@ -55,8 +55,7 @@ jobs:
         run: |
           "$VCPKG_ROOT/vcpkg" install \
             zlib:x64-linux \
-            libzip:x64-linux \
-            minizip-ng:x64-linux
+            libzip:x64-linux
 
       - name: Build minimal minizip-ng
         run: |

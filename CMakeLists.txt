@@ -20,10 +20,17 @@ if (WIN32)
         set(VCPKG_HOST_TRIPLET "x64-windows-static-md" CACHE STRING "Host triplet")
     endif ()
 elseif (UNIX)
-    set(CMAKE_TOOLCHAIN_FILE "/home/bryan/lib/vcpkg/scripts/buildsystems/vcpkg.cmake")
-    set(VCPKG_TARGET_TRIPLET "x64-linux" CACHE STRING "" FORCE)
-    set(VCPKG_HOST_TRIPLET "x64-linux" CACHE STRING "" FORCE)
+    if (NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+        set(CMAKE_TOOLCHAIN_FILE
+                "/home/bryan/lib/vcpkg/scripts/buildsystems/vcpkg.cmake")
+    endif ()
+
+    if (NOT DEFINED VCPKG_TARGET_TRIPLET)
+        set(VCPKG_TARGET_TRIPLET "x64-linux" CACHE STRING "")
+        set(VCPKG_HOST_TRIPLET "x64-linux" CACHE STRING "" FORCE)
+    endif ()
 endif ()
+
 
 project(ZhoConverterQt LANGUAGES CXX)
 
@@ -51,12 +58,12 @@ set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "Install path"
 
 if (WIN32)
     if (MSVC)
-#        set(CMAKE_PREFIX_PATH "C:/QT/6.11.2/MSVC2022_64")
+        #        set(CMAKE_PREFIX_PATH "C:/QT/6.11.2/MSVC2022_64")
         list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/windows-msvc/installed/x64-windows-static-md")
         include_directories("${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/windows-msvc/installed/x64-windows-static-md/include")
         # add_compile_options(/Zc:__cplusplus)  # Ensure __cplusplus is correctly set
     else ()
-#        set(CMAKE_PREFIX_PATH "C:/Qt/6.11.2/mingw_64")
+        #        set(CMAKE_PREFIX_PATH "C:/Qt/6.11.2/mingw_64")
         list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/windows/installed/x64-mingw-static")
         include_directories("${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/windows/installed/x64-mingw-static/include")
     endif ()
@@ -66,11 +73,22 @@ elseif (APPLE)
     set(CMAKE_PREFIX_PATH "/Users/bryan/Qt/6.8.3/macos")
 
 elseif (UNIX)
-    set(CMAKE_PREFIX_PATH "/opt/Qt/6.8.3/gcc_64")
-    list(APPEND CMAKE_PREFIX_PATH "/home/bryan/lib/vcpkg/installed/x64-linux")
-    include_directories("/home/bryan/lib/vcpkg/installed/x64-linux/include")
-#    include_directories("/home/bryan/lib")
-    include_directories("vcpkg/boost_1_88_0")
+    # Local Qt fallback; CI supplies CMAKE_PREFIX_PATH.
+    if (NOT CMAKE_PREFIX_PATH)
+        set(CMAKE_PREFIX_PATH "/opt/Qt/6.8.3/gcc_64")
+    endif ()
+
+    # Local vcpkg fallback only when no external toolchain was supplied.
+    if (NOT DEFINED CMAKE_TOOLCHAIN_FILE)
+        list(APPEND CMAKE_PREFIX_PATH
+                "/home/bryan/lib/vcpkg/installed/x64-linux")
+        include_directories(
+                "/home/bryan/lib/vcpkg/installed/x64-linux/include")
+    endif ()
+
+    include_directories(
+            "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/boost_1_88_0")
+
     set(CMAKE_BUILD_RPATH "$ORIGIN")
 endif ()
 
@@ -264,6 +282,7 @@ elseif (APPLE)
 elseif (UNIX)
     install(FILES
             "${CMAKE_CURRENT_SOURCE_DIR}/opencc-fmmseg/libopencc_fmmseg_capi.so"
+            "${CMAKE_CURRENT_SOURCE_DIR}/pdfium/libpdfium.so"
             DESTINATION bin
     )
 endif ()
@@ -302,4 +321,4 @@ if (WIN32 AND NOT CMAKE_CROSSCOMPILING AND DEPLOY_WITH_WINDEPLOYQT)
                 \"windeployqt failed with exit code \${result}: \${error}\")
         endif()
     ")
-endif()
+endif ()
