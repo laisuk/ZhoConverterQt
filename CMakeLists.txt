@@ -239,7 +239,7 @@ if (WIN32)
     target_compile_definitions(ZhoConverterQt PRIVATE BOOST_NOWIDE_NO_LIB)
     # Only the Regex and Nowide conversion headers are used by this app.
     target_include_directories(ZhoConverterQt PRIVATE
-            "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/windows/boost_1_88_0")
+            "vcpkg/boost_1_88_0")
 endif ()
 
 # Install the application binary
