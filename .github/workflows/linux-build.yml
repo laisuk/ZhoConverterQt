@@ -66,6 +66,14 @@ jobs:
             -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
             -DVCPKG_TARGET_TRIPLET=x64-linux
 
+      - name: Patch minizip-ng header
+        run: |
+          MZ_HEADER="$VCPKG_ROOT/installed/x64-linux/include/minizip-ng/mz_zip_rw.h"
+      
+          sed -i '/#include "mz_strm.h"/a #include <cstdint>\n#include <mz_zip.h>' "$MZ_HEADER"
+      
+          head -n 20 "$MZ_HEADER"
+
       - name: Build
         run: |
           cmake --build build --parallel
