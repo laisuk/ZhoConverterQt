@@ -6,7 +6,7 @@
    <rect>
     <x>0</x>
     <y>0</y>
-    <width>1077</width>
+    <width>1055</width>
     <height>716</height>
    </rect>
   </property>
@@ -1280,8 +1280,8 @@
     <rect>
      <x>0</x>
      <y>0</y>
-     <width>1077</width>
-     <height>33</height>
+     <width>1055</width>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -1382,7 +1382,7 @@
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup_region"/>
   <buttongroup name="buttonGroup_config"/>
+  <buttongroup name="buttonGroup_region"/>
  </buttongroups>
 </ui>

@@ -1,4 +1,5 @@
 #include "mainwindow.h"
+#include "ui_mainwindow.h"
 #include "QClipboard"
 #include "QFileDialog"
 #include "QSaveFile"
@@ -11,6 +12,7 @@
 #include <QThread>
 #include <QTextDocumentFragment>
 #include <string>
+#include <QElapsedTimer>
 
 #include "EncodingDetector.h"
 

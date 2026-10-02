@@ -51,12 +51,12 @@ set(CMAKE_INSTALL_PREFIX "${CMAKE_BINARY_DIR}/install" CACHE PATH "Install path"
 
 if (WIN32)
     if (MSVC)
-        set(CMAKE_PREFIX_PATH "C:/QT/6.8.3/MSVC2022_64")
+#        set(CMAKE_PREFIX_PATH "C:/QT/6.11.2/MSVC2022_64")
         list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/windows-msvc/installed/x64-windows-static-md")
         include_directories("${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/windows-msvc/installed/x64-windows-static-md/include")
         # add_compile_options(/Zc:__cplusplus)  # Ensure __cplusplus is correctly set
     else ()
-        set(CMAKE_PREFIX_PATH "C:/Qt/6.8.3/mingw_64")
+#        set(CMAKE_PREFIX_PATH "C:/Qt/6.11.2/mingw_64")
         list(APPEND CMAKE_PREFIX_PATH "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/windows/installed/x64-mingw-static")
         include_directories("${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/windows/installed/x64-mingw-static/include")
     endif ()
@@ -271,18 +271,34 @@ endif ()
 option(DEPLOY_WITH_WINDEPLOYQT "Run windeployqt after install" OFF)
 
 if (WIN32 AND NOT CMAKE_CROSSCOMPILING AND DEPLOY_WITH_WINDEPLOYQT)
+    find_program(WINDEPLOYQT_EXECUTABLE
+            NAMES windeployqt
+            REQUIRED
+    )
+
+    message(STATUS "windeployqt: ${WINDEPLOYQT_EXECUTABLE}")
+
     install(CODE "
+        message(STATUS \"Running windeployqt...\")
+
         execute_process(
             COMMAND \"${WINDEPLOYQT_EXECUTABLE}\"
+                --release
                 --no-translations
                 --no-quick-import
                 --compiler-runtime
                 --dir \"${CMAKE_INSTALL_PREFIX}/bin\"
-                \"${CMAKE_INSTALL_PREFIX}/bin/$<TARGET_FILE_NAME:ZhoConverterQt>\"
+                \"${CMAKE_INSTALL_PREFIX}/bin/ZhoConverterQt.exe\"
             RESULT_VARIABLE result
+            OUTPUT_VARIABLE output
+            ERROR_VARIABLE error
         )
-        if (NOT result EQUAL 0)
-            message(FATAL_ERROR \"windeployqt failed with exit code \${result}\")
+
+        message(STATUS \"windeployqt output: \${output}\")
+
+        if(NOT result EQUAL 0)
+            message(FATAL_ERROR
+                \"windeployqt failed with exit code \${result}: \${error}\")
         endif()
     ")
-endif ()
+endif()

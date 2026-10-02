@@ -1,6 +1,6 @@
 #pragma once
 
-#include "ui_mainwindow.h"
+#include <QMainWindow>
 #include "OpenccFmmsegHelper.hpp"
 #include "PdfExtractWorker.h"
 #include "batchworker.h"
@@ -12,6 +12,8 @@ namespace Ui {
 };
 
 QT_END_NAMESPACE
+
+class QPushButton;
 
 class MainWindow final : public QMainWindow {
     Q_OBJECT
