@@ -63,7 +63,7 @@ jobs:
             -DestinationPath ZhoConverterQt-win-x64-msvc.zip
 
       - name: Upload artifact
-        uses: actions/upload-artifact@v4
+        uses: actions/upload-artifact@v7
         with:
           name: ZhoConverterQt-win-x64-msvc
           path: ZhoConverterQt-win-x64-msvc.zip
