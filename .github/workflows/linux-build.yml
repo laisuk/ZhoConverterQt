@@ -10,7 +10,6 @@ jobs:
     env:
       QT_VERSION: 6.11.2
       QT_ROOT: ${{ github.workspace }}/Qt
-      VCPKG_ROOT: ${{ github.workspace }}/vcpkg-linux
 
     steps:
       - name: Checkout
@@ -18,20 +17,13 @@ jobs:
         with:
           submodules: recursive
 
-      - name: Install system dependencies
+      - name: Install build dependencies
         run: |
           sudo apt-get update
           sudo apt-get install -y \
             build-essential \
             ninja-build \
-            libgl1-mesa-dev \
-            libxkbcommon-x11-0 \
-            libxcb-cursor0 \
-            libxcb-xinerama0 \
-            libxcb-icccm4 \
-            libxcb-keysyms1 \
-            libxcb-image0 \
-            libxcb-render-util0
+            libgl1-mesa-dev
 
       - name: Install Qt 6.11.2
         run: |
@@ -46,32 +38,11 @@ jobs:
           echo "$QT_ROOT/$QT_VERSION/gcc_64/bin" >> "$GITHUB_PATH"
           echo "CMAKE_PREFIX_PATH=$QT_ROOT/$QT_VERSION/gcc_64" >> "$GITHUB_ENV"
 
-      - name: Bootstrap vcpkg
-        run: |
-          git clone https://github.com/microsoft/vcpkg.git "$VCPKG_ROOT"
-          "$VCPKG_ROOT/bootstrap-vcpkg.sh" -disableMetrics
-
-      - name: Install vcpkg dependencies
-        run: |
-          "$VCPKG_ROOT/vcpkg" install \
-            zlib:x64-linux \
-            libzip:x64-linux \
-            minizip-ng:x64-linux      
-
       - name: Configure
         run: |
           cmake -S . -B build \
             -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
-            -DVCPKG_TARGET_TRIPLET=x64-linux
-
-      - name: Replace minizip-ng header
-        run: |
-          MZ_HEADER="$VCPKG_ROOT/installed/x64-linux/include/minizip-ng/mz_zip_rw.h"
-
-          cp -f minizip-reduced/mz_zip_rw.h "$MZ_HEADER"
-          cmp minizip-reduced/mz_zip_rw.h "$MZ_HEADER"
+            -DCMAKE_BUILD_TYPE=Release
 
       - name: Build
         run: |

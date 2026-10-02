@@ -20,15 +20,12 @@ if (WIN32)
         set(VCPKG_HOST_TRIPLET "x64-windows-static-md" CACHE STRING "Host triplet")
     endif ()
 elseif (UNIX)
-    if (NOT DEFINED CMAKE_TOOLCHAIN_FILE)
-        set(CMAKE_TOOLCHAIN_FILE
-                "/home/bryan/lib/vcpkg/scripts/buildsystems/vcpkg.cmake")
-    endif ()
+    set(CMAKE_TOOLCHAIN_FILE
+            "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/linux/scripts/buildsystems/vcpkg.cmake"
+            CACHE FILEPATH "Dependency toolchain")
 
-    if (NOT DEFINED VCPKG_TARGET_TRIPLET)
-        set(VCPKG_TARGET_TRIPLET "x64-linux" CACHE STRING "")
-        set(VCPKG_HOST_TRIPLET "x64-linux" CACHE STRING "" FORCE)
-    endif ()
+    set(VCPKG_TARGET_TRIPLET "x64-linux" CACHE STRING "Dependency triplet")
+    set(VCPKG_HOST_TRIPLET "x64-linux" CACHE STRING "Host triplet")
 endif ()
 
 
@@ -78,13 +75,11 @@ elseif (UNIX)
         set(CMAKE_PREFIX_PATH "/opt/Qt/6.8.3/gcc_64")
     endif ()
 
-    # Local vcpkg fallback only when no external toolchain was supplied.
-    if (NOT DEFINED CMAKE_TOOLCHAIN_FILE)
-        list(APPEND CMAKE_PREFIX_PATH
-                "/home/bryan/lib/vcpkg/installed/x64-linux")
-        include_directories(
-                "/home/bryan/lib/vcpkg/installed/x64-linux/include")
-    endif ()
+    list(APPEND CMAKE_PREFIX_PATH
+            "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/linux/installed/x64-linux")
+
+    include_directories(
+            "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/linux/installed/x64-linux/include")
 
     include_directories(
             "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/boost_1_88_0")
