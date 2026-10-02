@@ -55,40 +55,8 @@ jobs:
         run: |
           "$VCPKG_ROOT/vcpkg" install \
             zlib:x64-linux \
-            libzip:x64-linux
-
-      - name: Build minimal minizip-ng
-        run: |
-          git clone --depth 1 \
-            https://github.com/zlib-ng/minizip-ng.git \
-            "$RUNNER_TEMP/minizip-ng"
-      
-          cmake -S "$RUNNER_TEMP/minizip-ng" \
-            -B "$RUNNER_TEMP/minizip-ng/build" \
-            -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release \
-            -DCMAKE_INSTALL_PREFIX="$VCPKG_ROOT/installed/x64-linux" \
-            -DCMAKE_PREFIX_PATH="$VCPKG_ROOT/installed/x64-linux" \
-            -DBUILD_SHARED_LIBS=OFF \
-            -DMZ_ZLIB=ON \
-            -DMZ_ZLIB_FLAVOR=zlib \
-            -DMZ_BZIP2=OFF \
-            -DMZ_LZMA=OFF \
-            -DMZ_PPMD=OFF \
-            -DMZ_ZSTD=OFF \
-            -DMZ_PKCRYPT=OFF \
-            -DMZ_WZAES=OFF \
-            -DMZ_OPENSSL=OFF \
-            -DMZ_LIBBSD=OFF \
-            -DMZ_FETCH_LIBS=OFF \
-            -DMZ_BUILD_TESTS=OFF \
-            -DMZ_BUILD_UNIT_TESTS=OFF \
-            -DMZ_BUILD_FUZZ_TESTS=OFF
-      
-          cmake --build "$RUNNER_TEMP/minizip-ng/build" --parallel
-          cmake --install "$RUNNER_TEMP/minizip-ng/build"
-          
-          find "$RUNNER_TEMP/minizip-install" -type f | sort
+            libzip:x64-linux \
+            minizip-ng:x64-linux      
 
       - name: Configure
         run: |
@@ -96,8 +64,7 @@ jobs:
             -G Ninja \
             -DCMAKE_BUILD_TYPE=Release \
             -DCMAKE_TOOLCHAIN_FILE="$VCPKG_ROOT/scripts/buildsystems/vcpkg.cmake" \
-            -DVCPKG_TARGET_TRIPLET=x64-linux \
-            -DCMAKE_PREFIX_PATH="$QT_ROOT/$QT_VERSION/gcc_64;$RUNNER_TEMP/minizip-install"
+            -DVCPKG_TARGET_TRIPLET=x64-linux
 
       - name: Build
         run: |
