@@ -371,3 +371,7 @@ FodyWeavers.xsd
 
 !/vcpkg/windows-msvc/
 !/vcpkg/windows-msvc/**
+
+!/vcpkg/boost_1_88_0/
+!/vcpkg/boost_1_88_0/**
+
