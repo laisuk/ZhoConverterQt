@@ -77,17 +77,58 @@ jobs:
         run: |
           cmake --build build --parallel
 
-      - name: Collect artifact
+      - name: Create AppDir
         run: |
-          mkdir -p artifact
+          APPDIR="$RUNNER_TEMP/AppDir"
 
-          cp build/ZhoConverterQt artifact/
-          cp opencc-fmmseg/libopencc_fmmseg_capi.so artifact/
-          cp pdfium/libpdfium.so artifact/
+          mkdir -p "$APPDIR/usr/bin"
 
-          chmod +x artifact/ZhoConverterQt
+          cp build/ZhoConverterQt "$APPDIR/usr/bin/"
+          cp opencc-fmmseg/libopencc_fmmseg_capi.so "$APPDIR/usr/bin/"
+          cp pdfium/libpdfium.so "$APPDIR/usr/bin/"
 
-          tar -C artifact \
+          chmod +x "$APPDIR/usr/bin/ZhoConverterQt"
+
+      - name: Download linuxdeploy
+        run: |
+          wget -q \
+            https://github.com/linuxdeploy/linuxdeploy/releases/download/continuous/linuxdeploy-x86_64.AppImage
+
+          wget -q \
+            https://github.com/linuxdeploy/linuxdeploy-plugin-qt/releases/download/continuous/linuxdeploy-plugin-qt-x86_64.AppImage
+
+          chmod +x linuxdeploy-x86_64.AppImage
+          chmod +x linuxdeploy-plugin-qt-x86_64.AppImage
+
+      - name: Deploy Qt runtime
+        env:
+          QMAKE: ${{ env.QT_ROOT }}/${{ env.QT_VERSION }}/gcc_64/bin/qmake
+          APPIMAGE_EXTRACT_AND_RUN: "1"
+        run: |
+          export LD_LIBRARY_PATH="$QT_ROOT/$QT_VERSION/gcc_64/lib${LD_LIBRARY_PATH:+:$LD_LIBRARY_PATH}"
+
+          ./linuxdeploy-x86_64.AppImage \
+            --appdir "$RUNNER_TEMP/AppDir" \
+            --executable "$RUNNER_TEMP/AppDir/usr/bin/ZhoConverterQt" \
+            --plugin qt
+
+          echo "=== Deployed AppDir ==="
+          find "$RUNNER_TEMP/AppDir" -type f | sort
+
+      - name: Verify deployed binary
+        run: |
+          echo "=== ZhoConverterQt dependencies ==="
+          ldd "$RUNNER_TEMP/AppDir/usr/bin/ZhoConverterQt"
+
+          echo "=== Bundled Qt libraries ==="
+          find "$RUNNER_TEMP/AppDir" -name 'libQt6*.so*' -print
+
+          echo "=== Qt platform plugins ==="
+          find "$RUNNER_TEMP/AppDir" -path '*platforms*' -type f -print
+
+      - name: Create artifact
+        run: |
+          tar -C "$RUNNER_TEMP/AppDir" \
             -czf ZhoConverterQt-linux-x64.tar.gz .
 
       - name: Upload artifact
