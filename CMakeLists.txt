@@ -195,6 +195,13 @@ qt_add_executable(ZhoConverterQt
         ${HEADERS}
 )
 
+if (APPLE)
+    set_target_properties(ZhoConverterQt PROPERTIES
+            BUILD_RPATH "@executable_path/../Frameworks"
+            INSTALL_RPATH "@executable_path/../Frameworks"
+    )
+endif ()
+
 set_target_properties(ZhoConverterQt
         PROPERTIES
         WIN32_EXECUTABLE TRUE
@@ -313,7 +320,7 @@ elseif (APPLE)
     install(FILES
             "${CMAKE_CURRENT_SOURCE_DIR}/opencc-fmmseg/libopencc_fmmseg_capi.dylib"
             "${CMAKE_CURRENT_SOURCE_DIR}/pdfium/libpdfium.dylib"
-            DESTINATION "."
+            DESTINATION "ZhoConverterQt.app/Contents/Frameworks"
     )
 elseif (UNIX)
     install(FILES
