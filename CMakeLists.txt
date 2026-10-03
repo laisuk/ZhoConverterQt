@@ -119,11 +119,12 @@ elseif (UNIX)
     include_directories(
             "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/linux/installed/x64-linux/include")
 
-    include_directories(
-            "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/boost_1_88_0")
-
     set(CMAKE_BUILD_RPATH "$ORIGIN")
 endif ()
+
+
+include_directories(
+        "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/boost_1_88_0")
 
 #set(QT_DIR "${CMAKE_PREFIX_PATH}/lib/cmake/Qt6")
 
@@ -290,8 +291,8 @@ if (WIN32)
     # Nowide conversions are inline; suppress its MSVC compiled-library auto-link.
     target_compile_definitions(ZhoConverterQt PRIVATE BOOST_NOWIDE_NO_LIB)
     # Only the Regex and Nowide conversion headers are used by this app.
-    target_include_directories(ZhoConverterQt PRIVATE
-            "vcpkg/boost_1_88_0")
+#    target_include_directories(ZhoConverterQt PRIVATE
+#            "vcpkg/boost_1_88_0")
 endif ()
 
 # Install the application binary
