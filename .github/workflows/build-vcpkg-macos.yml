@@ -35,10 +35,26 @@ jobs:
         run: |
           find _vcpkg/installed/arm64-osx-static -type f | sort
 
+      - name: Replace minizip-ng header
+        run: |
+          MZ_HEADER="_vcpkg/installed/arm64-osx-static/include/minizip-ng/mz_zip_rw.h"
+      
+          cp -f minizip-reduced/mz_zip_rw.h "$MZ_HEADER"
+          cmp minizip-reduced/mz_zip_rw.h "$MZ_HEADER"
+
       - name: Prepare artifact
         run: |
           mkdir -p artifact/macos-arm64
-          cp -R _vcpkg/installed/arm64-osx-static/. artifact/macos-arm64/
+
+          cp -f _vcpkg/.vcpkg-root \
+            artifact/macos-arm64/.vcpkg-root
+
+          cp -R _vcpkg/scripts \
+            artifact/macos-arm64/scripts
+
+          mkdir -p artifact/macos-arm64/installed
+          cp -R _vcpkg/installed/arm64-osx-static \
+            artifact/macos-arm64/installed/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
