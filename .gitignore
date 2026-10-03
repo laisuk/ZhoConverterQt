@@ -375,6 +375,9 @@ FodyWeavers.xsd
 !/vcpkg/linux/
 !/vcpkg/linux/**
 
+!/vcpkg/macos-arm64/
+!/vcpkg/macos-arm64/**
+
 !/vcpkg/boost_1_88_0/
 !/vcpkg/boost_1_88_0/**
 

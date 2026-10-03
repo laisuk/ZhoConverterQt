@@ -28,7 +28,7 @@ jobs:
       - name: Install dependencies
         run: |
           ./_vcpkg/vcpkg install \
-            "libzip[bzip2]:arm64-osx-static" \
+            "libzip:arm64-osx-static" \
             "minizip-ng[core,zlib]:arm64-osx-static"
 
       - name: Show installed files
