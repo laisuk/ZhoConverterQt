@@ -48,6 +48,24 @@ jobs:
           echo "=== install tree ==="
           find build/install -maxdepth 4 -print
 
+      #      - name: Fix native library paths
+      #        run: |
+      #          APP="build/install/ZhoConverterQt.app"
+      #          EXE="$APP/Contents/MacOS/ZhoConverterQt"
+      #
+      #          OPENCC_PATH="$(otool -L "$EXE" | awk '/libopencc_fmmseg_capi\.dylib/ {print $1}')"
+      #          PDFIUM_PATH="$(otool -L "$EXE" | awk '/libpdfium\.dylib/ {print $1}')"
+      #
+      #          install_name_tool -change \
+      #            "$OPENCC_PATH" \
+      #            "@rpath/libopencc_fmmseg_capi.dylib" \
+      #            "$EXE"
+      #
+      #          install_name_tool -change \
+      #            "$PDFIUM_PATH" \
+      #            "@rpath/libpdfium.dylib" \
+      #            "$EXE"
+
       - name: Deploy Qt
         run: |
           macdeployqt \
@@ -62,8 +80,10 @@ jobs:
 
           file build/install/ZhoConverterQt.app/Contents/MacOS/ZhoConverterQt
 
-          otool -L \
-            build/install/ZhoConverterQt.app/Contents/MacOS/ZhoConverterQt
+          otool -l build/install/ZhoConverterQt.app/Contents/MacOS/ZhoConverterQt |
+            grep -A2 LC_RPATH
+          
+          otool -L build/install/ZhoConverterQt.app/Contents/MacOS/ZhoConverterQt
 
       - name: Create ZIP
         run: |
