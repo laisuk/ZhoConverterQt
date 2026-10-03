@@ -45,6 +45,8 @@ jobs:
       - name: Install
         run: |
           cmake --install build
+          echo "=== install tree ==="
+          find build/install -maxdepth 4 -print
 
       - name: Deploy Qt
         run: |

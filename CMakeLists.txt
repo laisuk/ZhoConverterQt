@@ -198,6 +198,7 @@ qt_add_executable(ZhoConverterQt
 set_target_properties(ZhoConverterQt
         PROPERTIES
         WIN32_EXECUTABLE TRUE
+        MACOSX_BUNDLE TRUE
 )
 
 target_link_libraries(ZhoConverterQt
