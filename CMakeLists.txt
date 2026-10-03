@@ -7,25 +7,54 @@ if (WIN32)
             VCPKG_TARGET_TRIPLET MATCHES "^x64-windows")
         set(_zho_mingw_default OFF)
     endif ()
-    option(ZHO_USE_BUNDLED_MINGW "Use the repository MinGW dependency SDK" ${_zho_mingw_default})
+
+    option(ZHO_USE_BUNDLED_MINGW
+            "Use the repository MinGW dependency SDK"
+            ${_zho_mingw_default})
+
     if (ZHO_USE_BUNDLED_MINGW)
-        set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/windows/scripts/buildsystems/vcpkg.cmake"
+        set(CMAKE_TOOLCHAIN_FILE
+                "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/windows/scripts/buildsystems/vcpkg.cmake"
                 CACHE FILEPATH "Dependency toolchain")
-        set(VCPKG_TARGET_TRIPLET "x64-mingw-static" CACHE STRING "Dependency triplet")
-        set(VCPKG_HOST_TRIPLET "x64-mingw-static" CACHE STRING "Host triplet")
+        set(VCPKG_TARGET_TRIPLET
+                "x64-mingw-static"
+                CACHE STRING "Dependency triplet")
+        set(VCPKG_HOST_TRIPLET
+                "x64-mingw-static"
+                CACHE STRING "Host triplet")
     else ()
-        set(CMAKE_TOOLCHAIN_FILE "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/windows-msvc/scripts/buildsystems/vcpkg.cmake"
+        set(CMAKE_TOOLCHAIN_FILE
+                "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/windows-msvc/scripts/buildsystems/vcpkg.cmake"
                 CACHE FILEPATH "Dependency toolchain")
-        set(VCPKG_TARGET_TRIPLET "x64-windows-static-md" CACHE STRING "Dependency triplet")
-        set(VCPKG_HOST_TRIPLET "x64-windows-static-md" CACHE STRING "Host triplet")
+        set(VCPKG_TARGET_TRIPLET
+                "x64-windows-static-md"
+                CACHE STRING "Dependency triplet")
+        set(VCPKG_HOST_TRIPLET
+                "x64-windows-static-md"
+                CACHE STRING "Host triplet")
     endif ()
+
+elseif (APPLE)
+    set(CMAKE_TOOLCHAIN_FILE
+            "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/macos-arm64/scripts/buildsystems/vcpkg.cmake"
+            CACHE FILEPATH "Dependency toolchain")
+    set(VCPKG_TARGET_TRIPLET
+            "arm64-osx-static"
+            CACHE STRING "Dependency triplet")
+    set(VCPKG_HOST_TRIPLET
+            "arm64-osx-static"
+            CACHE STRING "Host triplet")
+
 elseif (UNIX)
     set(CMAKE_TOOLCHAIN_FILE
             "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/linux/scripts/buildsystems/vcpkg.cmake"
             CACHE FILEPATH "Dependency toolchain")
-
-    set(VCPKG_TARGET_TRIPLET "x64-linux" CACHE STRING "Dependency triplet")
-    set(VCPKG_HOST_TRIPLET "x64-linux" CACHE STRING "Host triplet")
+    set(VCPKG_TARGET_TRIPLET
+            "x64-linux"
+            CACHE STRING "Dependency triplet")
+    set(VCPKG_HOST_TRIPLET
+            "x64-linux"
+            CACHE STRING "Host triplet")
 endif ()
 
 
@@ -67,7 +96,16 @@ if (WIN32)
 
 
 elseif (APPLE)
-    set(CMAKE_PREFIX_PATH "/Users/bryan/Qt/6.8.3/macos")
+    # Local Qt fallback; CI supplies CMAKE_PREFIX_PATH.
+    if (NOT CMAKE_PREFIX_PATH)
+        set(CMAKE_PREFIX_PATH "/Users/bryan/Qt/6.8.3/macos")
+    endif ()
+
+    list(APPEND CMAKE_PREFIX_PATH
+            "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/macos-arm64/installed/arm64-osx-static")
+
+    include_directories(
+            "${CMAKE_CURRENT_SOURCE_DIR}/vcpkg/macos-arm64/installed/arm64-osx-static/include")
 
 elseif (UNIX)
     # Local Qt fallback; CI supplies CMAKE_PREFIX_PATH.
@@ -272,6 +310,7 @@ if (WIN32)
 elseif (APPLE)
     install(FILES
             "${CMAKE_CURRENT_SOURCE_DIR}/opencc-fmmseg/libopencc_fmmseg_capi.dylib"
+            "${CMAKE_CURRENT_SOURCE_DIR}/pdfium/libpdfium.dylib"
             DESTINATION "."
     )
 elseif (UNIX)
