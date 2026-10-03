@@ -32,6 +32,8 @@ private slots:
 
     void on_actionAbout_triggered();
 
+    void on_actionSelectEditorFont_triggered();
+
     void on_tabWidget_currentChanged(int index) const;
 
     void on_rbStd_clicked() const;

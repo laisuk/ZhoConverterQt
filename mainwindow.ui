@@ -1320,6 +1320,8 @@
     <addaction name="actionAddPageHeader"/>
     <addaction name="actionCompactPdfText"/>
     <addaction name="actionAutoReflow"/>
+    <addaction name="separator"/>
+    <addaction name="actionSelectEditorFont"/>
    </widget>
    <addaction name="menuFile"/>
    <addaction name="menuSettings"/>
@@ -1377,6 +1379,11 @@
    </property>
    <property name="text">
     <string>Auto-Reflow PDF Text</string>
+   </property>
+  </action>
+  <action name="actionSelectEditorFont">
+   <property name="text">
+    <string>Select Editor Font ...</string>
    </property>
   </action>
  </widget>

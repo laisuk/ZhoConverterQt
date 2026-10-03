@@ -3,6 +3,8 @@
 #include "QClipboard"
 #include "QFileDialog"
 #include "QSaveFile"
+#include <QFontDialog>
+#include <QSettings>
 #include "QMessageBox"
 #include <QFileInfo>
 #include <QMenu>
@@ -267,6 +269,57 @@ MainWindow::MainWindow(QWidget *parent)
     ui->tabWidget->setCurrentIndex(0);
     // openccInstance = opencc_new();
     // opencc_set_parallel(openccInstance, false);
+
+    QSettings settings;
+
+    if (const QString fontString = settings.value("editor/font").toString();
+        !fontString.isEmpty()) {
+        if (QFont font; font.fromString(fontString)) {
+            ui->tbSource->setFont(font);
+            ui->tbDestination->setFont(font);
+        }
+    }
+
+    ui->actionConvertFilename->setChecked(
+        settings.value("convertFilename", false).toBool()
+    );
+
+    settings.beginGroup("pdf");
+    ui->actionAddPageHeader->setChecked(
+        settings.value("addPageHeader", false).toBool()
+    );
+    ui->actionCompactPdfText->setChecked(
+        settings.value("compactExtractedText", false).toBool()
+    );
+    ui->actionAutoReflow->setChecked(
+        settings.value("autoReflowText", true).toBool()
+    );
+    settings.endGroup();
+
+    connect(ui->actionConvertFilename, &QAction::toggled,
+            this, [](const bool checked) {
+                QSettings sts;
+                sts.setValue("convertFilename", checked);
+            });
+
+    connect(ui->actionAddPageHeader, &QAction::toggled,
+            this, [](const bool checked) {
+                QSettings sts;
+                sts.setValue("pdf/addPageHeader", checked);
+            });
+
+    connect(ui->actionCompactPdfText, &QAction::toggled,
+            this, [](const bool checked) {
+                QSettings sts;
+                sts.setValue("pdf/compactExtractedText", checked);
+            });
+
+    connect(ui->actionAutoReflow, &QAction::toggled,
+            this, [](const bool checked) {
+                QSettings sts;
+                sts.setValue("pdf/autoReflowText", checked);
+            });
+
     connect(ui->tbSource, &TextEditWidget::fileDropped, this,
             [this](const QString &path) {
                 if (path.isEmpty()) {
@@ -365,6 +418,26 @@ void MainWindow::on_actionAbout_triggered() {
 
     AboutDialog dlg(info, this, windowIcon());
     dlg.exec();
+}
+
+void MainWindow::on_actionSelectEditorFont_triggered() {
+    bool ok = false;
+
+    const QFont font = QFontDialog::getFont(
+        &ok,
+        ui->tbSource->font(),
+        this,
+        tr("Select Editor Font")
+    );
+
+    if (!ok)
+        return;
+
+    ui->tbSource->setFont(font);
+    ui->tbDestination->setFont(font);
+
+    QSettings settings;
+    settings.setValue("editor/font", font);
 }
 
 bool MainWindow::eventFilter(QObject *watched, QEvent *event) {
