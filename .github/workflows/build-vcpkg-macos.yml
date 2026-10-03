@@ -13,12 +13,12 @@ jobs:
 
       - name: Clone vcpkg
         run: |
-          git clone https://github.com/microsoft/vcpkg.git
-          ./vcpkg/bootstrap-vcpkg.sh -disableMetrics
+          git clone https://github.com/microsoft/vcpkg.git _vcpkg
+          ./_vcpkg/bootstrap-vcpkg.sh -disableMetrics
 
       - name: Create ARM64 static triplet
         run: |
-          cat > vcpkg/triplets/community/arm64-osx-static.cmake <<'EOF'
+          cat > _vcpkg/triplets/community/arm64-osx-static.cmake <<'EOF'
           set(VCPKG_TARGET_ARCHITECTURE arm64)
           set(VCPKG_CRT_LINKAGE dynamic)
           set(VCPKG_LIBRARY_LINKAGE static)
@@ -26,18 +26,18 @@ jobs:
 
       - name: Install dependencies
         run: |
-          ./vcpkg/vcpkg install \
+          ./_vcpkg/vcpkg install \
             "libzip[bzip2]:arm64-osx-static" \
             "minizip-ng[core,zlib]:arm64-osx-static"
 
       - name: Show installed files
         run: |
-          find vcpkg/installed/arm64-osx-static -type f | sort
+          find _vcpkg/installed/arm64-osx-static -type f | sort
 
       - name: Prepare artifact
         run: |
           mkdir -p artifact/macos-arm64
-          cp -R vcpkg/installed/arm64-osx-static/. artifact/macos-arm64/
+          cp -R _vcpkg/installed/arm64-osx-static/. artifact/macos-arm64/
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
