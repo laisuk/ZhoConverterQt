@@ -48,30 +48,30 @@ jobs:
           echo "=== install tree ==="
           find build/install -maxdepth 4 -print
 
-      #      - name: Fix native library paths
-      #        run: |
-      #          APP="build/install/ZhoConverterQt.app"
-      #          EXE="$APP/Contents/MacOS/ZhoConverterQt"
-      #
-      #          OPENCC_PATH="$(otool -L "$EXE" | awk '/libopencc_fmmseg_capi\.dylib/ {print $1}')"
-      #          PDFIUM_PATH="$(otool -L "$EXE" | awk '/libpdfium\.dylib/ {print $1}')"
-      #
-      #          install_name_tool -change \
-      #            "$OPENCC_PATH" \
-      #            "@rpath/libopencc_fmmseg_capi.dylib" \
-      #            "$EXE"
-      #
-      #          install_name_tool -change \
-      #            "$PDFIUM_PATH" \
-      #            "@rpath/libpdfium.dylib" \
-      #            "$EXE"
-
       - name: Deploy Qt
         run: |
           macdeployqt \
             build/install/ZhoConverterQt.app \
             -always-overwrite \
             -verbose=2
+
+      - name: Fix native library paths
+        run: |
+          APP="build/install/ZhoConverterQt.app"
+          EXE="$APP/Contents/MacOS/ZhoConverterQt"
+      
+          OPENCC_PATH="$(otool -L "$EXE" | awk '/libopencc_fmmseg_capi\.dylib/ {print $1}')"
+          PDFIUM_PATH="$(otool -L "$EXE" | awk '/libpdfium\.dylib/ {print $1}')"
+      
+          install_name_tool -change \
+            "$OPENCC_PATH" \
+            "@rpath/libopencc_fmmseg_capi.dylib" \
+            "$EXE"
+      
+          install_name_tool -change \
+            "$PDFIUM_PATH" \
+            "@rpath/libpdfium.dylib" \
+            "$EXE"
 
       - name: Verify bundle
         run: |
