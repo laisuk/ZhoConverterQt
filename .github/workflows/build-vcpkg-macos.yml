@@ -44,17 +44,54 @@ jobs:
 
       - name: Prepare artifact
         run: |
-          mkdir -p artifact/macos-arm64
+          SRC="_vcpkg"
+          DEST="artifact/macos-arm64"
 
-          cp -f _vcpkg/.vcpkg-root \
-            artifact/macos-arm64/.vcpkg-root
+          mkdir -p "$DEST/installed"
+          mkdir -p "$DEST/scripts/buildsystems/msbuild"
+          mkdir -p "$DEST/scripts/buildsystems/osx"
+          mkdir -p "$DEST/scripts/cmake"
 
-          cp -R _vcpkg/scripts \
-            artifact/macos-arm64/scripts
+          # Root marker
+          cp -f "$SRC/.vcpkg-root" \
+            "$DEST/.vcpkg-root"
 
-          mkdir -p artifact/macos-arm64/installed
-          cp -R _vcpkg/installed/arm64-osx-static \
-            artifact/macos-arm64/installed/
+          # Keep installed triplet unchanged.
+          cp -R "$SRC/installed/arm64-osx-static" \
+            "$DEST/installed/"
+
+          # Minimal vcpkg toolchain infrastructure, matching existing vendor roots.
+          cp -f "$SRC/scripts/buildsystems/vcpkg.cmake" \
+            "$DEST/scripts/buildsystems/"
+
+          cp -f "$SRC/scripts/buildsystems/msbuild/applocal.ps1" \
+                "$SRC/scripts/buildsystems/msbuild/vcpkg.props" \
+                "$SRC/scripts/buildsystems/msbuild/vcpkg.targets" \
+                "$SRC/scripts/buildsystems/msbuild/vcpkg-general.xml" \
+            "$DEST/scripts/buildsystems/msbuild/"
+
+          cp -f "$SRC/scripts/buildsystems/osx/applocal.py" \
+            "$DEST/scripts/buildsystems/osx/"
+
+          cp -f "$SRC/scripts/cmake/vcpkg_get_windows_sdk.cmake" \
+            "$DEST/scripts/cmake/"
+
+      - name: Verify artifact
+        run: |
+          DEST="artifact/macos-arm64"
+
+          test -f "$DEST/.vcpkg-root"
+          test -d "$DEST/installed/arm64-osx-static"
+
+          test -f "$DEST/scripts/buildsystems/vcpkg.cmake"
+          test -f "$DEST/scripts/buildsystems/msbuild/applocal.ps1"
+          test -f "$DEST/scripts/buildsystems/msbuild/vcpkg.props"
+          test -f "$DEST/scripts/buildsystems/msbuild/vcpkg.targets"
+          test -f "$DEST/scripts/buildsystems/msbuild/vcpkg-general.xml"
+          test -f "$DEST/scripts/buildsystems/osx/applocal.py"
+          test -f "$DEST/scripts/cmake/vcpkg_get_windows_sdk.cmake"
+
+          find "$DEST" -type f | sort
 
       - name: Upload artifact
         uses: actions/upload-artifact@v7
@@ -62,3 +99,4 @@ jobs:
           name: vcpkg-macos-arm64
           path: artifact/macos-arm64
           if-no-files-found: error
+          include-hidden-files: true
