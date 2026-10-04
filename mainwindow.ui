@@ -615,10 +615,10 @@
                </font>
               </property>
               <property name="toolTip">
-               <string>Normalize compatibility CJK text</string>
+               <string>Normalize CJK compatibility ideographs and Unicode compatibility characters</string>
               </property>
               <property name="text">
-               <string>N</string>
+               <string>≡</string>
               </property>
               <property name="iconSize">
                <size>
@@ -754,6 +754,9 @@
                 <pointsize>10</pointsize>
                 <bold>true</bold>
                </font>
+              </property>
+              <property name="toolTip">
+               <string>Fallback unsupported CJK characters to displayable alternatives to avoid tofu (□)</string>
               </property>
               <property name="text">
                <string>豆</string>
@@ -1295,7 +1298,7 @@
      <x>0</x>
      <y>0</y>
      <width>1055</width>
-     <height>33</height>
+     <height>26</height>
     </rect>
    </property>
    <widget class="QMenu" name="menuFile">
@@ -1403,7 +1406,7 @@
  <resources/>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup_region"/>
   <buttongroup name="buttonGroup_config"/>
+  <buttongroup name="buttonGroup_region"/>
  </buttongroups>
 </ui>

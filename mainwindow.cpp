@@ -267,6 +267,7 @@ MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindowClass()) {
     ui->setupUi(this);
     ui->tabWidget->setCurrentIndex(0);
+    this->resize(1000, 700);
     // openccInstance = opencc_new();
     // opencc_set_parallel(openccInstance, false);
 
