@@ -35,48 +35,62 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef nsGB2312Prober_h__
-#define nsGB2312Prober_h__
+// for S-JIS encoding, obeserve characteristic:
+// 1, kana character (or hankaku?) often have hight frequency of appereance
+// 2, kana character often exist in group
+// 3, certain combination of kana is never used in japanese language
 
-#include "nsCharSetProber.h"
-#include "nsCodingStateMachine.h"
-#include "CharDistribution.h"
+#include "nsSJISProber.h"
 
-// We use GB18030 to replace GB2312, because 18030 is a superset.
+void  nsSJISProber::Reset()
+{
+  mCodingSM->Reset(); 
+  mState = eDetecting;
+  mContextAnalyser.Reset(mIsPreferredLanguage);
+  mDistributionAnalyser.Reset(mIsPreferredLanguage);
+}
 
-class nsGB18030Prober : public nsCharSetProber {
-public:
-    nsGB18030Prober(const PRBool aIsPreferredLanguage)
-        : mIsPreferredLanguage(aIsPreferredLanguage) {
-        mCodingSM = new nsCodingStateMachine(&GB18030SMModel);
-        nsGB18030Prober::Reset();
+nsProbingState nsSJISProber::HandleData(const char* aBuf, const PRUint32 aLen)
+{
+  for (PRUint32 i = 0; i < aLen; i++)
+  {
+    const nsSMState codingState = mCodingSM->NextState(aBuf[i]);
+    if (codingState == eItsMe)
+    {
+      mState = eFoundIt;
+      break;
     }
-
-    ~nsGB18030Prober() override { delete mCodingSM; }
-
-    nsProbingState HandleData(const char *aBuf, PRUint32 aLen) override;
-
-    const char *GetCharSetName() override { return "GB18030"; }
-    nsProbingState GetState() override { return mState; }
-
-    void Reset() override;
-
-    float GetConfidence() override;
-
-    void SetOpion() override {
+    if (codingState == eStart)
+    {
+      const PRUint32 charLen = mCodingSM->GetCurrentCharLen();
+      if (i == 0)
+      {
+        mLastChar[1] = aBuf[0];
+        mContextAnalyser.HandleOneChar(mLastChar+2-charLen, charLen);
+        mDistributionAnalyser.HandleOneChar(mLastChar, charLen);
+      }
+      else
+      {
+        mContextAnalyser.HandleOneChar(aBuf+i+1-charLen, charLen);
+        mDistributionAnalyser.HandleOneChar(aBuf+i-1, charLen);
+      }
     }
+  }
 
-protected:
-    void GetDistribution(PRUint32 aCharLen, const char *aStr);
+  mLastChar[0] = aBuf[aLen-1];
 
-    nsCodingStateMachine *mCodingSM;
-    nsProbingState mState;
+  if (mState == eDetecting)
+    if (mContextAnalyser.GotEnoughData() && GetConfidence() > SHORTCUT_THRESHOLD)
+      mState = eFoundIt;
 
-    //GB2312ContextAnalysis mContextAnalyser;
-    GB2312DistributionAnalysis mDistributionAnalyser;
-    char mLastChar[2];
-    PRBool mIsPreferredLanguage;
-};
+  return mState;
+}
 
+float nsSJISProber::GetConfidence()
+{
+  const float contxtCf = mContextAnalyser.GetConfidence();
+  const float distribCf = mDistributionAnalyser.GetConfidence();
 
-#endif /* nsGB2312Prober_h__ */
+  return (contxtCf > distribCf ? contxtCf : distribCf);
+}
+

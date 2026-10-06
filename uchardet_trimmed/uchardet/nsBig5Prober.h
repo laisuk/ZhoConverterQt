@@ -42,33 +42,39 @@
 #include "nsCodingStateMachine.h"
 #include "CharDistribution.h"
 
-class nsBig5Prober: public nsCharSetProber {
+class nsBig5Prober : public nsCharSetProber {
 public:
-  nsBig5Prober(PRBool aIsPreferredLanguage)
-    :mIsPreferredLanguage(aIsPreferredLanguage) 
-  {mCodingSM = new nsCodingStateMachine(&Big5SMModel); 
-    Reset();}
-  virtual ~nsBig5Prober(void){delete mCodingSM;}
-  nsProbingState HandleData(const char* aBuf, PRUint32 aLen);
-  const char* GetCharSetName() {return "BIG5";}
-  nsProbingState GetState(void) {return mState;}
-  void      Reset(void);
-  float     GetConfidence(void);
-  void      SetOpion() {}
+    nsBig5Prober(PRBool aIsPreferredLanguage)
+        : mIsPreferredLanguage(aIsPreferredLanguage) {
+        mCodingSM = new nsCodingStateMachine(&Big5SMModel);
+        nsBig5Prober::Reset();
+    }
+
+    ~nsBig5Prober() override { delete mCodingSM; }
+
+    nsProbingState HandleData(const char *aBuf, PRUint32 aLen) override;
+
+    const char *GetCharSetName() override { return "BIG5"; }
+    nsProbingState GetState() override { return mState; }
+
+    void Reset() override;
+
+    float GetConfidence() override;
+
+    void SetOpion() override {
+    }
 
 protected:
-  void      GetDistribution(PRUint32 aCharLen, const char* aStr);
-  
-  nsCodingStateMachine* mCodingSM;
-  nsProbingState mState;
+    void GetDistribution(PRUint32 aCharLen, const char *aStr);
 
-  //Big5ContextAnalysis mContextAnalyser;
-  Big5DistributionAnalysis mDistributionAnalyser;
-  char mLastChar[2];
-  PRBool mIsPreferredLanguage;
+    nsCodingStateMachine *mCodingSM;
+    nsProbingState mState;
 
+    //Big5ContextAnalysis mContextAnalyser;
+    Big5DistributionAnalysis mDistributionAnalyser;
+    char mLastChar[2];
+    PRBool mIsPreferredLanguage;
 };
 
 
 #endif /* nsBig5Prober_h__ */
-

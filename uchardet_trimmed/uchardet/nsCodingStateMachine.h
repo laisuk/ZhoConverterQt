@@ -62,7 +62,7 @@ public:
   explicit nsCodingStateMachine(const SMModel* sm)
       : mCurrentState(eStart), mCurrentCharLen(0), mCurrentBytePos(0), mModel(sm) {}
 
-  nsSMState NextState(char c)
+  nsSMState NextState(const char c)
   {
     const PRUint32 byteCls = GETCLASS(c);
     if (mCurrentState == eStart)
@@ -77,9 +77,9 @@ public:
     return mCurrentState;
   }
 
-  PRUint32 GetCurrentCharLen(void) const { return mCurrentCharLen; }
-  void Reset(void) { mCurrentState = eStart; }
-  const char* GetCodingStateMachine() const { return mModel->name; }
+  [[nodiscard]] PRUint32 GetCurrentCharLen() const { return mCurrentCharLen; }
+  void Reset() { mCurrentState = eStart; }
+  [[nodiscard]] const char* GetCodingStateMachine() const { return mModel->name; }
 
 protected:
   nsSMState mCurrentState;
@@ -90,3 +90,4 @@ protected:
 
 extern const SMModel Big5SMModel;
 extern const SMModel GB18030SMModel;
+extern const SMModel SJISSMModel;

@@ -109,7 +109,6 @@ EncodingDetector::detect(const QByteArrayView data) {
     // ------------------------------------------------------------
     // 5. Unknown legacy 8-bit encoding.
     //
-    // Later:
     //   uchardet
     //      ↓
     //   Big5 / GB18030 / Shift-JIS / etc.
@@ -353,6 +352,9 @@ EncodingDetector::detectLegacyEncoding(const QByteArrayView data)
 
         case uchardet_trimmed::Encoding::Gb18030:
             return Encoding::Gb18030;
+
+        case uchardet_trimmed::Encoding::ShiftJis:
+            return Encoding::ShiftJis;
 
         case uchardet_trimmed::Encoding::Unknown:
         default:

@@ -125,10 +125,11 @@ private:
 
     [[nodiscard]] opencc_config_t getCurrentConfigId() const;
 
-    bool loadTextFile(const QString &filePath,
-                  const QString &encoding = QStringLiteral("Auto"),
-                  bool showErrorDialog = false,
-                  bool strictDecoding = false);
+    bool loadTextFile(
+        const QString &filePath,
+        const QString &requestedEncoding = QStringLiteral("Auto"),
+        bool showErrorDialog = false,
+        bool strictDecoding = false);
 
     void showEncodingMenu();
 

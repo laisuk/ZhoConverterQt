@@ -39,11 +39,12 @@
 
 #include "Big5Freq.tab"
 #include "GB2312Freq.tab"
+#include "JISFreq.tab"
 
 #define SURE_YES 0.99f
 #define SURE_NO  0.01f
 
-float CharDistributionAnalysis::GetConfidence(void)
+float CharDistributionAnalysis::GetConfidence() const
 {
   if (mTotalChars <= 0 || mFreqChars <= mDataThreshold)
     return SURE_NO;
@@ -71,4 +72,11 @@ Big5DistributionAnalysis::Big5DistributionAnalysis()
   mCharToFreqOrder = Big5CharToFreqOrder;
   mTableSize = BIG5_TABLE_SIZE;
   mTypicalDistributionRatio = BIG5_TYPICAL_DISTRIBUTION_RATIO;
+}
+
+SJISDistributionAnalysis::SJISDistributionAnalysis()
+{
+  mCharToFreqOrder = JISCharToFreqOrder;
+  mTableSize = JIS_TABLE_SIZE;
+  mTypicalDistributionRatio = JIS_TYPICAL_DISTRIBUTION_RATIO;
 }

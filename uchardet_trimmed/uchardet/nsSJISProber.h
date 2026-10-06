@@ -35,28 +35,33 @@
  *
  * ***** END LICENSE BLOCK ***** */
 
-#ifndef nsGB2312Prober_h__
-#define nsGB2312Prober_h__
+// for S-JIS encoding, obeserve characteristic:
+// 1, kana character (or hankaku?) often have hight frequency of appereance
+// 2, kana character often exist in group
+// 3, certain combination of kana is never used in japanese language
+
+#ifndef nsSJISProber_h__
+#define nsSJISProber_h__
 
 #include "nsCharSetProber.h"
 #include "nsCodingStateMachine.h"
+#include "JpCntx.h"
 #include "CharDistribution.h"
 
-// We use GB18030 to replace GB2312, because 18030 is a superset.
 
-class nsGB18030Prober : public nsCharSetProber {
+class nsSJISProber : public nsCharSetProber {
 public:
-    nsGB18030Prober(const PRBool aIsPreferredLanguage)
+    nsSJISProber(PRBool aIsPreferredLanguage)
         : mIsPreferredLanguage(aIsPreferredLanguage) {
-        mCodingSM = new nsCodingStateMachine(&GB18030SMModel);
-        nsGB18030Prober::Reset();
+        mCodingSM = new nsCodingStateMachine(&SJISSMModel);
+        nsSJISProber::Reset();
     }
 
-    ~nsGB18030Prober() override { delete mCodingSM; }
+    ~nsSJISProber() override { delete mCodingSM; }
 
     nsProbingState HandleData(const char *aBuf, PRUint32 aLen) override;
 
-    const char *GetCharSetName() override { return "GB18030"; }
+    const char *GetCharSetName() override { return "SHIFT_JIS"; }
     nsProbingState GetState() override { return mState; }
 
     void Reset() override;
@@ -67,16 +72,15 @@ public:
     }
 
 protected:
-    void GetDistribution(PRUint32 aCharLen, const char *aStr);
-
     nsCodingStateMachine *mCodingSM;
     nsProbingState mState;
 
-    //GB2312ContextAnalysis mContextAnalyser;
-    GB2312DistributionAnalysis mDistributionAnalyser;
+    SJISContextAnalysis mContextAnalyser;
+    SJISDistributionAnalysis mDistributionAnalyser;
+
     char mLastChar[2];
     PRBool mIsPreferredLanguage;
 };
 
 
-#endif /* nsGB2312Prober_h__ */
+#endif /* nsSJISProber_h__ */

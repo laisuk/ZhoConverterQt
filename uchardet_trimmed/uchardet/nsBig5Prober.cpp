@@ -37,20 +37,18 @@
 
 #include "nsBig5Prober.h"
 
-void  nsBig5Prober::Reset(void)
+void  nsBig5Prober::Reset()
 {
   mCodingSM->Reset(); 
   mState = eDetecting;
   mDistributionAnalyser.Reset(mIsPreferredLanguage);
 }
 
-nsProbingState nsBig5Prober::HandleData(const char* aBuf, PRUint32 aLen)
+nsProbingState nsBig5Prober::HandleData(const char* aBuf, const PRUint32 aLen)
 {
-  nsSMState codingState;
-
   for (PRUint32 i = 0; i < aLen; i++)
   {
-    codingState = mCodingSM->NextState(aBuf[i]);
+    const nsSMState codingState = mCodingSM->NextState(aBuf[i]);
     if (codingState == eItsMe)
     {
       mState = eFoundIt;
@@ -58,7 +56,7 @@ nsProbingState nsBig5Prober::HandleData(const char* aBuf, PRUint32 aLen)
     }
     if (codingState == eStart)
     {
-      PRUint32 charLen = mCodingSM->GetCurrentCharLen();
+      const PRUint32 charLen = mCodingSM->GetCurrentCharLen();
 
       if (i == 0)
       {
@@ -79,10 +77,10 @@ nsProbingState nsBig5Prober::HandleData(const char* aBuf, PRUint32 aLen)
   return mState;
 }
 
-float nsBig5Prober::GetConfidence(void)
+float nsBig5Prober::GetConfidence()
 {
-  float distribCf = mDistributionAnalyser.GetConfidence();
+  const float distribCf = mDistributionAnalyser.GetConfidence();
 
-  return (float)distribCf;
+  return distribCf;
 }
 

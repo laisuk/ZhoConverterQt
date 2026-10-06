@@ -40,35 +40,35 @@
 #include "nscore.h"
 
 typedef enum {
-  eIdxSft4bits  = 3,
-  eIdxSft8bits  = 2,
-  eIdxSft16bits = 1
-} nsIdxSft; 
+    eIdxSft4bits = 3,
+    eIdxSft8bits = 2,
+    eIdxSft16bits = 1
+} nsIdxSft;
 
 typedef enum {
-  eSftMsk4bits  = 7,
-  eSftMsk8bits  = 3,
-  eSftMsk16bits = 1
-} nsSftMsk; 
+    eSftMsk4bits = 7,
+    eSftMsk8bits = 3,
+    eSftMsk16bits = 1
+} nsSftMsk;
 
 typedef enum {
-  eBitSft4bits  = 2,
-  eBitSft8bits  = 3,
-  eBitSft16bits = 4
-} nsBitSft; 
+    eBitSft4bits = 2,
+    eBitSft8bits = 3,
+    eBitSft16bits = 4
+} nsBitSft;
 
 typedef enum {
-  eUnitMsk4bits  = 0x0000000FL,
-  eUnitMsk8bits  = 0x000000FFL,
-  eUnitMsk16bits = 0x0000FFFFL
-} nsUnitMsk; 
+    eUnitMsk4bits = 0x0000000FL,
+    eUnitMsk8bits = 0x000000FFL,
+    eUnitMsk16bits = 0x0000FFFFL
+} nsUnitMsk;
 
 typedef struct nsPkgInt {
-  nsIdxSft  idxsft;
-  nsSftMsk  sftmsk;
-  nsBitSft  bitsft;
-  nsUnitMsk unitmsk;
-  const PRUint32* const data;
+    nsIdxSft idxsft;
+    nsSftMsk sftmsk;
+    nsBitSft bitsft;
+    nsUnitMsk unitmsk;
+    const PRUint32 *const data;
 } nsPkgInt;
 
 
@@ -86,4 +86,3 @@ typedef struct nsPkgInt {
  (((((c).data)[(i)>>(c).idxsft])>>(((i)&(c).sftmsk)<<(c).bitsft))&(c).unitmsk)
 
 #endif /* nsPkgInt_h__ */
-

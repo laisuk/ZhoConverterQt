@@ -42,79 +42,97 @@
 #define ENOUGH_DATA_THRESHOLD 1024
 #define MINIMUM_DATA_THRESHOLD 4
 
-class CharDistributionAnalysis
-{
+class CharDistributionAnalysis {
 public:
-  CharDistributionAnalysis() { Reset(PR_FALSE); }
+    virtual ~CharDistributionAnalysis() = default;
 
-  void HandleOneChar(const char* aStr, PRUint32 aCharLen)
-  {
-    const PRInt32 order = (aCharLen == 2) ? GetOrder(aStr) : -1;
-    if (order >= 0)
-    {
-      ++mTotalChars;
-      if (static_cast<PRUint32>(order) < mTableSize &&
-          512 > mCharToFreqOrder[order])
-        ++mFreqChars;
+    CharDistributionAnalysis() { Reset(PR_FALSE); }
+
+    void HandleOneChar(const char *aStr, PRUint32 aCharLen) {
+        if (const PRInt32 order = (aCharLen == 2) ? GetOrder(aStr) : -1; order >= 0) {
+            ++mTotalChars;
+            if (static_cast<PRUint32>(order) < mTableSize &&
+                512 > mCharToFreqOrder[order])
+                ++mFreqChars;
+        }
     }
-  }
 
-  float GetConfidence(void);
+    [[nodiscard]] float GetConfidence() const;
 
-  void Reset(PRBool aIsPreferredLanguage)
-  {
-    mDone = PR_FALSE;
-    mTotalChars = 0;
-    mFreqChars = 0;
-    mDataThreshold = aIsPreferredLanguage ? 0 : MINIMUM_DATA_THRESHOLD;
-  }
+    void Reset(const PRBool aIsPreferredLanguage) {
+        mDone = PR_FALSE;
+        mTotalChars = 0;
+        mFreqChars = 0;
+        mDataThreshold = aIsPreferredLanguage ? 0 : MINIMUM_DATA_THRESHOLD;
+    }
 
-  PRBool GotEnoughData() { return mTotalChars > ENOUGH_DATA_THRESHOLD; }
+    [[nodiscard]] PRBool GotEnoughData() const { return mTotalChars > ENOUGH_DATA_THRESHOLD; }
 
 protected:
-  virtual PRInt32 GetOrder(const char* str) { return -1; }
+    virtual PRInt32 GetOrder(const char *str) { return -1; }
 
-  PRBool mDone;
-  PRUint32 mFreqChars;
-  PRUint32 mTotalChars;
-  PRUint32 mDataThreshold;
-  const PRInt16* mCharToFreqOrder;
-  PRUint32 mTableSize;
-  float mTypicalDistributionRatio;
+    PRBool mDone;
+    PRUint32 mFreqChars;
+    PRUint32 mTotalChars;
+    PRUint32 mDataThreshold;
+    const PRInt16 *mCharToFreqOrder;
+    PRUint32 mTableSize;
+    float mTypicalDistributionRatio;
 };
 
-class GB2312DistributionAnalysis : public CharDistributionAnalysis
-{
+class GB2312DistributionAnalysis : public CharDistributionAnalysis {
 public:
-  GB2312DistributionAnalysis();
+    GB2312DistributionAnalysis();
 
 protected:
-  PRInt32 GetOrder(const char* str) override
-  {
-    if (static_cast<unsigned char>(str[0]) >= 0xb0 &&
-        static_cast<unsigned char>(str[1]) >= 0xa1)
-      return 94 * (static_cast<unsigned char>(str[0]) - 0xb0) +
-             static_cast<unsigned char>(str[1]) - 0xa1;
-    return -1;
-  }
+    PRInt32 GetOrder(const char *str) override {
+        if (static_cast<unsigned char>(str[0]) >= 0xb0 &&
+            static_cast<unsigned char>(str[1]) >= 0xa1)
+            return 94 * (static_cast<unsigned char>(str[0]) - 0xb0) +
+                   static_cast<unsigned char>(str[1]) - 0xa1;
+        return -1;
+    }
 };
 
-class Big5DistributionAnalysis : public CharDistributionAnalysis
-{
+class Big5DistributionAnalysis : public CharDistributionAnalysis {
 public:
-  Big5DistributionAnalysis();
+    Big5DistributionAnalysis();
 
 protected:
-  PRInt32 GetOrder(const char* str) override
-  {
-    if (static_cast<unsigned char>(str[0]) < 0xa4)
-      return -1;
+    PRInt32 GetOrder(const char *str) override {
+        if (static_cast<unsigned char>(str[0]) < 0xa4)
+            return -1;
 
-    if (static_cast<unsigned char>(str[1]) >= 0xa1)
-      return 157 * (static_cast<unsigned char>(str[0]) - 0xa4) +
-             static_cast<unsigned char>(str[1]) - 0xa1 + 63;
+        if (static_cast<unsigned char>(str[1]) >= 0xa1)
+            return 157 * (static_cast<unsigned char>(str[0]) - 0xa4) +
+                   static_cast<unsigned char>(str[1]) - 0xa1 + 63;
 
-    return 157 * (static_cast<unsigned char>(str[0]) - 0xa4) +
-           static_cast<unsigned char>(str[1]) - 0x40;
-  }
+        return 157 * (static_cast<unsigned char>(str[0]) - 0xa4) +
+               static_cast<unsigned char>(str[1]) - 0x40;
+    }
+};
+
+
+class SJISDistributionAnalysis : public CharDistributionAnalysis {
+public:
+    SJISDistributionAnalysis();
+
+protected:
+    //for sjis encoding, we are interested
+    //  first  byte range: 0x81 -- 0x9f , 0xe0 -- 0xfe
+    //  second byte range: 0x40 -- 0x7e,  0x81 -- oxfe
+    //no validation needed here. State machine has done that
+    PRInt32 GetOrder(const char *str) override {
+        PRInt32 order;
+        if (static_cast<unsigned char>(*str) >= static_cast<unsigned char>(0x81) && static_cast<unsigned char>(*str) <= static_cast<unsigned char>(0x9f))
+            order = 188 * (static_cast<unsigned char>(str[0]) - static_cast<unsigned char>(0x81));
+        else if (static_cast<unsigned char>(*str) >= static_cast<unsigned char>(0xe0) && static_cast<unsigned char>(*str) <= static_cast<unsigned char>(0xef))
+            order = 188 * (static_cast<unsigned char>(str[0]) - static_cast<unsigned char>(0xe0) + 31);
+        else
+            return -1;
+        order += static_cast<unsigned char>(*(str + 1)) - 0x40;
+        if (static_cast<unsigned char>(str[1]) > static_cast<unsigned char>(0x7f))
+            order--;
+        return order;
+    }
 };

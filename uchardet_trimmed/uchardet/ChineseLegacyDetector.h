@@ -7,7 +7,8 @@ namespace uchardet_trimmed {
 enum class Encoding {
     Unknown,
     Big5,
-    Gb18030
+    Gb18030,
+    ShiftJis
 };
 
 struct Result {
@@ -15,6 +16,7 @@ struct Result {
     float confidence = 0.0F;
     float big5Confidence = 0.0F;
     float gb18030Confidence = 0.0F;
+    float shiftJisConfidence = 0.0F;
 };
 
 // Chinese-only statistical fallback detector.

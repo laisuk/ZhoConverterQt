@@ -272,8 +272,10 @@ endif ()
 add_library(uchardet_trimmed STATIC
         uchardet_trimmed/uchardet/ChineseLegacyDetector.cpp
         uchardet_trimmed/uchardet/CharDistribution.cpp
+        uchardet_trimmed/uchardet/JpCntx.cpp
         uchardet_trimmed/uchardet/nsBig5Prober.cpp
         uchardet_trimmed/uchardet/nsGB2312Prober.cpp
+        uchardet_trimmed/uchardet/nsSJISProber.cpp
         uchardet_trimmed/uchardet/nsMBCSSM.cpp
 )
 

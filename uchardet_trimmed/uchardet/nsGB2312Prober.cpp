@@ -42,7 +42,7 @@
 
 #include "nsGB2312Prober.h"
 
-void  nsGB18030Prober::Reset(void)
+void  nsGB18030Prober::Reset()
 {
   mCodingSM->Reset(); 
   mState = eDetecting;
@@ -50,13 +50,11 @@ void  nsGB18030Prober::Reset(void)
   //mContextAnalyser.Reset();
 }
 
-nsProbingState nsGB18030Prober::HandleData(const char* aBuf, PRUint32 aLen)
+nsProbingState nsGB18030Prober::HandleData(const char* aBuf, const PRUint32 aLen)
 {
-  nsSMState codingState;
-
   for (PRUint32 i = 0; i < aLen; i++)
   {
-    codingState = mCodingSM->NextState(aBuf[i]);
+    const nsSMState codingState = mCodingSM->NextState(aBuf[i]);
     if (codingState == eItsMe)
     {
       mState = eFoundIt;
@@ -64,7 +62,7 @@ nsProbingState nsGB18030Prober::HandleData(const char* aBuf, PRUint32 aLen)
     }
     if (codingState == eStart)
     {
-      PRUint32 charLen = mCodingSM->GetCurrentCharLen();
+      const PRUint32 charLen = mCodingSM->GetCurrentCharLen();
 
       if (i == 0)
       {
@@ -87,10 +85,10 @@ nsProbingState nsGB18030Prober::HandleData(const char* aBuf, PRUint32 aLen)
   return mState;
 }
 
-float nsGB18030Prober::GetConfidence(void)
+float nsGB18030Prober::GetConfidence()
 {
-  float distribCf = mDistributionAnalyser.GetConfidence();
+  const float distribCf = mDistributionAnalyser.GetConfidence();
 
-  return (float)distribCf;
+  return distribCf;
 }
 

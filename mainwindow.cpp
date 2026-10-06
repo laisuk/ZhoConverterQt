@@ -204,6 +204,10 @@ namespace {
                              Qt::CaseInsensitive) == 0)
             return decodeWindowsCodePage(bytes, 950, ok);
 
+        if (encoding.compare(QStringLiteral("Shift-JIS"),
+                             Qt::CaseInsensitive) == 0)
+            return decodeWindowsCodePage(bytes, 932, ok);
+
         // Windows has no separate Big5-HKSCS code page exposed here.
         // CP950 is used as the native fallback without adding dependencies.
         if (encoding.compare(QStringLiteral("Big5-HKSCS"),
@@ -217,6 +221,10 @@ namespace {
         if (encoding.compare(QStringLiteral("Big5"),
                              Qt::CaseInsensitive) == 0)
             return decodeIconv(bytes, "BIG5", ok);
+
+        if (encoding.compare(QStringLiteral("Shift-JIS"),
+                             Qt::CaseInsensitive) == 0)
+            return decodeIconv(bytes, "SHIFT-JIS", ok);
 
         if (encoding.compare(QStringLiteral("Big5-HKSCS"),
                              Qt::CaseInsensitive) == 0)
@@ -509,9 +517,9 @@ bool MainWindow::loadTextFile(const QString &filePath,
                 codecNameForDetectedEncoding(encoding);
 
         if (actualEncoding.isEmpty()) {
-            // Detector knows only that this is some legacy 8-bit
-            // encoding. Until uchardet is added, preserve the old
-            // fallback behaviour.
+            /// Encoding could not be identified reliably.
+            // Preserve the fallback behaviour so the file can still
+            // be opened and manually reloaded with another encoding.
             actualEncoding = QStringLiteral("UTF-8");
         }
 
@@ -606,6 +614,7 @@ void MainWindow::showEncodingMenu() {
         {.label = "UTF-8", .codec = "UTF-8"},
         {.label = "GB18030 / GBK", .codec = "GB18030"},
         {.label = "Big5 / CP950", .codec = "Big5"},
+        {.label = "Shift-JIS / CP932", .codec = "Shift-JIS"},
 #ifdef Q_OS_WIN
         {.label = "Big5-HKSCS (CP950 fallback)", .codec = "Big5-HKSCS"},
 #else
