@@ -224,10 +224,9 @@ namespace pdfium::detail {
 
     [[nodiscard]]
     inline bool IsMetadataKey(std::u32string_view key) noexcept {
-        return std::any_of(
-            std::begin(METADATA_KEYS),
-            std::end(METADATA_KEYS),
-            [&](auto k) noexcept { return k == key; }
+        return std::ranges::any_of(METADATA_KEYS
+                                   ,
+                                   [&](auto k) noexcept { return k == key; }
         );
     }
 
@@ -248,7 +247,7 @@ namespace pdfium::detail {
     // Utility: contains (view-based)
     [[nodiscard]]
     inline bool Contains(const std::u32string_view s, const char32_t ch) noexcept {
-        return std::find(s.begin(), s.end(), ch) != s.end();
+        return std::ranges::find(s, ch) != s.end();
     }
 
     // ------------------------- Trim helpers (view-based, no allocation) -------------------------
@@ -417,8 +416,8 @@ namespace pdfium::detail {
     // Contains any char from set (view-based)
     [[nodiscard]]
     inline bool AnyOf(const std::u32string_view s, const std::u32string_view set) noexcept {
-        return std::any_of(s.begin(), s.end(),
-                           [&](const char32_t ch) noexcept { return Contains(set, ch); });
+        return std::ranges::any_of(s,
+                                   [&](const char32_t ch) noexcept { return Contains(set, ch); });
     }
 
     // ------------------------------------------------------------

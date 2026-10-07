@@ -73,10 +73,10 @@ namespace pdfium::text::punct {
     /// (e.g. 。！？!?).
     [[nodiscard]]
     [[gnu::always_inline]] inline bool ContainsStrongSentenceEnd(const std::u32string_view s) noexcept {
-        return std::any_of(s.begin(), s.end(),
-                           [](const char32_t ch) noexcept {
-                               return IsStrongSentenceEnd(ch);
-                           });
+        return std::ranges::any_of(s,
+                                   [](const char32_t ch) noexcept {
+                                       return IsStrongSentenceEnd(ch);
+                                   });
     }
 
     /// Returns true if the string ends with a Tier-1 strong sentence ender
@@ -105,10 +105,10 @@ namespace pdfium::text::punct {
     /// separator characters (e.g. ， , 、).
     [[nodiscard]]
     [[gnu::always_inline]] inline bool ContainsAnyCommaLike(const std::u32string_view s) noexcept {
-        return std::any_of(s.begin(), s.end(),
-                           [](const char32_t ch) noexcept {
-                               return IsCommaLike(ch);
-                           });
+        return std::ranges::any_of(s,
+                                   [](const char32_t ch) noexcept {
+                                       return IsCommaLike(ch);
+                                   });
     }
 
     // -------------------------
@@ -216,20 +216,20 @@ namespace pdfium::text::punct {
 
     [[nodiscard]]
     [[gnu::always_inline]] inline bool IsBracketOpener(char32_t ch) noexcept {
-        return std::any_of(std::begin(BRACKET_PAIRS), std::end(BRACKET_PAIRS),
-                           [ch](const auto &p) { return p.first == ch; });
+        return std::ranges::any_of(BRACKET_PAIRS,
+                                   [ch](const auto &p) { return p.first == ch; });
     }
 
     [[nodiscard]]
     [[gnu::always_inline]] inline bool IsBracketCloser(char32_t ch) noexcept {
-        return std::any_of(std::begin(BRACKET_PAIRS), std::end(BRACKET_PAIRS),
-                           [ch](const auto &p) { return p.second == ch; });
+        return std::ranges::any_of(BRACKET_PAIRS,
+                                   [ch](const auto &p) { return p.second == ch; });
     }
 
     [[nodiscard]]
     [[gnu::always_inline]] inline bool IsMatchingBracket(char32_t open, char32_t close) noexcept {
-        return std::any_of(std::begin(BRACKET_PAIRS), std::end(BRACKET_PAIRS),
-                           [open, close](const auto &p) { return p.first == open && p.second == close; });
+        return std::ranges::any_of(BRACKET_PAIRS,
+                                   [open, close](const auto &p) { return p.first == open && p.second == close; });
     }
 
     // minLen=3 means at least: open + 1 char + close

@@ -230,13 +230,10 @@ namespace pdfium {
             out.reserve(src.size() * 3); // rough estimate
 
             for (std::size_t i = 0; i < src.size(); ++i) {
-                const std::uint32_t ch = src[i];
-
-                if (ch >= 0xD800 && ch <= 0xDBFF) {
+                if (const std::uint32_t ch = src[i]; ch >= 0xD800 && ch <= 0xDBFF) {
                     // High surrogate
                     if (i + 1 < src.size()) {
-                        const std::uint32_t low = src[i + 1];
-                        if (low >= 0xDC00 && low <= 0xDFFF) {
+                        if (const std::uint32_t low = src[i + 1]; low >= 0xDC00 && low <= 0xDFFF) {
                             const std::uint32_t cp =
                                     0x10000 + (((ch - 0xD800) << 10) | (low - 0xDC00));
                             append_utf8_codepoint(out, cp);
@@ -261,8 +258,7 @@ namespace pdfium {
             const std::size_t n = s.size();
 
             for (std::size_t read = 0; read < n; ++read) {
-                const char c = s[read];
-                if (c == '\r') {
+                if (const char c = s[read]; c == '\r') {
                     if (read + 1 < n && s[read + 1] == '\n')
                         ++read;
                     s[write++] = '\n';
@@ -428,7 +424,7 @@ namespace pdfium {
             if (addPageHeader) {
                 result += "=== [Page ";
                 result += std::to_string(i + 1);
-                result += "/";
+                result += '/';
                 result += std::to_string(pageCount);
                 result += "] ===\n\n";
             }
@@ -437,8 +433,7 @@ namespace pdfium {
             detail::ExtractPageText(page.Get(), utf16Buffer, pageText);
             detail::NormalizeNewlinesInPlace(pageText);
 
-            const auto [start, end] = detail::TrimRange(pageText);
-            if (end > start) {
+            if (const auto [start, end] = detail::TrimRange(pageText); end > start) {
                 result.append(pageText, start, end - start);
             }
 
