@@ -255,10 +255,45 @@ if (WIN32)
             "${CMAKE_CURRENT_SOURCE_DIR}/pdfium/pdfium.dll.lib"
     )
 elseif (APPLE)
-    target_link_libraries(ZhoConverterQt PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/opencc-fmmseg/libopencc_fmmseg_capi.dylib")
-    # ---- PDFium ----
-    target_link_libraries(ZhoConverterQt PUBLIC
+    find_program(ZHO_INSTALL_NAME_TOOL NAMES install_name_tool)
+    find_program(ZHO_CODESIGN NAMES codesign)
+    if (NOT ZHO_INSTALL_NAME_TOOL OR NOT ZHO_CODESIGN)
+        message(FATAL_ERROR "macOS builds require install_name_tool and codesign")
+    endif ()
+
+    # Link against build-local copies with portable IDs; never modify SDK files.
+    function(zho_stage_macos_library target source filename)
+        set(staged "${CMAKE_CURRENT_BINARY_DIR}/native-runtime/${filename}")
+        add_custom_command(OUTPUT "${staged}"
+                COMMAND ${CMAKE_COMMAND} -E make_directory "${CMAKE_CURRENT_BINARY_DIR}/native-runtime"
+                COMMAND ${CMAKE_COMMAND} -E copy "${source}" "${staged}"
+                COMMAND "${ZHO_INSTALL_NAME_TOOL}" -id "@rpath/${filename}" "${staged}"
+                COMMAND "${ZHO_CODESIGN}" --force --sign - "${staged}"
+                DEPENDS "${source}"
+                VERBATIM
+        )
+        add_custom_target(${target}_runtime DEPENDS "${staged}")
+        add_library(${target} SHARED IMPORTED)
+        set_target_properties(${target} PROPERTIES
+                IMPORTED_LOCATION "${staged}"
+                IMPORTED_SONAME "@rpath/${filename}")
+        add_dependencies(${target} ${target}_runtime)
+        target_link_libraries(ZhoConverterQt PRIVATE ${target})
+    endfunction()
+
+    zho_stage_macos_library(zho_opencc
+            "${CMAKE_CURRENT_SOURCE_DIR}/opencc-fmmseg/libopencc_fmmseg_capi.dylib"
+            libopencc_fmmseg_capi.dylib)
+    zho_stage_macos_library(zho_pdfium
             "${CMAKE_CURRENT_SOURCE_DIR}/pdfium/libpdfium.dylib"
+            libpdfium.dylib)
+    add_custom_command(TARGET ZhoConverterQt POST_BUILD
+            COMMAND ${CMAKE_COMMAND} -E make_directory "$<TARGET_FILE_DIR:ZhoConverterQt>/../Frameworks"
+            COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "$<TARGET_FILE:zho_opencc>" "$<TARGET_FILE:zho_pdfium>"
+            "$<TARGET_FILE_DIR:ZhoConverterQt>/../Frameworks"
+            COMMAND "${ZHO_CODESIGN}" --force --deep --sign - "$<TARGET_BUNDLE_DIR:ZhoConverterQt>"
+            VERBATIM
     )
 elseif (UNIX)
     target_link_libraries(ZhoConverterQt PUBLIC "${CMAKE_CURRENT_SOURCE_DIR}/opencc-fmmseg/libopencc_fmmseg_capi.so")
@@ -320,10 +355,20 @@ if (WIN32)
     )
 elseif (APPLE)
     install(FILES
-            "${CMAKE_CURRENT_SOURCE_DIR}/opencc-fmmseg/libopencc_fmmseg_capi.dylib"
-            "${CMAKE_CURRENT_SOURCE_DIR}/pdfium/libpdfium.dylib"
+            "$<TARGET_FILE:zho_opencc>"
+            "$<TARGET_FILE:zho_pdfium>"
             DESTINATION "ZhoConverterQt.app/Contents/Frameworks"
     )
+    # Installation may edit the executable's RPATH, so refresh its signature.
+    install(CODE "
+        execute_process(
+            COMMAND \"${ZHO_CODESIGN}\" --force --deep --sign -
+                \"\$ENV{DESTDIR}\${CMAKE_INSTALL_PREFIX}/ZhoConverterQt.app\"
+            RESULT_VARIABLE _zho_sign_result)
+        if(NOT _zho_sign_result EQUAL 0)
+            message(FATAL_ERROR \"Signing installed macOS bundle failed\")
+        endif()
+    ")
 elseif (UNIX)
     install(FILES
             "${CMAKE_CURRENT_SOURCE_DIR}/opencc-fmmseg/libopencc_fmmseg_capi.so"

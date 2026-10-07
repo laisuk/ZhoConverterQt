@@ -36,7 +36,8 @@ jobs:
         run: |
           cmake -S . -B build \
             -G Ninja \
-            -DCMAKE_BUILD_TYPE=Release
+            -DCMAKE_BUILD_TYPE=Release \
+            -DCMAKE_OSX_ARCHITECTURES=arm64
 
       - name: Build
         run: |
@@ -55,35 +56,44 @@ jobs:
             -always-overwrite \
             -verbose=2
 
-      - name: Fix native library paths
+      - name: Sign and verify bundle
         run: |
           APP="build/install/ZhoConverterQt.app"
           EXE="$APP/Contents/MacOS/ZhoConverterQt"
-      
-          OPENCC_PATH="$(otool -L "$EXE" | awk '/libopencc_fmmseg_capi\.dylib/ {print $1}')"
-          PDFIUM_PATH="$(otool -L "$EXE" | awk '/libpdfium\.dylib/ {print $1}')"
-      
-          install_name_tool -change \
-            "$OPENCC_PATH" \
-            "@rpath/libopencc_fmmseg_capi.dylib" \
-            "$EXE"
-      
-          install_name_tool -change \
-            "$PDFIUM_PATH" \
-            "@rpath/libpdfium.dylib" \
-            "$EXE"
+          test -x "$EXE"
+          for LIB in libopencc_fmmseg_capi.dylib libpdfium.dylib; do
+            test -f "$APP/Contents/Frameworks/$LIB"
+            otool -L "$EXE" | awk '{print $1}' | grep -Fx "@rpath/$LIB"
+            otool -D "$APP/Contents/Frameworks/$LIB" | grep -Fx "@rpath/$LIB"
+          done
+          otool -l "$EXE" | grep -F '@executable_path/../Frameworks'
+          lipo -verify_arch arm64 "$EXE"
+          codesign --force --deep --sign - "$APP"
+          codesign --verify --deep --strict --verbose=2 "$APP"
 
-      - name: Verify bundle
+      - name: Smoke test relocated bundle
         run: |
-          test -d build/install/ZhoConverterQt.app
-          test -x build/install/ZhoConverterQt.app/Contents/MacOS/ZhoConverterQt
-
-          file build/install/ZhoConverterQt.app/Contents/MacOS/ZhoConverterQt
-
-          otool -l build/install/ZhoConverterQt.app/Contents/MacOS/ZhoConverterQt |
-            grep -A2 LC_RPATH
-          
-          otool -L build/install/ZhoConverterQt.app/Contents/MacOS/ZhoConverterQt
+          ditto build/install/ZhoConverterQt.app "$RUNNER_TEMP/ZhoConverterQt.app"
+          QT_QPA_PLATFORM=offscreen python3 - <<'PY'
+          import os
+          import subprocess
+          from pathlib import Path
+          exe = Path(os.environ['RUNNER_TEMP']) / 'ZhoConverterQt.app/Contents/MacOS/ZhoConverterQt'
+          with (Path(os.environ['RUNNER_TEMP']) / 'zho-startup.log').open('w+') as log:
+              process = subprocess.Popen([str(exe)], cwd=os.environ['RUNNER_TEMP'], stdout=log, stderr=log)
+              try:
+                  process.wait(timeout=5)
+              except subprocess.TimeoutExpired:
+                  process.terminate()
+                  try:
+                      process.wait(timeout=5)
+                  except subprocess.TimeoutExpired:
+                      process.kill()
+                      process.wait()
+              else:
+                  log.seek(0)
+                  raise SystemExit(f'Application exited during startup ({process.returncode}):\n{log.read()}')
+          PY
 
       - name: Create ZIP
         run: |
