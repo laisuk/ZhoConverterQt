@@ -184,6 +184,8 @@ set(HEADERS
         src/AboutDialog.cpp
         src/EncodingDetector.h
         src/EncodingDetector.cpp
+        src/TextEncoding.h
+        src/TextEncoding.cpp
         uchardet_trimmed/uchardet/ChineseLegacyDetector.h
         uchardet_trimmed/uchardet/ChineseLegacyDetector.cpp
 )
@@ -411,4 +413,38 @@ if (WIN32 AND NOT CMAKE_CROSSCOMPILING AND DEPLOY_WITH_WINDEPLOYQT)
                 \"windeployqt failed with exit code \${result}: \${error}\")
         endif()
     ")
+endif ()
+
+
+option(ZHO_BUILD_TESTS "Build batch text encoding integration tests" OFF)
+if (ZHO_BUILD_TESTS)
+    enable_testing()
+    find_package(Qt6 REQUIRED COMPONENTS Test)
+    set(_zho_encoding_test_sources ${PROJECT_SOURCES})
+    list(REMOVE_ITEM _zho_encoding_test_sources main.cpp)
+    qt_add_executable(zho_batch_encoding_tests
+            tests/batch_encoding_test.cpp ${_zho_encoding_test_sources} ${SOURCES} ${HEADERS})
+    set_target_properties(zho_batch_encoding_tests PROPERTIES WIN32_EXECUTABLE FALSE)
+    target_include_directories(zho_batch_encoding_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+    target_link_libraries(zho_batch_encoding_tests PRIVATE
+            $<TARGET_PROPERTY:ZhoConverterQt,LINK_LIBRARIES> Qt6::Test)
+    add_dependencies(zho_batch_encoding_tests ZhoConverterQt)
+    if (WIN32)
+        target_compile_definitions(zho_batch_encoding_tests PRIVATE BOOST_NOWIDE_NO_LIB)
+        add_custom_command(TARGET zho_batch_encoding_tests POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${CMAKE_CURRENT_SOURCE_DIR}/opencc-fmmseg/opencc_fmmseg_capi.dll"
+                "${CMAKE_CURRENT_SOURCE_DIR}/pdfium/pdfium.dll"
+                "$<TARGET_FILE_DIR:zho_batch_encoding_tests>"
+                VERBATIM)
+    elseif (APPLE)
+        set_target_properties(zho_batch_encoding_tests PROPERTIES
+                BUILD_RPATH "@executable_path;@executable_path/../Frameworks")
+        add_custom_command(TARGET zho_batch_encoding_tests POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "$<TARGET_FILE:zho_opencc>" "$<TARGET_FILE:zho_pdfium>"
+                "$<TARGET_FILE_DIR:zho_batch_encoding_tests>"
+                VERBATIM)
+    endif ()
+    add_test(NAME batch_encoding COMMAND zho_batch_encoding_tests -platform offscreen)
 endif ()

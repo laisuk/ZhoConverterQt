@@ -1535,6 +1535,7 @@
      <string>Settings</string>
     </property>
     <addaction name="actionConvertFilename"/>
+    <addaction name="actionAutoDetectCjkBatch"/>
     <addaction name="separator"/>
     <addaction name="actionAddPageHeader"/>
     <addaction name="actionCompactPdfText"/>
@@ -1571,6 +1572,17 @@
    </property>
    <property name="text">
     <string>Convert Filename</string>
+   </property>
+  </action>
+  <action name="actionAutoDetectCjkBatch">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Auto-Detect CJK Text Encoding (Batch)</string>
+   </property>
+   <property name="toolTip">
+    <string>Detect Big5, GB18030 and Shift-JIS in batch text files. Output is UTF-8.</string>
    </property>
   </action>
   <action name="actionAddPageHeader">

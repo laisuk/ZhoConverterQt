@@ -10,6 +10,7 @@
 
 #include "OpenccFmmsegHelper.hpp"   // adjust include name
 #include "filetype_utils.h"
+#include "TextEncoding.h"
 // #include "OfficeConverter.hpp"
 #include "OfficeConverterMinizip.hpp"
 
@@ -24,6 +25,7 @@ BatchWorker::BatchWorker(QStringList files,
                          const bool addPdfPageHeader,
                          const bool autoReflowPdf,
                          const bool compactPdf,
+                         const bool autoDetectCjkEncoding,
                          QObject *parent)
     : QObject(parent),
       m_files(std::move(files)),
@@ -35,6 +37,7 @@ BatchWorker::BatchWorker(QStringList files,
       m_addPdfPageHeader(addPdfPageHeader),
       m_autoReflowPdf(autoReflowPdf),
       m_compactPdf(compactPdf),
+      m_autoDetectCjkEncoding(autoDetectCjkEncoding),
       m_cancelRequested(false) {
 }
 
@@ -162,14 +165,44 @@ void BatchWorker::processOneFile(const int idx, const int total, const QString &
     }
 
     QFile inFile(path);
-    if (!inFile.open(QIODevice::ReadOnly | QIODevice::Text)) {
+    if (!inFile.open(QIODevice::ReadOnly)) {
         emit log(QString("%1: %2 -> ❌ Error opening for read.")
             .arg(idx)
             .arg(path));
         return;
     }
 
-    const QString inputText = QTextStream(&inFile).readAll();
+    QString inputText;
+    if (m_autoDetectCjkEncoding) {
+        const QByteArray bytes = inFile.readAll();
+        if (inFile.error() != QFileDevice::NoError) {
+            emit error(QString("Cannot read %1: %2").arg(path, inFile.errorString()));
+            return;
+        }
+        // Keep Qt's Unicode BOM handling, including UTF-32, ahead of heuristics.
+        if (bytes.startsWith(QByteArray::fromHex("efbbbf")) ||
+            bytes.startsWith(QByteArray::fromHex("fffe")) ||
+            bytes.startsWith(QByteArray::fromHex("feff")) ||
+            bytes.startsWith(QByteArray::fromHex("0000feff")) || bytes.isEmpty()) {
+            inFile.seek(0);
+            inputText = QTextStream(&inFile).readAll();
+        } else {
+            const auto [encoding, bomSize] = EncodingDetector::detect(bytes);
+            const QString codec = TextEncoding::codecNameForDetectedEncoding(encoding);
+            bool ok = false;
+            inputText = TextEncoding::decodeTextBytes(bytes, codec, &ok);
+            if (!ok) {
+                emit error(QString("Cannot detect or decode text encoding: %1. File skipped.").arg(path));
+                return;
+            }
+            emit log(QString("%1: %2 -> Auto-detected %3").arg(idx).arg(path, codec));
+        }
+        // Match text-mode reads before writing through a text-mode output file.
+        inputText.replace(QStringLiteral("\r\n"), QStringLiteral("\n"));
+    } else {
+        inFile.setTextModeEnabled(true);
+        inputText = QTextStream(&inFile).readAll();
+    }
     inFile.close();
 
     const std::string converted =
