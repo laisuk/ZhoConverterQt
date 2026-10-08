@@ -1,4 +1,6 @@
 #include "mainwindow.h"
+#include "DictionaryWidget.h"
+#include "DictionaryFile.h"
 #include "ui_mainwindow.h"
 #include "QClipboard"
 #include "QFileDialog"
@@ -30,6 +32,37 @@
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindowClass()) {
     ui->setupUi(this);
+    m_dictionaryWidget = new DictionaryWidget(ui->tabDictionary);
+    ui->dictionaryLayout->addWidget(m_dictionaryWidget);
+    connect(m_dictionaryWidget, &DictionaryWidget::applyRequested, this, [this](const DictionaryRows &rows) {
+        if (m_batchThread) {
+            ui->statusBar->showMessage(tr("Wait until the batch thread has finished before applying dictionaries."));
+            return;
+        }
+        try {
+            std::vector<OpenccFmmsegHelper::CustomDictSpec> specs;
+            for (int i = 0; i < rows.size(); ++i) {
+                const auto &[slot, mode, path] = rows[i];
+                if (path.trimmed().isEmpty()) continue;
+                bool validSlot = false;
+                for (const auto &[id, name]: dictionarySlots()) if (id == slot) validSlot = true;
+                if (!validSlot || (mode != OPENCC_CUSTOM_DICT_APPEND && mode != OPENCC_CUSTOM_DICT_OVERRIDE))
+                    throw std::runtime_error(
+                        QString("Row %1 (%2): invalid slot or mode").arg(i + 1).arg(path).toUtf8().toStdString());
+                specs.push_back({.slot = slot, .mode = mode, .pairs = loadDictionaryFile(path.trimmed())});
+            }
+            OpenccFmmsegHelper candidate(specs);
+            candidate.setConfigId(getCurrentConfigId());
+            candidate.setPunctuation(ui->cbPunctuation->isChecked());
+            openccFmmsegHelper = std::move(candidate);
+            m_dictionaryWidget->setActiveSlotCount(static_cast<int>(specs.size()));
+            ui->statusBar->showMessage(specs.empty()
+                                           ? tr("Default dictionary restored.")
+                                           : tr("Custom dictionaries applied (%1 slots).").arg(specs.size()));
+        } catch (const std::exception &error) {
+            ui->statusBar->showMessage(tr("Dictionary application failed: %1").arg(QString::fromUtf8(error.what())));
+        }
+    });
     ui->tabWidget->setCurrentIndex(0);
     this->resize(1000, 700);
     // openccInstance = opencc_new();
@@ -617,6 +650,14 @@ void MainWindow::onBatchFinished(const bool cancelled) const {
 }
 
 void MainWindow::onBatchThreadFinished() {
+    auto *thread = qobject_cast<QThread *>(sender());
+    if (thread) thread->wait();
+    if (thread != m_batchThread) {
+        if (thread) thread->deleteLater();
+        return;
+    }
+    m_dictionaryWidget->setApplyEnabled(true);
+    if (thread) thread->deleteLater();
     m_batchThread = nullptr;
     m_batchWorker = nullptr;
 }
@@ -734,6 +775,7 @@ void MainWindow::on_tabWidget_currentChanged(const int index) const {
             ui->btnSaveAs->setEnabled(true);
             break;
         case 1:
+        case 2:
             ui->btnOpenFile->setEnabled(false);
             ui->btnSaveAs->setEnabled(false);
             break;
@@ -969,6 +1011,7 @@ void MainWindow::startBatchProcess(const opencc_config_t &config,
     m_cancelPdfButton->setEnabled(true);
     m_cancelPdfButton->show();
 
+    m_dictionaryWidget->setApplyEnabled(false);
     m_batchThread->start();
 }
 
@@ -1319,25 +1362,65 @@ void MainWindow::on_btnListClear_clicked() const {
 }
 
 void MainWindow::on_btnPreview_clicked() const {
-    if (QList<QListWidgetItem *> selected_items = ui->listSource->selectedItems(); !selected_items.isEmpty()) {
-        const QListWidgetItem *selected_item = selected_items[0];
-        const QString file_path = selected_item->text();
+    const auto selectedItems = ui->listSource->selectedItems();
+    if (selectedItems.isEmpty())
+        return;
 
-        QFile file(file_path);
-        if (const QFileInfo file_info(file_path); isAllowedTextLike(file_info.suffix().toLower())
-                                                  && file.open(QIODevice::ReadOnly | QIODevice::Text)) {
-            QTextStream in(&file);
-            const QString contents = in.readAll();
-            file.flush();
-            file.close();
-            ui->tbPreview->setPlainText(contents);
-            ui->statusBar->showMessage("Preview: " + file_path);
-        } else {
-            ui->tbPreview->clear();
-            ui->tbPreview->setPlainText(file_info.fileName() + ": ❌ Not a valid text file.");
-            ui->statusBar->showMessage(file_path + ": Not a valid text file.");
-        }
+    const QString filePath = selectedItems.first()->text();
+
+    if (const QFileInfo fileInfo(filePath); !isAllowedTextLike(fileInfo.suffix().toLower())) {
+        ui->tbPreview->setPlainText(
+            fileInfo.fileName() + tr(": ❌ Not a valid text file."));
+        ui->statusBar->showMessage(
+            filePath + tr(": Not a valid text file."));
+        return;
     }
+
+    QFile file(filePath);
+    if (!file.open(QIODevice::ReadOnly)) {
+        ui->tbPreview->setPlainText(file.errorString());
+        ui->statusBar->showMessage(
+            tr("Cannot preview: %1").arg(filePath));
+        return;
+    }
+
+    QByteArray bytes = file.readAll();
+
+    if (file.error() != QFileDevice::NoError) {
+        ui->tbPreview->setPlainText(file.errorString());
+        ui->statusBar->showMessage(
+            tr("Cannot read: %1").arg(filePath));
+        return;
+    }
+
+    auto encoding = QStringLiteral("UTF-8");
+
+    if (ui->actionAutoDetectCjkBatch->isChecked()) {
+        const auto [detected, bomSize] = EncodingDetector::detect(bytes);
+
+        encoding = TextEncoding::codecNameForDetectedEncoding(detected);
+
+        if (encoding.isEmpty())
+            encoding = QStringLiteral("UTF-8");
+
+        if (bomSize > 0)
+            bytes.remove(0, bomSize);
+    }
+
+    bool decoded = false;
+    QString contents =
+            TextEncoding::decodeTextBytes(bytes, encoding, &decoded);
+
+    if (!decoded)
+        contents = QString::fromUtf8(bytes);
+
+    ui->tbPreview->setPlainText(contents);
+
+    ui->statusBar->showMessage(
+        ui->actionAutoDetectCjkBatch->isChecked()
+            ? tr("Preview (%1): %2").arg(encoding, filePath)
+            : tr("Preview: %1").arg(filePath)
+    );
 }
 
 void MainWindow::on_btnOutDir_clicked() {

@@ -14,6 +14,8 @@ namespace Ui {
 QT_END_NAMESPACE
 
 class QPushButton;
+class DictionaryWidget;
+
 
 class MainWindow final : public QMainWindow {
     Q_OBJECT
@@ -110,6 +112,7 @@ private slots:
 
 private:
     Ui::MainWindowClass *ui;
+    DictionaryWidget *m_dictionaryWidget = nullptr;
 
     void displayFileList(const QStringList &files) const;
 

@@ -158,6 +158,10 @@ set(PROJECT_SOURCES
         mainwindow.ui
         mainwindow.h
         mainwindow.cpp
+        src/DictionaryFile.cpp
+        src/DictionaryFile.h
+        src/DictionaryWidget.cpp
+        src/DictionaryWidget.h
         src/draglistwidget.cpp
         src/draglistwidget.h
         src/texteditwidget.cpp
