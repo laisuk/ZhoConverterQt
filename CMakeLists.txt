@@ -415,6 +415,18 @@ if (WIN32 AND NOT CMAKE_CROSSCOMPILING AND DEPLOY_WITH_WINDEPLOYQT)
     ")
 endif ()
 
+# Install MinGW runtime DLLs from the selected compiler toolchain.
+if (MINGW)
+    get_filename_component(_zho_mingw_bin
+            "${CMAKE_CXX_COMPILER}" DIRECTORY)
+
+    install(FILES
+            "${_zho_mingw_bin}/libwinpthread-1.dll"
+            "${_zho_mingw_bin}/libgcc_s_seh-1.dll"
+            "${_zho_mingw_bin}/libstdc++-6.dll"
+            DESTINATION bin
+    )
+endif ()
 
 option(ZHO_BUILD_TESTS "Build batch text encoding integration tests" OFF)
 if (ZHO_BUILD_TESTS)
