@@ -151,6 +151,8 @@ private:
     QString m_currentPdfFilePath; // <--- add this
 
     void startPdfExtraction(const QString &filePath);
+    void startDocxExtractAction(const QString &fileName);
+    void startOdtExtractAction(const QString &fileName);
     void startEpubExtractAction(const QString &fileName);
 
     // NEW: batch

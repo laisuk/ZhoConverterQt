@@ -26,6 +26,7 @@
 // #include "OfficeConverterMinizip.hpp"
 #include "AboutDialog.h"
 #include "ReflowHelper.hpp"
+#include "OpenXmlHelper.h"
 #include "EpubHelper.h"
 #include <QtConcurrent/QtConcurrentRun>
 #include <QFutureWatcher>
@@ -621,6 +622,64 @@ void MainWindow::cleanupPdfThread() {
     }
 }
 
+void MainWindow::startDocxExtractAction(const QString &fileName) {
+    ui->statusBar->showMessage(tr("Extracting DOCX: %1").arg(fileName));
+
+    auto *watcher = new QFutureWatcher<QString>(this);
+
+    connect(watcher, &QFutureWatcher<QString>::finished,
+            this, [this, watcher, fileName]() {
+                try {
+                    const QString text = watcher->result();
+
+                    ui->tbSource->setPlainText(text);
+
+                    ui->statusBar->showMessage(
+                        tr("DOCX extraction completed: %1").arg(fileName));
+                } catch (const std::exception &e) {
+                    QMessageBox::warning(
+                        this,
+                        tr("DOCX Extraction Failed"),
+                        QString::fromUtf8(e.what()));
+                }
+
+                watcher->deleteLater();
+            });
+
+    watcher->setFuture(QtConcurrent::run([fileName]() {
+        return OpenXmlHelper::extractDocxAllText(fileName);
+    }));
+}
+
+void MainWindow::startOdtExtractAction(const QString &fileName) {
+    ui->statusBar->showMessage(tr("Extracting ODT: %1").arg(fileName));
+
+    auto *watcher = new QFutureWatcher<QString>(this);
+
+    connect(watcher, &QFutureWatcher<QString>::finished,
+            this, [this, watcher, fileName]() {
+                try {
+                    const QString text = watcher->result();
+
+                    ui->tbSource->setPlainText(text);
+
+                    ui->statusBar->showMessage(
+                        tr("ODT extraction completed: %1").arg(fileName));
+                } catch (const std::exception &e) {
+                    QMessageBox::warning(
+                        this,
+                        tr("ODT Extraction Failed"),
+                        QString::fromUtf8(e.what()));
+                }
+
+                watcher->deleteLater();
+            });
+
+    watcher->setFuture(QtConcurrent::run([fileName]() {
+        return OpenXmlHelper::extractOdtAllText(fileName);
+    }));
+}
+
 void MainWindow::startEpubExtractAction(const QString &fileName) {
     ui->statusBar->showMessage(
         tr("Extracting EPUB: %1").arg(fileName));
@@ -1071,7 +1130,7 @@ void MainWindow::on_btnOpenFile_clicked() {
         ".",
         tr("Text Files (*.txt);;"
             "Subtitle Files (*.srt *.vtt *.ass *.ttml2 *.xml);;"
-            "XML Files (*.xml *.ttml2);;"
+            "Word and OpenXML Documents (*.docx *.odt);;"
             "EPUB Files (*.epub);;"
             "PDF Files (*.pdf);;"
             "All Files (*.*)")
@@ -1080,23 +1139,32 @@ void MainWindow::on_btnOpenFile_clicked() {
     if (file_name.isEmpty())
         return;
 
-    // ----- If it's a PDF → use PdfExtractWorker -----
+    // PDF → PdfExtractWorker.
     if (isPdf(file_name)) {
-        // Show in the status bar
         ui->statusBar->showMessage(tr("Opening PDF: %1").arg(file_name));
-
-        // Start PDF extraction in worker thread
         startPdfExtraction(file_name);
         return;
     }
 
-    // EPUB → libzip + libxml2 extraction.
+    // EPUB → libzip + libxml2.
     if (isEpub(file_name)) {
         startEpubExtractAction(file_name);
         return;
     }
 
-    // ----- Otherwise: load through the single text-file loader -----
+    // DOCX → libzip + libxml2.
+    if (OpenXmlHelper::isDocx(file_name)) {
+        startDocxExtractAction(file_name);
+        return;
+    }
+
+    // ODT → libzip + libxml2.
+    if (OpenXmlHelper::isOdt(file_name)) {
+        startOdtExtractAction(file_name);
+        return;
+    }
+
+    // Plain text → encoding-aware loader.
     loadTextFile(file_name);
 }
 

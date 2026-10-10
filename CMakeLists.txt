@@ -172,36 +172,60 @@ set(PROJECT_SOURCES
         pdfium/PdfExtractWorker.cpp
 )
 
-set(APP_ICON_RESOURCE_WINDOWS "${CMAKE_CURRENT_SOURCE_DIR}/zhoconverterqt.rc")
-set(HEADERS
+# Windows application icon
+set(APP_ICON_RESOURCE_WINDOWS
+        "${CMAKE_CURRENT_SOURCE_DIR}/zhoconverterqt.rc"
+)
+
+# Application sources
+set(APP_SOURCES
+        # Main application
+        ${PROJECT_SOURCES}
+
+        # Office document conversion
         src/OfficeConverter.hpp
         src/OfficeConverterMinizip.hpp
         src/ZipPathUtils.hpp
+
+        # Document extraction
+        src/EpubHelper.h
+        src/EpubHelper.cpp
+        src/OpenXmlHelper.h
+        src/OpenXmlHelper.cpp
+
+        # PDF extraction and reflow
         pdfium/PdfiumHelper.hpp
         pdfium/ReflowHelper.hpp
         pdfium/PdfExtractWorker.h
         pdfium/batchworker.h
         pdfium/batchworker.cpp
-        src/filetype_utils.h
-        src/filetype_utils.cpp
         pdfium/PunctSets.hpp
         pdfium/CjkText.hpp
-        src/AboutDialog.cpp
+
+        # Text encoding and detection
         src/EncodingDetector.h
         src/EncodingDetector.cpp
         src/TextEncoding.h
         src/TextEncoding.cpp
         uchardet_trimmed/uchardet/ChineseLegacyDetector.h
         uchardet_trimmed/uchardet/ChineseLegacyDetector.cpp
-        src/EpubHelper.h
-        src/EpubHelper.cpp
+
+        # File utilities
+        src/filetype_utils.h
+        src/filetype_utils.cpp
+
+        # Dialogs
+        src/AboutDialog.cpp
 )
-qt_add_resources(SOURCES Resource.qrc)
+
+# Qt resources
+qt_add_resources(APP_RESOURCES Resource.qrc)
+
+# Application target
 qt_add_executable(ZhoConverterQt
-        ${PROJECT_SOURCES}
+        ${APP_SOURCES}
+        ${APP_RESOURCES}
         ${APP_ICON_RESOURCE_WINDOWS}
-        ${SOURCES}
-        ${HEADERS}
 )
 
 if (APPLE)
@@ -366,8 +390,8 @@ if (WIN32)
     # Nowide conversions are inline; suppress its MSVC compiled-library auto-link.
     target_compile_definitions(ZhoConverterQt PRIVATE BOOST_NOWIDE_NO_LIB)
     # Only the Regex and Nowide conversion headers are used by this app.
-#    target_include_directories(ZhoConverterQt PRIVATE
-#            "vcpkg/boost_1_88_0")
+    #    target_include_directories(ZhoConverterQt PRIVATE
+    #            "vcpkg/boost_1_88_0")
 endif ()
 
 # Install the application binary

@@ -82,8 +82,13 @@ DictionaryWidget::DictionaryWidget(QWidget *parent) : QWidget(parent) {
         }
     )");
     table->setHorizontalHeaderLabels({tr("Slot"), tr("Mode"), tr("Dictionary file"), tr("Remove")});
-    table->horizontalHeader()->setSectionResizeMode(QHeaderView::ResizeToContents);
-    table->horizontalHeader()->setSectionResizeMode(2, QHeaderView::Stretch);
+    auto *horizontalHeader = table->horizontalHeader();
+
+    horizontalHeader->setSectionResizeMode(QHeaderView::Interactive);
+    horizontalHeader->setSectionResizeMode(2, QHeaderView::Stretch);
+    table->setColumnWidth(0, 180); // Slot
+    table->setColumnWidth(1, 100); // Mode
+    table->setColumnWidth(3, 80); // Remove
     table->verticalHeader()->hide();
     layout->addWidget(table);
     empty = new QLabel(tr("No custom dictionaries configured."), this);
