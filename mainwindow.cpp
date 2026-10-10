@@ -12,7 +12,6 @@
 #include <QMenu>
 #include <QMouseEvent>
 #include <QSet>
-#include <QThread>
 #include <QTextDocumentFragment>
 #include <string>
 #include <QElapsedTimer>
@@ -27,6 +26,9 @@
 // #include "OfficeConverterMinizip.hpp"
 #include "AboutDialog.h"
 #include "ReflowHelper.hpp"
+#include "EpubHelper.h"
+#include <QtConcurrent/QtConcurrentRun>
+#include <QFutureWatcher>
 
 
 MainWindow::MainWindow(QWidget *parent)
@@ -619,6 +621,36 @@ void MainWindow::cleanupPdfThread() {
     }
 }
 
+void MainWindow::startEpubExtractAction(const QString &fileName) {
+    ui->statusBar->showMessage(
+        tr("Extracting EPUB: %1").arg(fileName));
+
+    auto *watcher = new QFutureWatcher<QString>(this);
+
+    connect(watcher, &QFutureWatcher<QString>::finished,
+            this, [this, watcher, fileName]() {
+                try {
+                    const QString text = watcher->result();
+
+                    ui->tbSource->setPlainText(text);
+
+                    ui->statusBar->showMessage(
+                        tr("EPUB extraction completed: %1").arg(fileName));
+                } catch (const std::exception &e) {
+                    QMessageBox::warning(
+                        this,
+                        tr("EPUB Extraction Failed"),
+                        QString::fromUtf8(e.what()));
+                }
+
+                watcher->deleteLater();
+            });
+
+    watcher->setFuture(QtConcurrent::run([fileName]() {
+        return EpubHelper::extractEpubAllText(fileName);
+    }));
+}
+
 // ------------------------------------
 // Batch Slots
 // ------------------------------------
@@ -1040,6 +1072,7 @@ void MainWindow::on_btnOpenFile_clicked() {
         tr("Text Files (*.txt);;"
             "Subtitle Files (*.srt *.vtt *.ass *.ttml2 *.xml);;"
             "XML Files (*.xml *.ttml2);;"
+            "EPUB Files (*.epub);;"
             "PDF Files (*.pdf);;"
             "All Files (*.*)")
     );
@@ -1057,6 +1090,12 @@ void MainWindow::on_btnOpenFile_clicked() {
         return;
     }
 
+    // EPUB → libzip + libxml2 extraction.
+    if (isEpub(file_name)) {
+        startEpubExtractAction(file_name);
+        return;
+    }
+
     // ----- Otherwise: load through the single text-file loader -----
     loadTextFile(file_name);
 }
@@ -1069,6 +1108,10 @@ bool MainWindow::isPdf(const QString &path) {
     const QByteArray head = f.read(64); // enough for all real PDFs
     const qsizetype index = head.indexOf("%PDF-");
     return index >= 0;
+}
+
+bool MainWindow::isEpub(const QString &path) {
+    return EpubHelper::isEpub(path);
 }
 
 void MainWindow::on_btnReflow_clicked() const {

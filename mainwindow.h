@@ -56,6 +56,8 @@ private slots:
 
     static bool isPdf(const QString &path);
 
+    static bool isEpub(const QString &path);
+
     void on_btnReflow_clicked() const;
 
     void on_btnNormCompat_clicked() const;
@@ -149,6 +151,7 @@ private:
     QString m_currentPdfFilePath; // <--- add this
 
     void startPdfExtraction(const QString &filePath);
+    void startEpubExtractAction(const QString &fileName);
 
     // NEW: batch
     QThread *m_batchThread = nullptr;

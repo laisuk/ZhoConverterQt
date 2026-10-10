@@ -58,7 +58,7 @@ elseif (UNIX)
 endif ()
 
 
-project(ZhoConverterQt LANGUAGES CXX)
+project(ZhoConverterQt LANGUAGES C CXX)
 
 if (WIN32 AND ZHO_USE_BUNDLED_MINGW AND NOT MINGW)
     message(FATAL_ERROR "The bundled SDK requires MinGW. Configure MSVC with -DZHO_USE_BUNDLED_MINGW=OFF in a fresh build directory.")
@@ -134,6 +134,7 @@ find_package(Qt${QT_VERSION_MAJOR}
         Core
         Gui
         Widgets
+        Concurrent
 )
 qt_standard_project_setup()
 #set(libzip_DIR "D:/lib/vcpkg/packages/libzip_x64-windows-static/share/libzip")
@@ -192,6 +193,8 @@ set(HEADERS
         src/TextEncoding.cpp
         uchardet_trimmed/uchardet/ChineseLegacyDetector.h
         uchardet_trimmed/uchardet/ChineseLegacyDetector.cpp
+        src/EpubHelper.h
+        src/EpubHelper.cpp
 )
 qt_add_resources(SOURCES Resource.qrc)
 qt_add_executable(ZhoConverterQt
@@ -219,6 +222,7 @@ target_link_libraries(ZhoConverterQt
         Qt::Core
         Qt::Gui
         Qt::Widgets
+        Qt::Concurrent
 )
 
 if (NOT WIN32)
@@ -328,6 +332,26 @@ target_compile_features(uchardet_trimmed PUBLIC cxx_std_17)
 
 target_link_libraries(ZhoConverterQt PRIVATE
         uchardet_trimmed
+)
+
+# Vendored libxml2 2.15.4 — static XML + tolerant HTML parser.
+set(BUILD_SHARED_LIBS OFF)
+
+set(LIBXML2_WITH_HTML ON)
+set(LIBXML2_WITH_ICONV OFF)
+set(LIBXML2_WITH_MODULES OFF)
+set(LIBXML2_WITH_CATALOG OFF)
+set(LIBXML2_WITH_DEBUG OFF)
+
+set(LIBXML2_WITH_PROGRAMS OFF)
+set(LIBXML2_WITH_TESTS OFF)
+set(LIBXML2_WITH_PYTHON OFF)
+set(LIBXML2_WITH_DOCS OFF)
+
+add_subdirectory(vcpkg/libxml2_minimal)
+
+target_link_libraries(ZhoConverterQt PRIVATE
+        LibXml2::LibXml2
 )
 
 if (WIN32)
