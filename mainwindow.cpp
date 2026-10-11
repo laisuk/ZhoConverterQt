@@ -722,7 +722,7 @@ void MainWindow::setExtractedSource(const QString &filePath,
     m_textEncodingWasAutoDetected = false;
 
     const int textCode =
-        openccFmmsegHelper.zhoCheck(text.toStdString());
+            openccFmmsegHelper.zhoCheck(text.toStdString());
 
     update_tbSource_info(textCode);
 
@@ -1494,24 +1494,112 @@ void MainWindow::on_btnListClear_clicked() const {
     ui->statusBar->showMessage("All entries cleared.");
 }
 
-void MainWindow::on_btnPreview_clicked() const {
+void MainWindow::on_btnPreview_clicked() {
     const auto selectedItems = ui->listSource->selectedItems();
     if (selectedItems.isEmpty())
         return;
 
-    const QString filePath = selectedItems.first()->text();
+    const quint64 requestId = ++m_previewRequestId;
 
-    if (const QFileInfo fileInfo(filePath); !isAllowedTextLike(fileInfo.suffix().toLower())) {
+    const QString filePath = selectedItems.first()->text();
+    const QFileInfo fileInfo(filePath);
+    const QString suffix = fileInfo.suffix().toLower();
+
+    // Cheap extension pre-filter before ZIP validation.
+    if (isOfficeExt(suffix)) {
+        enum class DocumentType {
+            None,
+            Docx,
+            Odt,
+            Epub
+        };
+
+        auto type = DocumentType::None;
+
+        if (suffix == QLatin1String("docx") &&
+            OpenXmlHelper::isDocx(filePath)) {
+            type = DocumentType::Docx;
+        } else if (suffix == QLatin1String("odt") &&
+                   OpenXmlHelper::isOdt(filePath)) {
+            type = DocumentType::Odt;
+        } else if (suffix == QLatin1String("epub") &&
+                   EpubHelper::isEpub(filePath)) {
+            type = DocumentType::Epub;
+        }
+
+        if (type != DocumentType::None) {
+            auto *watcher = new QFutureWatcher<QString>(this);
+
+            ui->tbPreview->clear();
+            ui->statusBar->showMessage(
+                tr("Extracting preview: %1").arg(filePath));
+
+            connect(watcher, &QFutureWatcher<QString>::finished,
+                    this, [this, watcher, filePath, type, requestId]() {
+                        watcher->deleteLater();
+
+                        // Ignore results from superseded requests.
+                        if (requestId != m_previewRequestId)
+                            return;
+
+                        const QString format =
+                                type == DocumentType::Docx
+                                    ? QStringLiteral("DOCX")
+                                    : type == DocumentType::Odt
+                                          ? QStringLiteral("ODT")
+                                          : QStringLiteral("EPUB");
+
+                        try {
+                            ui->tbPreview->setPlainText(watcher->result());
+
+                            ui->statusBar->showMessage(
+                                tr("%1 extraction completed: %2")
+                                .arg(format, filePath));
+                        } catch (const std::exception &e) {
+                            QMessageBox::warning(
+                                this,
+                                tr("%1 Extraction Failed").arg(format),
+                                QString::fromUtf8(e.what()));
+                        }
+                    });
+
+            watcher->setFuture(
+                QtConcurrent::run([filePath, type]() -> QString {
+                    switch (type) {
+                        case DocumentType::Docx:
+                            return OpenXmlHelper::extractDocxAllText(filePath);
+
+                        case DocumentType::Odt:
+                            return OpenXmlHelper::extractOdtAllText(filePath);
+
+                        case DocumentType::Epub:
+                            return EpubHelper::extractEpubAllText(filePath);
+
+                        default:
+                            return {};
+                    }
+                }));
+
+            return;
+        }
+    }
+
+    // Reject unsupported file types.
+    if (!isAllowedTextLike(suffix)) {
         ui->tbPreview->setPlainText(
             fileInfo.fileName() + tr(": ❌ Not a valid text file."));
+
         ui->statusBar->showMessage(
-            filePath + tr(": Not a valid text file."));
+            tr("%1: Not a valid text file.").arg(filePath));
         return;
     }
 
+    // Plain-text preview.
     QFile file(filePath);
+
     if (!file.open(QIODevice::ReadOnly)) {
         ui->tbPreview->setPlainText(file.errorString());
+
         ui->statusBar->showMessage(
             tr("Cannot preview: %1").arg(filePath));
         return;
@@ -1521,26 +1609,33 @@ void MainWindow::on_btnPreview_clicked() const {
 
     if (file.error() != QFileDevice::NoError) {
         ui->tbPreview->setPlainText(file.errorString());
+
         ui->statusBar->showMessage(
             tr("Cannot read: %1").arg(filePath));
         return;
     }
 
+    const bool autoDetect =
+            ui->actionAutoDetectCjkBatch->isChecked();
+
     auto encoding = QStringLiteral("UTF-8");
 
-    if (ui->actionAutoDetectCjkBatch->isChecked()) {
-        const auto [detected, bomSize] = EncodingDetector::detect(bytes);
+    if (autoDetect) {
+        const auto [detected, bomSize] =
+                EncodingDetector::detect(bytes);
 
-        encoding = TextEncoding::codecNameForDetectedEncoding(detected);
+        const QString detectedCodec =
+                TextEncoding::codecNameForDetectedEncoding(detected);
 
-        if (encoding.isEmpty())
-            encoding = QStringLiteral("UTF-8");
+        if (!detectedCodec.isEmpty())
+            encoding = detectedCodec;
 
         if (bomSize > 0)
             bytes.remove(0, bomSize);
     }
 
     bool decoded = false;
+
     QString contents =
             TextEncoding::decodeTextBytes(bytes, encoding, &decoded);
 
@@ -1550,10 +1645,9 @@ void MainWindow::on_btnPreview_clicked() const {
     ui->tbPreview->setPlainText(contents);
 
     ui->statusBar->showMessage(
-        ui->actionAutoDetectCjkBatch->isChecked()
+        autoDetect
             ? tr("Preview (%1): %2").arg(encoding, filePath)
-            : tr("Preview: %1").arg(filePath)
-    );
+            : tr("Preview: %1").arg(filePath));
 }
 
 void MainWindow::on_btnOutDir_clicked() {
