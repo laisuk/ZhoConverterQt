@@ -372,7 +372,7 @@ set(LIBXML2_WITH_TESTS OFF)
 set(LIBXML2_WITH_PYTHON OFF)
 set(LIBXML2_WITH_DOCS OFF)
 
-add_subdirectory(vcpkg/libxml2_minimal)
+add_subdirectory(vcpkg/libxml2_minimal EXCLUDE_FROM_ALL)
 
 target_link_libraries(ZhoConverterQt PRIVATE
         LibXml2::LibXml2
@@ -481,34 +481,65 @@ if (MINGW)
 endif ()
 
 option(ZHO_BUILD_TESTS "Build batch text encoding integration tests" OFF)
+
 if (ZHO_BUILD_TESTS)
     enable_testing()
     find_package(Qt6 REQUIRED COMPONENTS Test)
-    set(_zho_encoding_test_sources ${PROJECT_SOURCES})
+
+    # Reuse application sources, excluding the GUI entry point.
+    set(_zho_encoding_test_sources ${APP_SOURCES})
     list(REMOVE_ITEM _zho_encoding_test_sources main.cpp)
+
     qt_add_executable(zho_batch_encoding_tests
-            tests/batch_encoding_test.cpp ${_zho_encoding_test_sources} ${SOURCES} ${HEADERS})
-    set_target_properties(zho_batch_encoding_tests PROPERTIES WIN32_EXECUTABLE FALSE)
-    target_include_directories(zho_batch_encoding_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+            tests/batch_encoding_test.cpp
+            ${_zho_encoding_test_sources}
+    )
+
+    set_target_properties(zho_batch_encoding_tests PROPERTIES
+            WIN32_EXECUTABLE FALSE
+            MACOSX_BUNDLE FALSE
+    )
+
+    target_include_directories(zho_batch_encoding_tests PRIVATE
+            "${CMAKE_CURRENT_SOURCE_DIR}"
+    )
+
     target_link_libraries(zho_batch_encoding_tests PRIVATE
-            $<TARGET_PROPERTY:ZhoConverterQt,LINK_LIBRARIES> Qt6::Test)
+            $<TARGET_PROPERTY:ZhoConverterQt,LINK_LIBRARIES>
+            Qt6::Test
+    )
+
     add_dependencies(zho_batch_encoding_tests ZhoConverterQt)
+
     if (WIN32)
-        target_compile_definitions(zho_batch_encoding_tests PRIVATE BOOST_NOWIDE_NO_LIB)
+        target_compile_definitions(zho_batch_encoding_tests PRIVATE
+                BOOST_NOWIDE_NO_LIB
+        )
+
         add_custom_command(TARGET zho_batch_encoding_tests POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different
                 "${CMAKE_CURRENT_SOURCE_DIR}/opencc-fmmseg/opencc_fmmseg_capi.dll"
                 "${CMAKE_CURRENT_SOURCE_DIR}/pdfium/pdfium.dll"
                 "$<TARGET_FILE_DIR:zho_batch_encoding_tests>"
-                VERBATIM)
+                VERBATIM
+        )
+
     elseif (APPLE)
         set_target_properties(zho_batch_encoding_tests PROPERTIES
-                BUILD_RPATH "@executable_path;@executable_path/../Frameworks")
+                BUILD_RPATH "@executable_path;@executable_path/../Frameworks"
+        )
+
         add_custom_command(TARGET zho_batch_encoding_tests POST_BUILD
                 COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                "$<TARGET_FILE:zho_opencc>" "$<TARGET_FILE:zho_pdfium>"
+                "$<TARGET_FILE:zho_opencc>"
+                "$<TARGET_FILE:zho_pdfium>"
                 "$<TARGET_FILE_DIR:zho_batch_encoding_tests>"
-                VERBATIM)
+                VERBATIM
+        )
     endif ()
-    add_test(NAME batch_encoding COMMAND zho_batch_encoding_tests -platform offscreen)
+
+    add_test(
+            NAME batch_encoding
+            COMMAND zho_batch_encoding_tests -platform offscreen
+    )
 endif ()

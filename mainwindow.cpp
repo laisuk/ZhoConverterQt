@@ -357,6 +357,9 @@ bool MainWindow::loadTextFile(const QString &filePath,
 
     ui->tbSource->document()->setPlainText(contents);
     ui->tbSource->contentFilename = filePath;
+    ui->lblFileName->setCursor(Qt::PointingHandCursor);
+    ui->lblFileName->setToolTip(
+        tr("Click to reload the current text file using a different encoding."));
 
     m_currentTextEncoding = actualEncoding;
     m_textEncodingWasAutoDetected = autoDetect;
@@ -632,7 +635,7 @@ void MainWindow::startDocxExtractAction(const QString &fileName) {
                 try {
                     const QString text = watcher->result();
 
-                    ui->tbSource->setPlainText(text);
+                    setExtractedSource(fileName, text);
 
                     ui->statusBar->showMessage(
                         tr("DOCX extraction completed: %1").arg(fileName));
@@ -661,7 +664,7 @@ void MainWindow::startOdtExtractAction(const QString &fileName) {
                 try {
                     const QString text = watcher->result();
 
-                    ui->tbSource->setPlainText(text);
+                    setExtractedSource(fileName, text);
 
                     ui->statusBar->showMessage(
                         tr("ODT extraction completed: %1").arg(fileName));
@@ -691,7 +694,7 @@ void MainWindow::startEpubExtractAction(const QString &fileName) {
                 try {
                     const QString text = watcher->result();
 
-                    ui->tbSource->setPlainText(text);
+                    setExtractedSource(fileName, text);
 
                     ui->statusBar->showMessage(
                         tr("EPUB extraction completed: %1").arg(fileName));
@@ -708,6 +711,25 @@ void MainWindow::startEpubExtractAction(const QString &fileName) {
     watcher->setFuture(QtConcurrent::run([fileName]() {
         return EpubHelper::extractEpubAllText(fileName);
     }));
+}
+
+void MainWindow::setExtractedSource(const QString &filePath,
+                                    const QString &text) {
+    ui->tbSource->setPlainText(text);
+    ui->tbSource->contentFilename = filePath;
+
+    m_currentTextEncoding = QStringLiteral("UTF-8");
+    m_textEncodingWasAutoDetected = false;
+
+    const int textCode =
+        openccFmmsegHelper.zhoCheck(text.toStdString());
+
+    update_tbSource_info(textCode);
+
+    // Document extraction does not support encoding reload.
+    ui->lblFileName->setCursor(Qt::ArrowCursor);
+    ui->lblFileName->setToolTip(
+        tr("Encoding reload is unavailable for document files."));
 }
 
 // ------------------------------------

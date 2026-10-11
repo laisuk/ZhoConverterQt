@@ -154,6 +154,8 @@ private:
     void startDocxExtractAction(const QString &fileName);
     void startOdtExtractAction(const QString &fileName);
     void startEpubExtractAction(const QString &fileName);
+    void setExtractedSource(const QString &filePath,
+                        const QString &text);
 
     // NEW: batch
     QThread *m_batchThread = nullptr;
