@@ -383,7 +383,7 @@
        <enum>QTabWidget::TabShape::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>2</number>
+       <number>0</number>
       </property>
       <property name="iconSize">
        <size>
@@ -674,12 +674,16 @@
                     <string>Normalize CJK compatibility ideographs and Unicode compatibility characters</string>
                    </property>
                    <property name="text">
-                    <string>≡</string>
+                    <string/>
+                   </property>
+                   <property name="icon">
+                    <iconset resource="Resource.qrc">
+                     <normaloff>:/resource/icons8-playlist-64.png</normaloff>:/resource/icons8-playlist-64.png</iconset>
                    </property>
                    <property name="iconSize">
                     <size>
-                     <width>16</width>
-                     <height>16</height>
+                     <width>18</width>
+                     <height>18</height>
                     </size>
                    </property>
                   </widget>
@@ -1646,7 +1650,7 @@
  </resources>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup_region"/>
   <buttongroup name="buttonGroup_config"/>
+  <buttongroup name="buttonGroup_region"/>
  </buttongroups>
 </ui>
