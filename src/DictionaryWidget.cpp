@@ -144,10 +144,10 @@ void DictionaryWidget::addRow(const DictionaryRow &row) {
     auto *fileLayout = new QHBoxLayout(fileCell);
     fileLayout->setContentsMargins(0, 0, 0, 0);
     auto *path = new QLineEdit(row.path, fileCell);
-    auto *browse = new QPushButton(tr("Browse…"), fileCell);
+    auto *browse = new QPushButton(tr("🗁 Browse"), fileCell);
     fileLayout->addWidget(path);
     fileLayout->addWidget(browse);
-    auto *remove = new QPushButton(tr("Remove"), table);
+    auto *remove = new QPushButton(tr("✕ Remove"), table);
     remove->setStyleSheet("QPushButton { color: #D32F2F; }");
     table->setCellWidget(index, 0, slot);
     table->setCellWidget(index, 1, mode);
