@@ -899,15 +899,10 @@ void MainWindow::on_tabWidget_currentChanged(const int index) const {
             ui->btnSaveAs->setEnabled(true);
             break;
         case 1:
-            ui->btnOpenFile->setEnabled(false);
-            ui->lblFileName->setVisible(false);
-            ui->btnSaveAs->setEnabled(false);
-            break;
         case 2:
             ui->btnOpenFile->setEnabled(false);
             ui->lblFileName->setVisible(false);
             ui->btnSaveAs->setEnabled(false);
-            ui->btnProcess->setEnabled(false);
             break;
         default:
             break;
