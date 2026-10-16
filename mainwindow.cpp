@@ -395,7 +395,7 @@ bool MainWindow::loadTextFile(const QString &filePath,
 
 void MainWindow::showEncodingMenu() {
     const QString filePath = ui->tbSource->contentFilename;
-    if (filePath.isEmpty())
+    if (filePath.isEmpty() || ui->tabWidget->currentIndex() != 0 || m_pdfThread || m_batchThread)
         return;
 
     if (!isEncodingSelectableFile(filePath)) {
@@ -439,13 +439,21 @@ void MainWindow::showEncodingMenu() {
     const QPoint pos =
             ui->lblFileName->mapToGlobal(ui->lblFileName->rect().bottomLeft());
 
-    if (const QAction *selected = menu.exec(pos))
+    if (const QAction *selected = menu.exec(pos)) {
+        if (ui->tbSource->contentFilename != filePath)
+            return;
+
         reloadCurrentTextFile(selected->data().toString());
+    }
 }
 
 void MainWindow::reloadCurrentTextFile(const QString &encoding) {
     const QString filePath = ui->tbSource->contentFilename;
-    if (filePath.isEmpty())
+    if (filePath.isEmpty() ||
+        ui->tabWidget->currentIndex() != 0 ||
+        m_pdfThread ||
+        m_batchThread ||
+        !isEncodingSelectableFile(filePath))
         return;
 
     loadTextFile(filePath, encoding, true, true);
@@ -882,15 +890,24 @@ opencc_config_t MainWindow::getCurrentConfigId() const {
 }
 
 void MainWindow::on_tabWidget_currentChanged(const int index) const {
+    ui->btnProcess->setEnabled(index < 2 && !m_pdfThread && !m_batchThread);
     switch (index) {
         case 0:
-            ui->btnOpenFile->setEnabled(true);
+            ui->btnOpenFile->setEnabled(!m_pdfThread && !m_batchThread);
+            ui->lblFileName->setVisible(true);
+            ui->lblFileName->setEnabled(!m_pdfThread && !m_batchThread);
             ui->btnSaveAs->setEnabled(true);
             break;
         case 1:
+            ui->btnOpenFile->setEnabled(false);
+            ui->lblFileName->setVisible(false);
+            ui->btnSaveAs->setEnabled(false);
+            break;
         case 2:
             ui->btnOpenFile->setEnabled(false);
+            ui->lblFileName->setVisible(false);
             ui->btnSaveAs->setEnabled(false);
+            ui->btnProcess->setEnabled(false);
             break;
         default:
             break;

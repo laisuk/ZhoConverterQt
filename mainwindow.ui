@@ -1585,7 +1585,7 @@
     <bool>true</bool>
    </property>
    <property name="text">
-    <string>Convert Filename</string>
+    <string>Convert Filename (batch)</string>
    </property>
   </action>
   <action name="actionAutoDetectCjkBatch">
