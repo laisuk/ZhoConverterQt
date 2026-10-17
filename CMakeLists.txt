@@ -110,7 +110,7 @@ elseif (APPLE)
 elseif (UNIX)
     # Local Qt fallback; CI supplies CMAKE_PREFIX_PATH.
     if (NOT CMAKE_PREFIX_PATH)
-        set(CMAKE_PREFIX_PATH "/opt/Qt/6.8.3/gcc_64")
+        set(CMAKE_PREFIX_PATH "/opt/Qt/6.11.2/gcc_64")
     endif ()
 
     list(APPEND CMAKE_PREFIX_PATH
