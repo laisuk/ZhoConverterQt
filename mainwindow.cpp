@@ -32,6 +32,68 @@
 #include <QFutureWatcher>
 
 
+namespace {
+    struct FileDialogState {
+        QString directory;
+        QString selectedFilter;
+    };
+
+    FileDialogState restoreFileDialogState(
+        const QString &key,
+        const QString &filters) {
+        QSettings settings;
+
+        const QStringList availableFilters =
+                filters.split(";;", Qt::SkipEmptyParts);
+
+        QString directory = settings.value(
+            key + "/directory",
+            QDir::homePath()
+        ).toString();
+
+        if (!QDir(directory).exists())
+            directory = QDir::homePath();
+
+        const int filterIndex = settings.value(
+            key + "/filterIndex", 0
+        ).toInt();
+
+        const QString selectedFilter =
+                filterIndex >= 0 && filterIndex < availableFilters.size()
+                    ? availableFilters.at(filterIndex)
+                    : availableFilters.value(0);
+
+        return {directory, selectedFilter};
+    }
+
+    void saveFileDialogState(
+        const QString &key,
+        const QString &filePath,
+        const QString &selectedFilter,
+        const QString &filters) {
+        const QStringList availableFilters =
+                filters.split(";;", Qt::SkipEmptyParts);
+
+        QSettings settings;
+
+        settings.setValue(
+            key + "/directory",
+            QFileInfo(filePath).absolutePath()
+        );
+
+        const qsizetype index =
+                availableFilters.indexOf(selectedFilter);
+
+        if (index >= 0) {
+            settings.setValue(
+                key + "/filterIndex",
+                index
+            );
+        }
+    }
+} // namespace
+
+
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindowClass()) {
     ui->setupUi(this);
@@ -1224,21 +1286,36 @@ void MainWindow::on_btnCopy_clicked() const {
     ui->statusBar->showMessage("Destination contents copied to clipboard");
 }
 
+
 void MainWindow::on_btnOpenFile_clicked() {
+    const QString filters =
+            tr("Text Files (*.txt);;"
+                "Subtitle Files (*.srt *.vtt *.ass *.ttml2 *.xml);;"
+                "Word and OpenXML Documents (*.docx *.odt);;"
+                "EPUB Files (*.epub);;"
+                "PDF Files (*.pdf);;"
+                "All Files (*.*)");
+
+    constexpr auto settingsKey = "fileDialog/open";
+
+    const auto state = restoreFileDialogState(
+        settingsKey, filters);
+
+    QString selectedFilter = state.selectedFilter;
+
     const QString file_name = QFileDialog::getOpenFileName(
         this,
         tr("Open File"),
-        ".",
-        tr("Text Files (*.txt);;"
-            "Subtitle Files (*.srt *.vtt *.ass *.ttml2 *.xml);;"
-            "Word and OpenXML Documents (*.docx *.odt);;"
-            "EPUB Files (*.epub);;"
-            "PDF Files (*.pdf);;"
-            "All Files (*.*)")
+        state.directory,
+        filters,
+        &selectedFilter
     );
 
     if (file_name.isEmpty())
         return;
+
+    saveFileDialogState(
+        settingsKey, file_name, selectedFilter, filters);
 
     // PDF → PdfExtractWorker.
     if (isPdf(file_name)) {
@@ -1441,40 +1518,64 @@ void MainWindow::on_btnDeTofu_clicked() const {
     ui->statusBar->showMessage(tr("✅ Text deTofu complete."));
 }
 
+
 void MainWindow::on_btnSaveAs_clicked() {
-    // Determine which text box to save
+    // Determine which text box to save.
     const QString targetName = ui->cbSaveTarget->currentText();
+
     const QString content =
             (targetName == "Source")
                 ? ui->tbSource->toPlainText()
                 : ui->tbDestination->toPlainText();
 
-    // Suggested filename like "./Source.txt"
-    const QString suggested = QString("./%1.txt").arg(targetName);
+    const QString filters =
+            tr("Text File (*.txt);;All Files (*.*)");
+
+    constexpr auto settingsKey = "fileDialog/save";
+
+    const auto state = restoreFileDialogState(
+        settingsKey, filters);
+
+    // Preserve the existing Source.txt / Destination.txt naming.
+    const QString suggested = QDir(state.directory).filePath(
+        QString("%1.txt").arg(targetName)
+    );
+
+    QString selectedFilter = state.selectedFilter;
 
     const QString filename = QFileDialog::getSaveFileName(
         this,
         tr("Save Text File"),
         suggested,
-        tr("Text File (*.txt);;All Files (*.*)")
+        filters,
+        &selectedFilter
     );
 
     if (filename.isEmpty())
         return;
 
     QSaveFile file(filename);
+
     if (!file.open(QIODevice::WriteOnly | QIODevice::Text)) {
-        ui->statusBar->showMessage(tr("❌ Cannot open file for writing."));
+        ui->statusBar->showMessage(
+            tr("❌ Cannot open file for writing."));
         return;
     }
 
     QTextStream out(&file);
     out << content;
+    out.flush();
 
-    if (!file.commit()) {
-        ui->statusBar->showMessage(tr("❌ Failed to save file."));
+    if (out.status() != QTextStream::Ok || !file.commit()) {
+        file.cancelWriting();
+        ui->statusBar->showMessage(
+            tr("❌ Failed to save file."));
         return;
     }
+
+    // Persist only after successful writing.
+    saveFileDialogState(
+        settingsKey, filename, selectedFilter, filters);
 
     ui->statusBar->showMessage(
         QStringLiteral("💾 File saved (%1): %2")
@@ -1499,22 +1600,38 @@ void MainWindow::on_tbSource_textChanged() const {
         .arg(ui->tbSource->document()->toPlainText().length()));
 }
 
-void MainWindow::on_btnAdd_clicked() {
-    QFileDialog file_dialog(this);
-    file_dialog.setFileMode(QFileDialog::ExistingFiles);
 
-    if (const QStringList files =
-            QFileDialog::getOpenFileNames(this,
-                                          "Open Files",
-                                          "",
-                                          "Text Files (*.txt);;"
-                                          "Subtitle Files (*.srt *.vtt *.ass *.ttml2 *.xml);;"
-                                          "Office Files (*.docx *.xlsx *.pptx *.odt *.ods *.odp *.epub);;"
-                                          "PDF Files (*.pdf);;"
-                                          "All Files (*.*)"); !files.isEmpty()) {
-        displayFileList(files);
-        ui->statusBar->showMessage("File(s) added.");
-    }
+void MainWindow::on_btnAdd_clicked() {
+    const QString filters =
+            tr("Text Files (*.txt);;"
+                "Subtitle Files (*.srt *.vtt *.ass *.ttml2 *.xml);;"
+                "Office Files (*.docx *.xlsx *.pptx *.odt *.ods *.odp *.epub);;"
+                "PDF Files (*.pdf);;"
+                "All Files (*.*)");
+
+    constexpr auto settingsKey = "fileDialog/batch";
+
+    const auto state = restoreFileDialogState(
+        settingsKey, filters);
+
+    QString selectedFilter = state.selectedFilter;
+
+    const QStringList files = QFileDialog::getOpenFileNames(
+        this,
+        tr("Open Files"),
+        state.directory,
+        filters,
+        &selectedFilter
+    );
+
+    if (files.isEmpty())
+        return;
+
+    saveFileDialogState(
+        settingsKey, files.first(), selectedFilter, filters);
+
+    displayFileList(files);
+    ui->statusBar->showMessage(tr("File(s) added."));
 }
 
 void MainWindow::displayFileList(const QStringList &files) const {
