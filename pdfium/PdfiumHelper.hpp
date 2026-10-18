@@ -1,7 +1,6 @@
 #pragma once
 
 #include <atomic>
-#include <cctype>
 #include <cstdint>
 #include <functional>
 #include <future>

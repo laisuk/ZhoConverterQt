@@ -1,6 +1,5 @@
 #pragma once
 #include <algorithm>
-#include <cstddef>
 #include <cstdint>
 #include <string_view>
 
@@ -211,8 +210,8 @@ namespace pdfium::text {
     // Contains any CJK (very simple heuristic: >0x7F)
     [[nodiscard]]
     [[gnu::always_inline]] inline bool ContainsCjk(const std::u32string_view s) noexcept {
-        return std::any_of(s.begin(), s.end(),
-                           [](const char32_t ch) { return ch > 0x7F; });
+        return std::ranges::any_of(s,
+                                   [](const char32_t ch) { return ch > 0x7F; });
     }
 
     [[nodiscard]]
@@ -223,13 +222,13 @@ namespace pdfium::text {
     // All ASCII?
     [[nodiscard]]
     [[gnu::always_inline]] inline bool IsAllAscii(const std::u32string_view s) noexcept {
-        return std::all_of(s.begin(), s.end(), IsAscii);
+        return std::ranges::all_of(s, IsAscii);
     }
 
     // Any A-Z / a-z
     [[nodiscard]]
     [[gnu::always_inline]] inline bool HasLatinAlpha(const std::u32string_view s) noexcept {
-        return std::any_of(s.begin(), s.end(), [](const char32_t ch) {
+        return std::ranges::any_of(s, [](const char32_t ch) {
             return (ch >= U'a' && ch <= U'z') || (ch >= U'A' && ch <= U'Z');
         });
     }
@@ -380,10 +379,10 @@ namespace pdfium::text {
     [[nodiscard]]
     [[gnu::always_inline]] inline bool
     ContainsAnyCjk(const std::u32string_view s) noexcept {
-        return std::any_of(s.begin(), s.end(),
-                           [](const char32_t ch) noexcept {
-                               return IsCjk(ch);
-                           });
+        return std::ranges::any_of(s,
+                                   [](const char32_t ch) noexcept {
+                                       return IsCjk(ch);
+                                   });
     }
 
     // =========================

@@ -184,7 +184,7 @@ void MainWindow::on_actionExit_triggered() { QApplication::quit(); }
 void MainWindow::on_actionAbout_triggered() {
     AboutInfo info;
 
-    // Prefer central metadata instead of hardcoding
+    // Prefer central metadata instead of hardcoding.
     info.app_name = QCoreApplication::applicationName();
     info.version = QCoreApplication::applicationVersion();
     info.author = "Laisuk Lai";
@@ -199,28 +199,95 @@ void MainWindow::on_actionAbout_triggered() {
     info.license_text = "MIT License";
     info.license_url = "https://opensource.org/licenses/MIT";
 
-    QString buildType;
+    // Build configuration.
 #ifdef NDEBUG
-    buildType = "Release";
+    const QString buildType = "Release";
 #else
-    buildType = "Debug";
+    const QString buildType = "Debug";
 #endif
 
-    QString platform;
+    // Target platform.
 #ifdef Q_OS_WIN
-    platform = "Windows";
-#elif defined(Q_OS_MAC)
-    platform = "macOS";
+    const QString platform = "Windows";
+#elif defined(Q_OS_MACOS)
+    const QString platform = "macOS";
 #elif defined(Q_OS_LINUX)
-    platform = "Linux";
+    const QString platform = "Linux";
 #else
-    platform = "Unknown";
+    const QString platform = "Unknown";
 #endif
 
-    const QString qtVersion = QT_VERSION_STR;
+    // Compiler / toolchain.
+    QString compiler;
 
-    info.details = QString("Qt: %1\nBuild: %2\nPlatform: %3\nOpencc-Fmmseg: %4")
-            .arg(qtVersion, buildType, platform, m_openccVersion);
+#if defined(Q_CC_CLANG) && defined(Q_CC_MSVC)
+    compiler = QString("Clang-cl %1.%2.%3 (MSVC ABI)")
+            .arg(__clang_major__)
+            .arg(__clang_minor__)
+            .arg(__clang_patchlevel__);
+#elif defined(Q_CC_CLANG)
+    compiler = QString("Clang %1.%2.%3")
+            .arg(__clang_major__)
+            .arg(__clang_minor__)
+            .arg(__clang_patchlevel__);
+#elif defined(Q_CC_MSVC)
+    compiler = QString("MSVC %1.%2")
+            .arg(_MSC_VER / 100)
+            .arg(_MSC_VER % 100);
+#elif defined(Q_CC_GNU)
+    compiler = QString("GCC %1.%2.%3")
+            .arg(__GNUC__)
+            .arg(__GNUC_MINOR__)
+            .arg(__GNUC_PATCHLEVEL__);
+#else
+    compiler = "Unknown";
+#endif
+
+    // Architecture.
+#if defined(Q_PROCESSOR_X86_64)
+    const QString architecture = "x86_64";
+#elif defined(Q_PROCESSOR_ARM_64)
+    const QString architecture = "ARM64";
+#elif defined(Q_PROCESSOR_X86_32)
+    const QString architecture = "x86";
+#elif defined(Q_PROCESSOR_ARM)
+    const QString architecture = "ARM";
+#else
+    const QString architecture = "Unknown";
+#endif
+
+    // C++ language standard.
+#if defined(_MSVC_LANG)
+    constexpr long cppStandard = _MSVC_LANG;
+#else
+    constexpr long cppStandard = __cplusplus;
+#endif
+
+    QString cppVersion;
+    if (cppStandard >= 202302L)
+        cppVersion = "C++23";
+    if (cppStandard >= 202002L)
+        cppVersion = "C++20";
+    else if (cppStandard >= 201703L)
+        cppVersion = "C++17";
+    else
+        cppVersion = QString::number(cppStandard);
+
+    // About details.
+    info.details = QString(
+                "Qt: %1\n"
+                "Build: %2\n"
+                "Platform: %3 (%4)\n"
+                "Compiler: %5\n"
+                "C++ Standard: %6\n"
+                "Opencc-Fmmseg: %7")
+            .arg(QT_VERSION_STR,
+                 buildType,
+                 platform,
+                 architecture,
+                 compiler,
+                 cppVersion,
+                 m_openccVersion);
 
     AboutDialog dlg(info, this, windowIcon());
     dlg.exec();
