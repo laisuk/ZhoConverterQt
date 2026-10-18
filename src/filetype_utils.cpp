@@ -33,12 +33,12 @@ namespace {
 
 bool isOfficeExt(const QString &extLower)
 {
-    return OFFICE_EXTENSIONS.count(extLower.toStdString()) != 0;
+    return OFFICE_EXTENSIONS.contains(extLower.toStdString());
 }
 
 bool isTextExt(const QString &extLower)
 {
-    return TEXTFILE_EXTENSIONS.count(extLower.toStdString()) != 0;
+    return TEXTFILE_EXTENSIONS.contains(extLower.toStdString());
 }
 
 bool isAllowedTextLike(const QString &extLower)

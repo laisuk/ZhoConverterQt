@@ -41,7 +41,7 @@ namespace {
     FileDialogState restoreFileDialogState(
         const QString &key,
         const QString &filters) {
-        QSettings settings;
+        const QSettings settings;
 
         const QStringList availableFilters =
                 filters.split(";;", Qt::SkipEmptyParts);
@@ -63,7 +63,7 @@ namespace {
                     ? availableFilters.at(filterIndex)
                     : availableFilters.value(0);
 
-        return {directory, selectedFilter};
+        return {.directory = directory, .selectedFilter = selectedFilter};
     }
 
     void saveFileDialogState(

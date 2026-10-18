@@ -39,7 +39,7 @@ public:
                           bool punctuation,
                           bool keepFont = false) {
         std::ifstream in(inputPath, std::ios::binary);
-        if (!in) return {false, "❌ Cannot open input file."};
+        if (!in) return {.success = false, .message = "❌ Cannot open input file."};
 
         std::vector<uint8_t> inputBytes{
             std::istreambuf_iterator<char>(in),
@@ -48,15 +48,15 @@ public:
 
         auto [success, message, outputBytes] =
                 ConvertBytes(inputBytes, format, helper, config, punctuation, keepFont);
-        if (!success) return {false, message};
+        if (!success) return {.success = false, .message = message};
 
         std::ofstream out(outputPath, std::ios::binary);
-        if (!out) return {false, "❌ Cannot open output file for writing."};
+        if (!out) return {.success = false, .message = "❌ Cannot open output file for writing."};
 
         out.write(reinterpret_cast<const char *>(outputBytes.data()),
                   static_cast<std::streamsize>(outputBytes.size()));
 
-        return {true, message};
+        return {.success = true, .message = message};
     }
 
     static BytesResult ConvertBytes(const std::vector<uint8_t> &inputZipBytes,
@@ -66,7 +66,7 @@ public:
                                     bool punctuation,
                                     bool keepFont = false) {
         if (inputZipBytes.empty())
-            return {false, "❌ Input ZIP buffer is empty.", {}};
+            return {.success = false, .message = "❌ Input ZIP buffer is empty.", .outputBytes = {}};
 
         const std::string normalizedFormat = toLowerCopy(format);
 
@@ -82,14 +82,14 @@ public:
         );
         if (!inSrc) {
             zip_error_fini(&zipError);
-            return {false, "❌ Failed to create ZIP source from memory.", {}};
+            return {.success = false, .message = "❌ Failed to create ZIP source from memory.", .outputBytes = {}};
         }
 
         zip_t *zin = zip_open_from_source(inSrc, 0, &zipError);
         if (!zin) {
             zip_source_free(inSrc);
             zip_error_fini(&zipError);
-            return {false, "❌ Failed to open ZIP archive from memory.", {}};
+            return {.success = false, .message = "❌ Failed to open ZIP archive from memory.", .outputBytes = {}};
         }
 
         const zip_int64_t n = zip_get_num_entries(zin, 0);
@@ -145,7 +145,7 @@ public:
 
         const std::vector<size_t> targets = getTargetEntryIndices(normalizedFormat, entries);
         if (targets.empty())
-            return {false, "❌ No target fragments found in archive for this format.", {}};
+            return {.success = false, .message = "❌ No target fragments found in archive for this format.", .outputBytes = {}};
 
         size_t convertedCount = 0;
 
@@ -189,7 +189,7 @@ public:
         }
 
         if (convertedCount == 0)
-            return {false, "❌ No fragments were converted. Nothing changed.", {}};
+            return {.success = false, .message = "❌ No fragments were converted. Nothing changed.", .outputBytes = {}};
 
         // ---- Create output ZIP to memory ----
         zip_error_t outErr{};
@@ -198,7 +198,7 @@ public:
         zip_source_t *outSrc = zip_source_buffer_create(nullptr, 0, 0, &outErr);
         if (!outSrc) {
             zip_error_fini(&outErr);
-            return {false, "❌ Failed to create output ZIP buffer source.", {}};
+            return {.success = false, .message = "❌ Failed to create output ZIP buffer source.", .outputBytes = {}};
         }
 
         // Keep an extra reference so we can read bytes after zip_close()/zip_discard().
@@ -208,14 +208,14 @@ public:
         if (!zOut) {
             zip_source_free(outSrc);
             zip_error_fini(&outErr);
-            return {false, "❌ Failed to open output ZIP from buffer source.", {}};
+            return {.success = false, .message = "❌ Failed to open output ZIP from buffer source.", .outputBytes = {}};
         }
 
         auto failOutput = [&](const std::string &msg) -> BytesResult {
             zip_discard(zOut); // releases zip_t's ownership of outSrc
             zip_source_free(outSrc); // release our kept ref
             zip_error_fini(&outErr);
-            return {false, msg, {}};
+            return {.success = false, .message = msg, .outputBytes = {}};
         };
 
         auto addDir = [&](const std::string &entryName) -> bool {
@@ -291,7 +291,7 @@ public:
         if (zip_close(zOut) != 0) {
             zip_source_free(outSrc);
             zip_error_fini(&outErr);
-            return {false, "❌ Failed to finalize output ZIP.", {}};
+            return {.success = false, .message = "❌ Failed to finalize output ZIP.", .outputBytes = {}};
         }
 
         std::vector<uint8_t> outBytes;
@@ -310,13 +310,13 @@ public:
         zip_error_fini(&outErr);
 
         if (outBytes.empty())
-            return {false, "❌ Output ZIP buffer is empty (unexpected).", {}};
+            return {.success = false, .message = "❌ Output ZIP buffer is empty (unexpected).", .outputBytes = {}};
 
         return {
-            true,
-            "✅ Conversion completed.\n✅ Converted " +
-            std::to_string(convertedCount) + " fragment(s).\n",
-            std::move(outBytes)
+            .success = true,
+            .message = "✅ Conversion completed.\n✅ Converted " +
+                       std::to_string(convertedCount) + " fragment(s).\n",
+            .outputBytes = std::move(outBytes)
         };
     }
 
@@ -340,11 +340,10 @@ private:
     }
 
     static inline std::string toLowerCopy(std::string s) {
-        std::transform(
-            s.begin(),
-            s.end(),
-            s.begin(),
-            [](const unsigned char c) { return static_cast<char>(std::tolower(c)); }
+        std::ranges::transform(s
+                               ,
+                               s.begin(),
+                               [](const unsigned char c) { return static_cast<char>(std::tolower(c)); }
         );
         return s;
     }

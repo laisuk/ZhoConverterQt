@@ -1,3 +1,4 @@
+#include <ranges>
 #include <string>
 #include <zhoutilities.h>
 #include "opencc_fmmseg_capi.h"
@@ -49,17 +50,17 @@ std::string convert_punctuation(const std::string_view sv, const std::string_vie
     // Use the join method to create the regular expression patterns
     if (config.substr(0, 1) == "s") {
         // Create the regular expression patterns
-        for (const auto &[key, val]: s2t_mapping) {
+        for (const auto &key: s2t_mapping | std::views::keys) {
             pattern += key;
         }
         mapping = s2t_mapping;
     } else {
-        for (const auto &[key, val]: t2s_mapping) {
+        for (const auto &key: t2s_mapping | std::views::keys) {
             pattern += key;
         }
         mapping = t2s_mapping;
     }
-    pattern += L"]";
+    pattern += L']';
 
     const boost::wregex regex(pattern);
     const std::wstring output_text = boost::regex_replace(input_text, regex,

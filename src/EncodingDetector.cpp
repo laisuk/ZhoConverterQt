@@ -115,7 +115,7 @@ EncodingDetector::detect(const QByteArrayView data) {
     // ------------------------------------------------------------
 
     if (const auto legacy = detectLegacyEncoding(data);
-    legacy != Encoding::Unknown) {
+        legacy != Encoding::Unknown) {
         return {
             .encoding = legacy,
             .bomSize = 0
@@ -129,12 +129,9 @@ EncodingDetector::detect(const QByteArrayView data) {
 }
 
 bool EncodingDetector::isAscii(const QByteArrayView data) {
-    for (const char ch: data) {
-        if (u8(ch) >= 0x80)
-            return false;
-    }
-
-    return true;
+    return std::ranges::all_of(data, [](const char ch) {
+        return u8(ch) < 0x80;
+    });
 }
 
 bool EncodingDetector::isValidUtf8(const QByteArrayView data) {
@@ -333,14 +330,13 @@ QString EncodingDetector::encodingName(const Encoding encoding) {
 }
 
 EncodingDetector::Encoding
-EncodingDetector::detectLegacyEncoding(const QByteArrayView data)
-{
+EncodingDetector::detectLegacyEncoding(const QByteArrayView data) {
     if (data.isEmpty())
         return Encoding::Unknown;
 
     constexpr qsizetype MaxSampleSize = 128 * 1024;
     const QByteArrayView sample =
-        data.first(std::min(data.size(), MaxSampleSize));
+            data.first(std::min(data.size(), MaxSampleSize));
 
     const auto result = uchardet_trimmed::detectChineseLegacy(
         sample.data(),

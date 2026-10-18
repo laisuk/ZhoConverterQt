@@ -7,7 +7,6 @@
 
 #pragma once
 
-#include <QByteArrayView>
 #include <QString>
 
 class EncodingDetector final {
