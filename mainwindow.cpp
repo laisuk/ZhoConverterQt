@@ -1298,24 +1298,24 @@ void MainWindow::on_btnOpenFile_clicked() {
 
     constexpr auto settingsKey = "fileDialog/open";
 
-    const auto state = restoreFileDialogState(
+    const auto [directory, selectedFilter] = restoreFileDialogState(
         settingsKey, filters);
 
-    QString selectedFilter = state.selectedFilter;
+    QString selected_filter = selectedFilter;
 
     const QString file_name = QFileDialog::getOpenFileName(
         this,
         tr("Open File"),
-        state.directory,
+        directory,
         filters,
-        &selectedFilter
+        &selected_filter
     );
 
     if (file_name.isEmpty())
         return;
 
     saveFileDialogState(
-        settingsKey, file_name, selectedFilter, filters);
+        settingsKey, file_name, selected_filter, filters);
 
     // PDF → PdfExtractWorker.
     if (isPdf(file_name)) {
@@ -1533,22 +1533,22 @@ void MainWindow::on_btnSaveAs_clicked() {
 
     constexpr auto settingsKey = "fileDialog/save";
 
-    const auto state = restoreFileDialogState(
+    const auto [directory, selectedFilter] = restoreFileDialogState(
         settingsKey, filters);
 
     // Preserve the existing Source.txt / Destination.txt naming.
-    const QString suggested = QDir(state.directory).filePath(
+    const QString suggested = QDir(directory).filePath(
         QString("%1.txt").arg(targetName)
     );
 
-    QString selectedFilter = state.selectedFilter;
+    QString selected_filter = selectedFilter;
 
     const QString filename = QFileDialog::getSaveFileName(
         this,
         tr("Save Text File"),
         suggested,
         filters,
-        &selectedFilter
+        &selected_filter
     );
 
     if (filename.isEmpty())
@@ -1575,7 +1575,7 @@ void MainWindow::on_btnSaveAs_clicked() {
 
     // Persist only after successful writing.
     saveFileDialogState(
-        settingsKey, filename, selectedFilter, filters);
+        settingsKey, filename, selected_filter, filters);
 
     ui->statusBar->showMessage(
         QStringLiteral("💾 File saved (%1): %2")
@@ -1611,24 +1611,24 @@ void MainWindow::on_btnAdd_clicked() {
 
     constexpr auto settingsKey = "fileDialog/batch";
 
-    const auto state = restoreFileDialogState(
+    const auto [directory, selectedFilter] = restoreFileDialogState(
         settingsKey, filters);
 
-    QString selectedFilter = state.selectedFilter;
+    QString selected_filter = selectedFilter;
 
     const QStringList files = QFileDialog::getOpenFileNames(
         this,
         tr("Open Files"),
-        state.directory,
+        directory,
         filters,
-        &selectedFilter
+        &selected_filter
     );
 
     if (files.isEmpty())
         return;
 
     saveFileDialogState(
-        settingsKey, files.first(), selectedFilter, filters);
+        settingsKey, files.first(), selected_filter, filters);
 
     displayFileList(files);
     ui->statusBar->showMessage(tr("File(s) added."));

@@ -460,6 +460,10 @@ if (WIN32 AND NOT CMAKE_CROSSCOMPILING AND DEPLOY_WITH_WINDEPLOYQT)
 
         message(STATUS \"windeployqt output: \${output}\")
 
+        if(NOT \"\${error}\" STREQUAL \"\")
+            message(STATUS \"windeployqt stderr: \${error}\")
+        endif()
+
         if(NOT result EQUAL 0)
             message(FATAL_ERROR
                 \"windeployqt failed with exit code \${result}: \${error}\")
