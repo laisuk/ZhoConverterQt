@@ -94,7 +94,7 @@ DictionaryWidget::DictionaryWidget(QWidget *parent) : QWidget(parent) {
     empty = new QLabel(tr("No custom dictionaries configured."), this);
     layout->addWidget(empty);
     auto *actions = new QHBoxLayout;
-    auto *add = new QPushButton(tr("✚ Add Custom Dictionary"), this);
+    auto *add = new QPushButton(tr("＋ Add Custom Dictionary"), this);
     add->setObjectName("dictionaryAdd");
     apply = new QPushButton(tr("✔ Apply to Current Converter"), this);
     apply->setObjectName("dictionaryApply");
