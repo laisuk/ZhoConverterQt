@@ -1130,27 +1130,17 @@ void MainWindow::main_process(const opencc_config_t &config, const bool is_punct
     QElapsedTimer timer;
     timer.start();
 
-    const auto output = openccFmmsegHelper.convert_cfg(
+    const auto output = openccFmmsegHelper.convert_cfg_cstr(
         inUtf8.constData(),
         config,
         is_punctuation
     );
 
-    const qint64 elapsedMs = timer.elapsed();
+    const double elapsedMs = static_cast<double>(timer.nsecsElapsed()) / 1'000'000.0;
 
     ui->tbDestination->document()->clear();
 
     const QString sourceKind = hasSelection ? "Selected text" : "Source text";
-
-    if (!output.data()) {
-        ui->statusBar->showMessage(
-            QString("%1 conversion failed in %2 ms. (%3)")
-            .arg(sourceKind)
-            .arg(elapsedMs)
-            .arg(opencc_config_id_to_name(config))
-        );
-        return;
-    }
 
     /*
     auto dumpFont = [](const char *tag, QPlainTextEdit *edit) {
@@ -1174,7 +1164,7 @@ void MainWindow::main_process(const opencc_config_t &config, const bool is_punct
     ui->statusBar->showMessage(
         QString("%1 conversion completed in %2 ms. (%3)")
         .arg(sourceKind)
-        .arg(elapsedMs)
+        .arg(elapsedMs, 0, 'f', 1)
         .arg(opencc_config_id_to_name(config))
     );
 }

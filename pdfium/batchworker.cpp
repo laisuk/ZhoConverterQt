@@ -103,8 +103,9 @@ void BatchWorker::processOneFile(const int idx, const int total, const QString &
 
     // Optional: convert filename stem (no punctuation for names unless you want it)
     if (m_convertFilename && m_converter) {
+        const QByteArray nameUtf8 = baseName.toUtf8();
         const std::string convertedName =
-                m_converter->convert_cfg(baseName.toStdString(),
+                m_converter->convert_cfg_cstr(nameUtf8.constData(),
                                          m_config,
                                          /*punctuation=*/false);
         baseName = QString::fromStdString(convertedName);
@@ -205,8 +206,9 @@ void BatchWorker::processOneFile(const int idx, const int total, const QString &
     }
     inFile.close();
 
+    const QByteArray inputUtf8 = inputText.toUtf8();
     const std::string converted =
-            m_converter->convert_cfg(inputText.toStdString(),
+            m_converter->convert_cfg_cstr(inputUtf8.constData(),
                                      m_config,
                                      m_isPunctuation);
 
@@ -272,9 +274,10 @@ void BatchWorker::processPdf(const int idx, const int total,
     }
 
     // OpenCC 轉換
+    const QByteArray inputUtf8 = rawText.toUtf8();
     const std::string converted =
-            m_converter->convert_cfg(
-                rawText.toStdString(),
+            m_converter->convert_cfg_cstr(
+                inputUtf8.constData(),
                 m_config,
                 m_isPunctuation);
 

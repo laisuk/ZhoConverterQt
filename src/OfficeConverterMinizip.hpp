@@ -239,7 +239,7 @@ public:
                     punctuation
                 );
             } else {
-                converted = helper.convert_cfg(xml, config, punctuation);
+                converted = helper.convert_cfg_cstr(xml.c_str(), config, punctuation);
             }
 
             if (!fontMap.empty()) {
@@ -535,7 +535,7 @@ private:
                                         const opencc_config_t &config,
                                         const bool punctuation) {
         if (isXlsxSharedStrings(entryName))
-            return helper.convert_cfg(xml, config, punctuation);
+            return helper.convert_cfg_cstr(xml.c_str(), config, punctuation);
 
         if (isXlsxWorksheet(entryName))
             return convertXlsxInlineStrings(xml, helper, config, punctuation);
@@ -616,7 +616,7 @@ static std::string convertXlsxInlineStringCell(const std::string &cellXml,
             out.append(m.str());
         } else {
             const std::string convertedText =
-                helper.convert_cfg(innerText, config, punctuation);
+                helper.convert_cfg_cstr(innerText.c_str(), config, punctuation);
             out.append(openTag);
             out.append(convertedText);
             out.append(closeTag);
