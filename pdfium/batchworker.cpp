@@ -11,8 +11,7 @@
 #include "OpenccFmmsegHelper.hpp"   // adjust include name
 #include "filetype_utils.h"
 #include "TextEncoding.h"
-// #include "OfficeConverter.hpp"
-#include "OfficeConverterMinizip.hpp"
+#include "OfficeConverter.hpp"
 
 class QPlainTextEdit;
 
@@ -130,14 +129,16 @@ void BatchWorker::processOneFile(const int idx, const int total, const QString &
             return;
         }
 
-        // We already know QFileInfo exists
-        auto [ok, msg] = OfficeConverterMinizip::Convert(
-            path.toStdString(),
-            outPath.toStdString(),
+        // Reuse the worker's engine and loaded dictionaries; content policy only.
+        const TextConverter contentConverter = [this](const std::string_view text) {
+            const std::string utf8(text);
+            return m_converter->convert_cfg_cstr(utf8.c_str(), m_config, m_isPunctuation);
+        };
+        auto [ok, msg] = OfficeConverter::Convert(
+            path.toUtf8().toStdString(),
+            outPath.toUtf8().toStdString(),
             extLower.toStdString(),
-            *m_converter,
-            m_config,
-            m_isPunctuation,
+            contentConverter,
             /*keepFont=*/true
         );
 

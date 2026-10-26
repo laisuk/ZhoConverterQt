@@ -547,3 +547,27 @@ if (ZHO_BUILD_TESTS)
             COMMAND zho_batch_encoding_tests -platform offscreen
     )
 endif ()
+
+option(ZHO_BUILD_OFFICE_TESTS "Build Office core and BatchWorker regression tests" OFF)
+if (ZHO_BUILD_OFFICE_TESTS)
+    enable_testing()
+    add_subdirectory(tests/office)
+    qt_add_executable(office_batch_tests
+            tests/office/office_batch_test.cpp
+            pdfium/batchworker.cpp pdfium/batchworker.h
+            pdfium/PdfExtractWorker.cpp pdfium/PdfExtractWorker.h
+            src/TextEncoding.cpp src/EncodingDetector.cpp src/filetype_utils.cpp)
+    target_include_directories(office_batch_tests PRIVATE "${CMAKE_CURRENT_SOURCE_DIR}")
+    target_link_libraries(office_batch_tests PRIVATE
+            $<TARGET_PROPERTY:ZhoConverterQt,LINK_LIBRARIES>)
+    if (WIN32)
+        target_compile_definitions(office_batch_tests PRIVATE BOOST_NOWIDE_NO_LIB)
+        add_custom_command(TARGET office_batch_tests POST_BUILD
+                COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                "${CMAKE_CURRENT_SOURCE_DIR}/opencc-fmmseg/opencc_fmmseg_capi.dll"
+                "${CMAKE_CURRENT_SOURCE_DIR}/pdfium/pdfium.dll"
+                "$<TARGET_FILE_DIR:office_batch_tests>" VERBATIM)
+    endif ()
+    add_test(NAME office_batch COMMAND office_batch_tests)
+    set_tests_properties(office_batch PROPERTIES TIMEOUT 30)
+endif ()
