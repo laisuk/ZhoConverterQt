@@ -104,6 +104,8 @@ MainWindow::MainWindow(QWidget *parent)
             selection-color: #000000;
         }
     )");
+    ui->tbDestination->setStyleSheet(ui->tbDestination->styleSheet() + QStringLiteral(
+                                         " QPlainTextEdit { selection-background-color: #B3D7FF; selection-color: #000000; }"));
     m_dictionaryWidget = new DictionaryWidget(ui->tabDictionary);
     ui->dictionaryLayout->addWidget(m_dictionaryWidget);
     connect(m_dictionaryWidget, &DictionaryWidget::applyRequested, this, [this](const DictionaryRows &rows) {
@@ -1888,10 +1890,17 @@ void MainWindow::on_cbManual_activated() const {
 }
 
 void MainWindow::showFindReplace(const bool replaceMode) {
+    // Replace always edits Source; Find may search the read-only Destination.
+    QPlainTextEdit *editor = !replaceMode && ui->tbDestination->hasFocus()
+                                 ? ui->tbDestination
+                                 : ui->tbSource;
     if (!m_findReplaceDialog) {
-        m_findReplaceDialog =
-                new FindReplaceDialog(ui->tbSource, this);
+        m_findReplaceDialog = new FindReplaceDialog(editor, this);
+    } else {
+        m_findReplaceDialog->setEditor(editor);
     }
 
+    ui->tabWidget->setCurrentWidget(ui->tabMain);
+    editor->setFocus();
     m_findReplaceDialog->openFind(replaceMode);
 }

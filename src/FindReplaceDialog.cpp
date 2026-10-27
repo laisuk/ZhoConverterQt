@@ -30,7 +30,7 @@ FindReplaceDialog::FindReplaceDialog(QPlainTextEdit *editor, QWidget *parent)
 
     auto *findRow = new QHBoxLayout;
     m_find = new QLineEdit(this);
-    m_find->setPlaceholderText(tr("Find in source…"));
+    m_find->setPlaceholderText(tr("Find in editor…"));
     m_find->setClearButtonEnabled(true);
     m_prev = new QPushButton(tr("↑"), this);
     m_next = new QPushButton(tr("↓"), this);
@@ -85,14 +85,7 @@ FindReplaceDialog::FindReplaceDialog(QPlainTextEdit *editor, QWidget *parent)
     connect(m_replaceOne, &QPushButton::clicked, this, [this] { replaceOne(); });
     connect(m_replaceAll, &QPushButton::clicked, this, [this] { replaceAll(); });
     connect(m_find, &QLineEdit::returnPressed, this, [this] { navigate(false); });
-    connect(m_editor->document(), &QTextDocument::contentsChanged,
-            this, [this] { if (isVisible()) scheduleRefresh(); });
-    connect(m_editor, &QPlainTextEdit::cursorPositionChanged,
-            this, [this] { if (isVisible()) scheduleRefresh(); });
-    connect(m_editor, &QObject::destroyed, this, [this] {
-        m_editor = nullptr;
-        close();
-    });
+    connectEditor();
 
     const QSettings settings;
     m_case->setChecked(settings.value("findReplace/matchCase", false).toBool());
@@ -102,6 +95,32 @@ FindReplaceDialog::FindReplaceDialog(QPlainTextEdit *editor, QWidget *parent)
 }
 
 FindReplaceDialog::~FindReplaceDialog() { saveSettings(); }
+
+void FindReplaceDialog::connectEditor() {
+    m_contentsConnection = connect(m_editor->document(), &QTextDocument::contentsChanged,
+            this, [this] { if (isVisible()) scheduleRefresh(); });
+    m_cursorConnection = connect(m_editor, &QPlainTextEdit::cursorPositionChanged,
+            this, [this] { if (isVisible()) scheduleRefresh(); });
+    m_destroyedConnection = connect(m_editor, &QObject::destroyed, this, [this] {
+        m_editor = nullptr;
+        m_queryStart = QTextCursor{};
+        close();
+    });
+}
+
+void FindReplaceDialog::setEditor(QPlainTextEdit *editor) {
+    Q_ASSERT(editor);
+    if (!editor || m_editor == editor) return;
+    clearHighlights();
+    disconnect(m_contentsConnection);
+    disconnect(m_cursorConnection);
+    disconnect(m_destroyedConnection);
+    m_refreshTimer->stop();
+    m_queryStart = QTextCursor{};
+    m_editor = editor;
+    connectEditor();
+    refresh();
+}
 
 void FindReplaceDialog::openFind(const bool replaceMode) {
     m_replaceVisible = replaceMode;

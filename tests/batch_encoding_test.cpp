@@ -1,4 +1,6 @@
 #include "mainwindow.h"
+#include "FindReplaceDialog.h"
+#include <QTimer>
 #include "DictionaryWidget.h"
 #include "DictionaryFile.h"
 #include <QLabel>
@@ -68,6 +70,112 @@ private slots:
         QCOMPARE(helper.convert_cfg_cstr(embeddedNul.c_str(), OPENCC_CONFIG_S2T),
                  helper.convert_cfg(embeddedNul, OPENCC_CONFIG_S2T));
     }
+    static void findReplaceEditorSwitching() {
+        QPlainTextEdit source, destination;
+        source.setPlainText("cat cat");
+        destination.setPlainText("cat destination cat");
+        destination.setReadOnly(true);
+        FindReplaceDialog dialog(&source);
+        dialog.openFind(true);
+        const auto edits = dialog.findChildren<QLineEdit *>();
+        QCOMPARE(edits.size(), 2);
+        edits[0]->setText("cat");
+        edits[1]->setText("dog");
+        QTRY_COMPARE(source.extraSelections().size(), 2);
+        // Switch while a query refresh still holds a cursor into Source.
+        edits[0]->setText("destination");
+        dialog.setEditor(&destination);
+        QVERIFY(source.extraSelections().isEmpty());
+        QTRY_COMPARE(destination.extraSelections().size(), 1);
+        auto *timer = dialog.findChild<QTimer *>();
+        QVERIFY(timer);
+        timer->stop();
+        source.appendPlainText("cat");
+        QVERIFY(!timer->isActive());
+        destination.appendPlainText("destination");
+        QVERIFY(timer->isActive());
+        QTRY_COMPARE(destination.extraSelections().size(), 2);
+        timer->stop();
+        auto cursor = destination.textCursor();
+        cursor.setPosition(1);
+        destination.setTextCursor(cursor);
+        QVERIFY(timer->isActive());
+        for (auto *button : dialog.findChildren<QPushButton *>()) {
+            if (button->text() == "Replace" || button->text() == "Replace All")
+                QVERIFY(!button->isEnabled());
+        }
+        for (auto *editor : {&source, &destination, &source, &destination})
+            dialog.setEditor(editor);
+        timer->stop();
+        source.appendPlainText("cat");
+        QVERIFY(!timer->isActive());
+        destination.appendPlainText("destination");
+        QVERIFY(timer->isActive());
+        dialog.close();
+    }
+
+    static void findReplaceFocusAndTabs() {
+        MainWindow window;
+        auto *source = widget<QPlainTextEdit>(window, "tbSource");
+        auto *destination = widget<QPlainTextEdit>(window, "tbDestination");
+        auto *tabs = widget<QTabWidget>(window, "tabWidget");
+        auto *mainTab = widget<QWidget>(window, "tabMain");
+        auto *find = widget<QAction>(window, "actionFind");
+        auto *replace = widget<QAction>(window, "actionReplace");
+        source->setPlainText("cat cat");
+        destination->setPlainText("cat destination cat");
+        window.show();
+        window.activateWindow();
+        destination->setFocus();
+        QTRY_VERIFY(destination->hasFocus());
+        replace->trigger();
+        FindReplaceDialog *dialog = nullptr;
+        for (auto *candidate : window.findChildren<QDialog *>())
+            if (auto *match = dynamic_cast<FindReplaceDialog *>(candidate)) dialog = match;
+        QVERIFY(dialog);
+        const auto edits = dialog->findChildren<QLineEdit *>();
+        QCOMPARE(edits.size(), 2);
+        auto *query = edits[0];
+        auto *replacement = edits[1];
+        QPushButton *replaceAll = nullptr;
+        for (auto *button : dialog->findChildren<QPushButton *>())
+            if (button->text() == "Replace All") replaceAll = button;
+        QVERIFY(replaceAll);
+        query->setText("cat");
+        replacement->setText("dog");
+        QTRY_VERIFY(replaceAll->isEnabled());
+        window.activateWindow();
+        destination->setFocus();
+        QTRY_VERIFY(destination->hasFocus());
+        replaceAll->click();
+        QCOMPARE(source->toPlainText(), QString("dog dog"));
+        QCOMPARE(destination->toPlainText(), QString("cat destination cat"));
+        find->trigger();
+        QVERIFY(!replacement->isVisible());
+        QVERIFY(!replaceAll->isEnabled());
+        QTRY_COMPARE(destination->extraSelections().size(), 2);
+        QVERIFY(source->extraSelections().isEmpty());
+        replace->trigger();
+        QVERIFY(replacement->isVisible());
+        QCOMPARE(replacement->text(), QString("dog"));
+        query->setText("dog");
+        replacement->setText("fox");
+        QTRY_VERIFY(replaceAll->isEnabled());
+        replaceAll->click();
+        QCOMPARE(source->toPlainText(), QString("fox fox"));
+        QCOMPARE(destination->toPlainText(), QString("cat destination cat"));
+        dialog->close();
+        tabs->setCurrentIndex(1);
+        find->trigger();
+        QCOMPARE(tabs->currentWidget(), mainTab);
+        dialog->close();
+        tabs->setCurrentIndex(1);
+        replace->trigger();
+        QCOMPARE(tabs->currentWidget(), mainTab);
+        QVERIFY(replacement->isVisible());
+        dialog->close();
+    }
+
     static void singleTextConversion() {
         MainWindow window;
         auto *source = widget<QPlainTextEdit>(window, "tbSource");

@@ -16,6 +16,7 @@ public:
     explicit FindReplaceDialog(QPlainTextEdit *editor, QWidget *parent = nullptr);
     ~FindReplaceDialog() override;
 
+    void setEditor(QPlainTextEdit *editor);
     void openFind(bool replaceMode = false);
 
 protected:
@@ -24,6 +25,10 @@ protected:
 
 private:
     QPlainTextEdit *m_editor;
+    QMetaObject::Connection m_contentsConnection;
+    QMetaObject::Connection m_cursorConnection;
+    QMetaObject::Connection m_destroyedConnection;
+    void connectEditor();
     QLineEdit *m_find;
     QLineEdit *m_replace;
     QLabel *m_counter;
