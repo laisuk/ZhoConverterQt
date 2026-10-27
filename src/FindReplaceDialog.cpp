@@ -85,6 +85,7 @@ FindReplaceDialog::FindReplaceDialog(QPlainTextEdit *editor, QWidget *parent)
     connect(m_replaceOne, &QPushButton::clicked, this, [this] { replaceOne(); });
     connect(m_replaceAll, &QPushButton::clicked, this, [this] { replaceAll(); });
     connect(m_find, &QLineEdit::returnPressed, this, [this] { navigate(false); });
+    updateTitle();
     connectEditor();
 
     const QSettings settings;
@@ -118,8 +119,16 @@ void FindReplaceDialog::setEditor(QPlainTextEdit *editor) {
     m_refreshTimer->stop();
     m_queryStart = QTextCursor{};
     m_editor = editor;
+    updateTitle();
     connectEditor();
     refresh();
+}
+
+void FindReplaceDialog::updateTitle() {
+    const QString target = m_editor->objectName() == "tbSource"
+                               ? tr("Source")
+                               : tr("Destination");
+    setWindowTitle(tr("Find / Replace - %1").arg(target));
 }
 
 void FindReplaceDialog::openFind(const bool replaceMode) {

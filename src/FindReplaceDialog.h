@@ -17,6 +17,9 @@ public:
     ~FindReplaceDialog() override;
 
     void setEditor(QPlainTextEdit *editor);
+
+    void updateTitle();
+
     void openFind(bool replaceMode = false);
 
 protected:
