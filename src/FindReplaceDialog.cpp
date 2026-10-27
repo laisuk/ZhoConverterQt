@@ -20,7 +20,8 @@ namespace {
 FindReplaceDialog::FindReplaceDialog(QPlainTextEdit *editor, QWidget *parent)
     : QDialog(parent), m_editor(editor) {
     Q_ASSERT(editor);
-    setWindowTitle(tr("Find / Replace"));
+    // setWindowTitle(tr("Find / Replace"));
+    updateTitle();
     setWindowFlag(Qt::Tool);
     setModal(false);
     setMinimumWidth(470);
@@ -85,7 +86,6 @@ FindReplaceDialog::FindReplaceDialog(QPlainTextEdit *editor, QWidget *parent)
     connect(m_replaceOne, &QPushButton::clicked, this, [this] { replaceOne(); });
     connect(m_replaceAll, &QPushButton::clicked, this, [this] { replaceAll(); });
     connect(m_find, &QLineEdit::returnPressed, this, [this] { navigate(false); });
-    updateTitle();
     connectEditor();
 
     const QSettings settings;
@@ -99,9 +99,9 @@ FindReplaceDialog::~FindReplaceDialog() { saveSettings(); }
 
 void FindReplaceDialog::connectEditor() {
     m_contentsConnection = connect(m_editor->document(), &QTextDocument::contentsChanged,
-            this, [this] { if (isVisible()) scheduleRefresh(); });
+                                   this, [this] { if (isVisible()) scheduleRefresh(); });
     m_cursorConnection = connect(m_editor, &QPlainTextEdit::cursorPositionChanged,
-            this, [this] { if (isVisible()) scheduleRefresh(); });
+                                 this, [this] { if (isVisible()) scheduleRefresh(); });
     m_destroyedConnection = connect(m_editor, &QObject::destroyed, this, [this] {
         m_editor = nullptr;
         m_queryStart = QTextCursor{};
