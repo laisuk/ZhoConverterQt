@@ -15,6 +15,7 @@ QT_END_NAMESPACE
 
 class QPushButton;
 class DictionaryWidget;
+class FindReplaceDialog;
 
 
 class MainWindow final : public QMainWindow {
@@ -117,4 +118,7 @@ private:
     QString m_openccVersion;
     QString m_currentTextEncoding = QStringLiteral("UTF-8");
     bool m_textEncodingWasAutoDetected = false;
+
+    FindReplaceDialog *m_findReplaceDialog = nullptr;
+    void showFindReplace(bool replaceMode = false);
 };

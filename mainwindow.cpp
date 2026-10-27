@@ -17,6 +17,7 @@
 #include <QElapsedTimer>
 
 #include "TextEncoding.h"
+#include "FindReplaceDialog.h"
 
 // #include "opencc_fmmseg_capi.h"
 #include "zhoutilities.h"
@@ -97,6 +98,12 @@ namespace {
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindowClass()) {
     ui->setupUi(this);
+    ui->tbSource->setStyleSheet(R"(
+        TextEditWidget {
+            selection-background-color: #B3D7FF;
+            selection-color: #000000;
+        }
+    )");
     m_dictionaryWidget = new DictionaryWidget(ui->tabDictionary);
     ui->dictionaryLayout->addWidget(m_dictionaryWidget);
     connect(m_dictionaryWidget, &DictionaryWidget::applyRequested, this, [this](const DictionaryRows &rows) {
@@ -204,6 +211,16 @@ MainWindow::MainWindow(QWidget *parent)
                 }
 
                 loadTextFile(path);
+            });
+
+    connect(ui->actionFind, &QAction::triggered,
+            this, [this] {
+                showFindReplace(false);
+            });
+
+    connect(ui->actionReplace, &QAction::triggered,
+            this, [this] {
+                showFindReplace(true);
             });
 
     ui->lblFileName->installEventFilter(this);
@@ -1868,4 +1885,13 @@ void MainWindow::on_btnClearTbDestination_clicked() const {
 
 void MainWindow::on_cbManual_activated() const {
     ui->rbManual->setChecked(true);
+}
+
+void MainWindow::showFindReplace(const bool replaceMode) {
+    if (!m_findReplaceDialog) {
+        m_findReplaceDialog =
+                new FindReplaceDialog(ui->tbSource, this);
+    }
+
+    m_findReplaceDialog->openFind(replaceMode);
 }
