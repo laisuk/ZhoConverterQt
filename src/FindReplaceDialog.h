@@ -37,6 +37,7 @@ private:
     QPushButton *m_replaceAll;
     QWidget *m_replaceRow;
     QTimer *m_refreshTimer;
+    mutable QTextCursor m_queryStart;
     bool m_replaceVisible = false;
 
     [[nodiscard]] QTextDocument::FindFlags flags(bool backward = false) const;
@@ -47,6 +48,7 @@ private:
     void navigate(bool backward) const;
     void replaceOne() const;
     void replaceAll() const;
+    void queryChanged() const;
     void scheduleRefresh() const;
     void refresh() const;
     void clearHighlights() const;

@@ -13,8 +13,8 @@
 #include <QVBoxLayout>
 
 namespace {
-constexpr int HighlightLimit = 1000;
-constexpr int CountLimit = 100000;
+    constexpr int HighlightLimit = 1000;
+    constexpr int CountLimit = 100000;
 }
 
 FindReplaceDialog::FindReplaceDialog(QPlainTextEdit *editor, QWidget *parent)
@@ -75,10 +75,10 @@ FindReplaceDialog::FindReplaceDialog(QPlainTextEdit *editor, QWidget *parent)
     m_refreshTimer->setSingleShot(true);
     m_refreshTimer->setInterval(120);
 
-    connect(m_find, &QLineEdit::textChanged, this, [this] { scheduleRefresh(); });
-    connect(m_case, &QCheckBox::toggled, this, [this] { scheduleRefresh(); });
-    connect(m_words, &QCheckBox::toggled, this, [this] { scheduleRefresh(); });
-    connect(m_regex, &QCheckBox::toggled, this, [this] { scheduleRefresh(); });
+    connect(m_find, &QLineEdit::textChanged, this, [this] { queryChanged(); });
+    connect(m_case, &QCheckBox::toggled, this, [this] { queryChanged(); });
+    connect(m_words, &QCheckBox::toggled, this, [this] { queryChanged(); });
+    connect(m_regex, &QCheckBox::toggled, this, [this] { queryChanged(); });
     connect(m_refreshTimer, &QTimer::timeout, this, [this] { refresh(); });
     connect(m_prev, &QPushButton::clicked, this, [this] { navigate(true); });
     connect(m_next, &QPushButton::clicked, this, [this] { navigate(false); });
@@ -89,7 +89,10 @@ FindReplaceDialog::FindReplaceDialog(QPlainTextEdit *editor, QWidget *parent)
             this, [this] { if (isVisible()) scheduleRefresh(); });
     connect(m_editor, &QPlainTextEdit::cursorPositionChanged,
             this, [this] { if (isVisible()) scheduleRefresh(); });
-    connect(m_editor, &QObject::destroyed, this, [this] { m_editor = nullptr; close(); });
+    connect(m_editor, &QObject::destroyed, this, [this] {
+        m_editor = nullptr;
+        close();
+    });
 
     const QSettings settings;
     m_case->setChecked(settings.value("findReplace/matchCase", false).toBool());
@@ -103,7 +106,8 @@ FindReplaceDialog::~FindReplaceDialog() { saveSettings(); }
 void FindReplaceDialog::openFind(const bool replaceMode) {
     m_replaceVisible = replaceMode;
     m_replaceRow->setVisible(replaceMode);
-    if (const QTextCursor cursor = m_editor->textCursor(); cursor.hasSelection() && !cursor.selectedText().contains(QChar::ParagraphSeparator)
+    if (const QTextCursor cursor = m_editor->textCursor(); cursor.hasSelection() && !cursor.selectedText().contains(
+                                                               QChar::ParagraphSeparator)
                                                            && cursor.selectedText().size() <= 200) {
         m_find->setText(cursor.selectedText());
     }
@@ -112,6 +116,7 @@ void FindReplaceDialog::openFind(const bool replaceMode) {
     activateWindow();
     m_find->setFocus();
     m_find->selectAll();
+    navigate(false);
     scheduleRefresh();
 }
 
@@ -153,6 +158,7 @@ bool FindReplaceDialog::isCurrentMatch() const {
 }
 
 void FindReplaceDialog::navigate(const bool backward) const {
+    m_queryStart = QTextCursor{};
     if (!validQuery()) return;
     QTextCursor start = m_editor->textCursor();
     start.setPosition(backward ? start.selectionStart() : start.selectionEnd());
@@ -192,7 +198,8 @@ void FindReplaceDialog::replaceAll() const {
         QTextCursor found = search(scan);
         if (found.isNull()) break;
         const int start = found.selectionStart();
-        if (const int end = found.selectionEnd(); start == end) { // Avoid infinite loops on zero-width regex matches.
+        if (const int end = found.selectionEnd(); start == end) {
+            // Avoid infinite loops on zero-width regex matches.
             scan.setPosition(end);
             if (!scan.movePosition(QTextCursor::NextCharacter)) break;
             continue;
@@ -206,12 +213,32 @@ void FindReplaceDialog::replaceAll() const {
     refresh();
 }
 
+void FindReplaceDialog::queryChanged() const {
+    if (m_queryStart.isNull()) {
+        m_queryStart = m_editor->textCursor();
+        // Keep the same starting point while refining a selected match.
+        m_queryStart.setPosition(m_queryStart.selectionStart());
+    }
+    scheduleRefresh();
+}
+
 void FindReplaceDialog::scheduleRefresh() const { m_refreshTimer->start(); }
 
 void FindReplaceDialog::refresh() const {
     if (!m_editor) return;
     clearHighlights();
     const bool valid = validQuery();
+    if (valid && !m_queryStart.isNull()) {
+        const QTextCursor start = m_queryStart;
+        m_queryStart = QTextCursor{};
+        QTextCursor found = search(start);
+        if (found.isNull())
+            found = search(QTextCursor(m_editor->document()));
+        if (!found.isNull()) {
+            m_editor->setTextCursor(found);
+            m_editor->ensureCursorVisible();
+        }
+    }
     m_prev->setEnabled(valid);
     m_next->setEnabled(valid);
     m_replaceOne->setEnabled(valid && !m_editor->isReadOnly());
@@ -219,7 +246,8 @@ void FindReplaceDialog::refresh() const {
     if (!valid) {
         m_counter->setText(tr("0 matches"));
         m_message->setText(m_regex->isChecked() && !m_find->text().isEmpty()
-                           ? expression().errorString() : QString{});
+                               ? expression().errorString()
+                               : QString{});
         return;
     }
 
@@ -241,7 +269,8 @@ void FindReplaceDialog::refresh() const {
         }
         ++total;
         if (current.hasSelection() && start == current.selectionStart()
-            && end == current.selectionEnd()) currentIndex = total;
+            && end == current.selectionEnd())
+            currentIndex = total;
         if (highlights.size() < HighlightLimit) {
             QTextEdit::ExtraSelection selection;
             selection.cursor = found;
@@ -252,12 +281,14 @@ void FindReplaceDialog::refresh() const {
     }
     m_editor->setExtraSelections(highlights);
     const QString count = total == CountLimit
-        ? tr("%1+ matches").arg(CountLimit)
-        : currentIndex ? tr("%1 of %2").arg(currentIndex).arg(total)
-                       : tr("%1 matches").arg(total);
+                              ? tr("%1+ matches").arg(CountLimit)
+                              : currentIndex
+                                    ? tr("%1 of %2").arg(currentIndex).arg(total)
+                                    : tr("%1 matches").arg(total);
     m_counter->setText(count);
     m_message->setText(total > HighlightLimit
-        ? tr("Highlighting the first %1 matches.").arg(HighlightLimit) : QString{});
+                           ? tr("Highlighting the first %1 matches.").arg(HighlightLimit)
+                           : QString{});
 }
 
 void FindReplaceDialog::clearHighlights() const {
