@@ -746,6 +746,9 @@
                    <property name="text">
                     <string>Paste</string>
                    </property>
+                   <property name="icon">
+                    <iconset theme="edit-paste"/>
+                   </property>
                   </widget>
                  </item>
                 </layout>
@@ -1022,6 +1025,9 @@
                    </property>
                    <property name="text">
                     <string>Copy</string>
+                   </property>
+                   <property name="icon">
+                    <iconset theme="edit-copy"/>
                    </property>
                   </widget>
                  </item>
@@ -1430,6 +1436,9 @@
           <property name="text">
            <string>Sava As</string>
           </property>
+          <property name="icon">
+           <iconset theme="document-save-as"/>
+          </property>
          </widget>
         </item>
         <item>
@@ -1489,6 +1498,9 @@
           </property>
           <property name="text">
            <string>Open File</string>
+          </property>
+          <property name="icon">
+           <iconset theme="document-open"/>
           </property>
          </widget>
         </item>
@@ -1645,7 +1657,7 @@
   </action>
   <action name="actionSelectEditorFont">
    <property name="icon">
-    <iconset theme="QIcon::ThemeIcon::MailMessageNew"/>
+    <iconset theme="preferences-desktop-font"/>
    </property>
    <property name="text">
     <string>Select Editor Font ...</string>
