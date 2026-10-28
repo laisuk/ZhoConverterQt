@@ -59,7 +59,7 @@ private:
     [[nodiscard]] bool validQuery() const;
     [[nodiscard]] bool isCurrentMatch() const;
     void navigate(bool backward) const;
-    void replaceOne() const;
+    void replaceNext() const;
     void replaceAll() const;
     void queryChanged() const;
     void scheduleRefresh() const;

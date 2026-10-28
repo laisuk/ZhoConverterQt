@@ -52,7 +52,7 @@ FindReplaceDialog::FindReplaceDialog(QPlainTextEdit *editor, QWidget *parent)
     replaceLayout->setContentsMargins(0, 0, 0, 0);
     m_replace = new QLineEdit(m_replaceRow);
     m_replace->setPlaceholderText(tr("Replace with…"));
-    m_replaceOne = new QPushButton(tr("Replace"), m_replaceRow);
+    m_replaceOne = new QPushButton(tr("Replace Next"), m_replaceRow);
     m_replaceAll = new QPushButton(tr("Replace All"), m_replaceRow);
     replaceLayout->addWidget(m_replace, 1);
     replaceLayout->addWidget(m_replaceOne);
@@ -83,7 +83,7 @@ FindReplaceDialog::FindReplaceDialog(QPlainTextEdit *editor, QWidget *parent)
     connect(m_refreshTimer, &QTimer::timeout, this, [this] { refresh(); });
     connect(m_prev, &QPushButton::clicked, this, [this] { navigate(true); });
     connect(m_next, &QPushButton::clicked, this, [this] { navigate(false); });
-    connect(m_replaceOne, &QPushButton::clicked, this, [this] { replaceOne(); });
+    connect(m_replaceOne, &QPushButton::clicked, this, [this] { replaceNext(); });
     connect(m_replaceAll, &QPushButton::clicked, this, [this] { replaceAll(); });
     connect(m_find, &QLineEdit::returnPressed, this, [this] { navigate(false); });
     connectEditor();
@@ -244,7 +244,7 @@ void FindReplaceDialog::navigate(const bool backward) const {
     refresh();
 }
 
-void FindReplaceDialog::replaceOne() const {
+void FindReplaceDialog::replaceNext() const {
     if (!validQuery() || m_editor->isReadOnly()) return;
     if (!isCurrentMatch()) {
         navigate(false);
