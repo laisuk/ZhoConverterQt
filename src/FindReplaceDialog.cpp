@@ -95,7 +95,46 @@ FindReplaceDialog::FindReplaceDialog(QPlainTextEdit *editor, QWidget *parent)
     m_replaceRow->hide();
 }
 
-FindReplaceDialog::~FindReplaceDialog() { saveSettings(); }
+FindReplaceDialog::~FindReplaceDialog() {
+    updateSelectionStyle(false);
+    saveSettings();
+}
+
+void FindReplaceDialog::updateSelectionStyle(const bool active) {
+    QPlainTextEdit *target = active ? m_editor : nullptr;
+    if (m_styledEditor == target) return;
+
+    if (m_styledEditor)
+        m_styledEditor->setStyleSheet(m_originalEditorStyleSheet);
+    m_styledEditor = target;
+    m_originalEditorStyleSheet.clear();
+    if (target) {
+        m_originalEditorStyleSheet = target->styleSheet();
+        // A widget stylesheet may contain bare declarations instead of rules.
+        QString styleSheet = m_originalEditorStyleSheet;
+        if (!styleSheet.isEmpty() && !styleSheet.contains(QLatin1Char('{')))
+            styleSheet = QStringLiteral("QPlainTextEdit { %1 }").arg(styleSheet);
+        target->setStyleSheet(styleSheet + QStringLiteral(
+            "\nQPlainTextEdit { selection-background-color: #B3D7FF; selection-color: #000000; }"));
+    }
+}
+
+bool FindReplaceDialog::event(QEvent *event) {
+    const bool handled = QDialog::event(event);
+    switch (event->type()) {
+    case QEvent::Show:
+    case QEvent::WindowActivate:
+        updateSelectionStyle(isVisible() && isActiveWindow());
+        break;
+    case QEvent::Hide:
+    case QEvent::WindowDeactivate:
+        updateSelectionStyle(false);
+        break;
+    default:
+        break;
+    }
+    return handled;
+}
 
 void FindReplaceDialog::connectEditor() {
     m_contentsConnection = connect(m_editor->document(), &QTextDocument::contentsChanged,
@@ -112,6 +151,7 @@ void FindReplaceDialog::connectEditor() {
 void FindReplaceDialog::setEditor(QPlainTextEdit *editor) {
     Q_ASSERT(editor);
     if (!editor || m_editor == editor) return;
+    updateSelectionStyle(false);
     clearHighlights();
     disconnect(m_contentsConnection);
     disconnect(m_cursorConnection);
@@ -119,6 +159,7 @@ void FindReplaceDialog::setEditor(QPlainTextEdit *editor) {
     m_refreshTimer->stop();
     m_queryStart = QTextCursor{};
     m_editor = editor;
+    updateSelectionStyle(isVisible() && isActiveWindow());
     updateTitle();
     connectEditor();
     refresh();

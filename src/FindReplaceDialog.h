@@ -1,6 +1,7 @@
 #pragma once
 
 #include <QDialog>
+#include <QPointer>
 #include <QRegularExpression>
 #include <QTextEdit>
 
@@ -23,11 +24,15 @@ public:
     void openFind(bool replaceMode = false);
 
 protected:
+    bool event(QEvent *event) override;
     void closeEvent(QCloseEvent *event) override;
     void keyPressEvent(QKeyEvent *event) override;
 
 private:
     QPlainTextEdit *m_editor;
+    QPointer<QPlainTextEdit> m_styledEditor;
+    QString m_originalEditorStyleSheet;
+    void updateSelectionStyle(bool active);
     QMetaObject::Connection m_contentsConnection;
     QMetaObject::Connection m_cursorConnection;
     QMetaObject::Connection m_destroyedConnection;

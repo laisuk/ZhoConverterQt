@@ -98,14 +98,6 @@ namespace {
 MainWindow::MainWindow(QWidget *parent)
     : QMainWindow(parent), ui(new Ui::MainWindowClass()) {
     ui->setupUi(this);
-    ui->tbSource->setStyleSheet(R"(
-        TextEditWidget {
-            selection-background-color: #B3D7FF;
-            selection-color: #000000;
-        }
-    )");
-    ui->tbDestination->setStyleSheet(ui->tbDestination->styleSheet() + QStringLiteral(
-                                         " QPlainTextEdit { selection-background-color: #B3D7FF; selection-color: #000000; }"));
     m_dictionaryWidget = new DictionaryWidget(ui->tabDictionary);
     ui->dictionaryLayout->addWidget(m_dictionaryWidget);
     connect(m_dictionaryWidget, &DictionaryWidget::applyRequested, this, [this](const DictionaryRows &rows) {
