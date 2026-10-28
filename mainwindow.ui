@@ -1456,6 +1456,12 @@
            <iconset resource="Resource.qrc">
             <normaloff>:/resource/exit.png</normaloff>:/resource/exit.png</iconset>
           </property>
+          <property name="iconSize">
+           <size>
+            <width>16</width>
+            <height>16</height>
+           </size>
+          </property>
          </widget>
         </item>
        </layout>
@@ -1539,7 +1545,6 @@
     <property name="title">
      <string>File</string>
     </property>
-    <addaction name="separator"/>
     <addaction name="actionExit"/>
    </widget>
    <widget class="QMenu" name="menuHelp">
@@ -1639,11 +1644,17 @@
    </property>
   </action>
   <action name="actionSelectEditorFont">
+   <property name="icon">
+    <iconset theme="QIcon::ThemeIcon::MailMessageNew"/>
+   </property>
    <property name="text">
     <string>Select Editor Font ...</string>
    </property>
   </action>
   <action name="actionFind">
+   <property name="icon">
+    <iconset theme="QIcon::ThemeIcon::EditFind"/>
+   </property>
    <property name="text">
     <string>Find</string>
    </property>
@@ -1678,7 +1689,7 @@
  </resources>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup_region"/>
   <buttongroup name="buttonGroup_config"/>
+  <buttongroup name="buttonGroup_region"/>
  </buttongroups>
 </ui>

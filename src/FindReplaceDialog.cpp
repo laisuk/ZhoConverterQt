@@ -33,8 +33,8 @@ FindReplaceDialog::FindReplaceDialog(QPlainTextEdit *editor, QWidget *parent)
     m_find = new QLineEdit(this);
     m_find->setPlaceholderText(tr("Find in editor…"));
     m_find->setClearButtonEnabled(true);
-    m_prev = new QPushButton(tr("↑"), this);
-    m_next = new QPushButton(tr("↓"), this);
+    m_prev = new QPushButton(tr("▲"), this);
+    m_next = new QPushButton(tr("▼"), this);
     m_prev->setToolTip(tr("Previous match (Shift+F3)"));
     m_next->setToolTip(tr("Next match (F3 / Enter)"));
     m_prev->setFixedWidth(35);
