@@ -167,6 +167,8 @@ set(PROJECT_SOURCES
         src/draglistwidget.h
         src/FindReplaceDialog.h
         src/FindReplaceDialog.cpp
+        src/GoToLine.h
+        src/GoToLine.cpp
         src/texteditwidget.cpp
         src/texteditwidget.h
         src/zhoutilities.h

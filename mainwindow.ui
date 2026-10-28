@@ -383,12 +383,12 @@
        <enum>QTabWidget::TabShape::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <property name="iconSize">
        <size>
-        <width>24</width>
-        <height>24</height>
+        <width>22</width>
+        <height>22</height>
        </size>
       </property>
       <widget class="QWidget" name="tabMain">
@@ -650,8 +650,8 @@
                    </property>
                    <property name="iconSize">
                     <size>
-                     <width>18</width>
-                     <height>18</height>
+                     <width>20</width>
+                     <height>20</height>
                     </size>
                    </property>
                   </widget>
@@ -682,8 +682,8 @@
                    </property>
                    <property name="iconSize">
                     <size>
-                     <width>18</width>
-                     <height>18</height>
+                     <width>20</width>
+                     <height>20</height>
                     </size>
                    </property>
                   </widget>
@@ -960,13 +960,14 @@
                    <property name="toolTip">
                     <string>Fallback unsupported CJK characters to displayable alternatives to avoid tofu (□)</string>
                    </property>
-                   <property name="text">
-                    <string>豆</string>
+                   <property name="icon">
+                    <iconset resource="Resource.qrc">
+                     <normaloff>:/resource/detofu.png</normaloff>:/resource/detofu.png</iconset>
                    </property>
                    <property name="iconSize">
                     <size>
-                     <width>18</width>
-                     <height>18</height>
+                     <width>20</width>
+                     <height>20</height>
                     </size>
                    </property>
                   </widget>
@@ -1584,6 +1585,7 @@
     </property>
     <addaction name="actionFind"/>
     <addaction name="actionReplace"/>
+    <addaction name="actionGoToLine"/>
    </widget>
    <widget class="QMenu" name="menuView">
     <property name="title">
@@ -1675,7 +1677,7 @@
     <iconset theme="QIcon::ThemeIcon::EditFind"/>
    </property>
    <property name="text">
-    <string>Find</string>
+    <string>Find ...</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+F</string>
@@ -1683,7 +1685,7 @@
   </action>
   <action name="actionReplace">
    <property name="text">
-    <string>Replace</string>
+    <string>Replace ...</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+H</string>
@@ -1695,6 +1697,17 @@
    </property>
    <property name="text">
     <string>Show Line Numbers</string>
+   </property>
+  </action>
+  <action name="actionGoToLine">
+   <property name="icon">
+    <iconset theme="QIcon::ThemeIcon::GoNext"/>
+   </property>
+   <property name="text">
+    <string>Go to Line ...</string>
+   </property>
+   <property name="shortcut">
+    <string>Ctrl+G</string>
    </property>
   </action>
  </widget>
@@ -1716,7 +1729,7 @@
  </resources>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup_region"/>
   <buttongroup name="buttonGroup_config"/>
+  <buttongroup name="buttonGroup_region"/>
  </buttongroups>
 </ui>

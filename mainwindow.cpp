@@ -18,6 +18,7 @@
 
 #include "TextEncoding.h"
 #include "FindReplaceDialog.h"
+#include "GoToLine.h"
 
 // #include "opencc_fmmseg_capi.h"
 #include "zhoutilities.h"
@@ -160,6 +161,15 @@ MainWindow::MainWindow(QWidget *parent)
                 ui->tbDestination->setLineNumbersVisible(enabled);
 
                 QSettings().setValue("editor/showLineNumbers", enabled);
+            });
+
+    connect(ui->actionGoToLine, &QAction::triggered,
+            this, [this] {
+                auto *editor = ui->tbDestination->hasFocus()
+                                   ? ui->tbDestination
+                                   : ui->tbSource;
+
+                GoToLine::show(editor, this);
             });
 
     ui->actionConvertFilename->setChecked(
