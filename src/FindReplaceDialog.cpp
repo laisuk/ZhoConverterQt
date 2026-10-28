@@ -9,6 +9,7 @@
 #include <QSettings>
 #include <QSignalBlocker>
 #include <QTextDocument>
+#include <QTextEdit> // QPlainTextEdit also uses QTextEdit::ExtraSelection.
 #include <QTimer>
 #include <QVBoxLayout>
 
@@ -97,6 +98,7 @@ FindReplaceDialog::FindReplaceDialog(QPlainTextEdit *editor, QWidget *parent)
 
 FindReplaceDialog::~FindReplaceDialog() {
     updateSelectionStyle(false);
+    clearHighlights();
     saveSettings();
 }
 
@@ -166,6 +168,7 @@ void FindReplaceDialog::setEditor(QPlainTextEdit *editor) {
 }
 
 void FindReplaceDialog::updateTitle() {
+    if (!m_editor) return;
     const QString target = m_editor->objectName() == "tbSource"
                                ? tr("Source")
                                : tr("Destination");
@@ -173,6 +176,7 @@ void FindReplaceDialog::updateTitle() {
 }
 
 void FindReplaceDialog::openFind(const bool replaceMode) {
+    if (!m_editor) return;
     m_replaceVisible = replaceMode;
     m_replaceRow->setVisible(replaceMode);
     if (const QTextCursor cursor = m_editor->textCursor(); cursor.hasSelection() && !cursor.selectedText().contains(
@@ -205,7 +209,7 @@ QRegularExpression FindReplaceDialog::expression() const {
 }
 
 bool FindReplaceDialog::validQuery() const {
-    return !m_find->text().isEmpty() && (!m_regex->isChecked() || expression().isValid());
+    return m_editor && !m_find->text().isEmpty() && (!m_regex->isChecked() || expression().isValid());
 }
 
 QTextCursor FindReplaceDialog::search(const QTextCursor &from, const bool backward) const {
@@ -283,6 +287,7 @@ void FindReplaceDialog::replaceAll() const {
 }
 
 void FindReplaceDialog::queryChanged() const {
+    if (!m_editor) return;
     if (m_queryStart.isNull()) {
         m_queryStart = m_editor->textCursor();
         // Keep the same starting point while refining a selected match.

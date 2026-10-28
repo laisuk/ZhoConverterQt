@@ -3,7 +3,8 @@
 #include <QDialog>
 #include <QPointer>
 #include <QRegularExpression>
-#include <QTextEdit>
+#include <QTextCursor>
+#include <QTextDocument>
 
 class QCheckBox;
 class QLabel;

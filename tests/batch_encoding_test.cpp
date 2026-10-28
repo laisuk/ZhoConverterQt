@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "FindReplaceDialog.h"
+#include "texteditwidget.h"
 #include <QTimer>
 #include "DictionaryWidget.h"
 #include "DictionaryFile.h"
@@ -101,7 +102,7 @@ private slots:
         destination.setTextCursor(cursor);
         QVERIFY(timer->isActive());
         for (auto *button : dialog.findChildren<QPushButton *>()) {
-            if (button->text() == "Replace" || button->text() == "Replace All")
+            if (button->text() == "Replace Next" || button->text() == "Replace All")
                 QVERIFY(!button->isEnabled());
         }
         for (auto *editor : {&source, &destination, &source, &destination})
@@ -112,6 +113,72 @@ private slots:
         destination.appendPlainText("destination");
         QVERIFY(timer->isActive());
         dialog.close();
+    }
+
+    static void findReplaceReplacementLengths_data() {
+        QTest::addColumn<QString>("replacement");
+        QTest::newRow("shorter") << QString("x");
+        QTest::newRow("longer") << QString("long replacement");
+        QTest::newRow("empty") << QString();
+        QTest::newRow("contains-query") << QString("catcat");
+    }
+
+    static void findReplaceReplacementLengths() {
+        QFETCH(QString, replacement);
+        TextEditWidget source;
+        source.setObjectName("tbSource");
+        source.setPlainText("cat cat cat");
+        source.setLineNumbersVisible(true);
+        FindReplaceDialog dialog(&source);
+        dialog.openFind(true);
+        const auto edits = dialog.findChildren<QLineEdit *>();
+        edits[0]->setText("cat");
+        edits[1]->setText(replacement);
+        QTRY_COMPARE(source.extraSelections().size(), 3);
+        QCOMPARE(source.extraSelections().first().format.background().color(), QColor(255, 214, 102, 125));
+        QPushButton *next = nullptr;
+        for (auto *button : dialog.findChildren<QPushButton *>())
+            if (button->text() == "Replace Next") next = button;
+        QVERIFY(next);
+        next->click();
+        QCOMPARE(source.toPlainText(), replacement + " cat cat");
+        QCOMPARE(source.textCursor().selectionStart(), replacement.size() + 1);
+        QCOMPARE(source.textCursor().selectedText(), QString("cat"));
+        next->click();
+        QCOMPARE(source.toPlainText(), replacement + " " + replacement + " cat");
+        QCOMPARE(source.textCursor().selectionStart(), 2 * replacement.size() + 2);
+        source.setLineNumbersVisible(false);
+        QCOMPARE(source.textCursor().selectedText(), QString("cat"));
+        QVERIFY(!source.extraSelections().isEmpty());
+    }
+
+    static void findReplaceEditorLifetime() {
+        auto *source = new TextEditWidget;
+        source->setPlainText("cat cat");
+        FindReplaceDialog dialog(source);
+        dialog.openFind(true);
+        const auto edits = dialog.findChildren<QLineEdit *>();
+        edits[0]->setText("cat");
+        delete source; // Includes a pending query refresh and its document cursor.
+        QVERIFY(!dialog.isVisible());
+        edits[0]->setText("dog");
+        dialog.updateTitle();
+        dialog.openFind(true);
+        QVERIFY(!dialog.isVisible());
+        TextEditWidget destination;
+        destination.setPlainText("dog dog");
+        dialog.setEditor(&destination);
+        dialog.openFind();
+        QTRY_COMPARE(destination.extraSelections().size(), 2);
+        dialog.close();
+        QVERIFY(destination.extraSelections().isEmpty());
+        {
+            FindReplaceDialog temporary(&destination);
+            temporary.openFind();
+            temporary.findChildren<QLineEdit *>().first()->setText("dog");
+            QTRY_COMPARE(destination.extraSelections().size(), 2);
+        }
+        QVERIFY(destination.extraSelections().isEmpty());
     }
 
     static void findReplaceFocusAndTabs() {

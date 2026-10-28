@@ -383,7 +383,7 @@
        <enum>QTabWidget::TabShape::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <property name="iconSize">
        <size>
@@ -786,7 +786,7 @@
               <number>0</number>
              </property>
              <item>
-              <widget class="QPlainTextEdit" name="tbDestination">
+              <widget class="TextEditWidget" name="tbDestination">
                <property name="font">
                 <font>
                  <family>Microsoft YaHei</family>
@@ -1585,8 +1585,15 @@
     <addaction name="actionFind"/>
     <addaction name="actionReplace"/>
    </widget>
+   <widget class="QMenu" name="menuView">
+    <property name="title">
+     <string>View</string>
+    </property>
+    <addaction name="actionShowLineNumbers"/>
+   </widget>
    <addaction name="menuFile"/>
    <addaction name="menuEdit"/>
+   <addaction name="menuView"/>
    <addaction name="menuSettings"/>
    <addaction name="menuHelp"/>
   </widget>
@@ -1682,6 +1689,14 @@
     <string>Ctrl+H</string>
    </property>
   </action>
+  <action name="actionShowLineNumbers">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="text">
+    <string>Show Line Numbers</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
@@ -1692,7 +1707,7 @@
   </customwidget>
   <customwidget>
    <class>TextEditWidget</class>
-   <extends>QTextEdit</extends>
+   <extends>QPlainTextEdit</extends>
    <header location="global">texteditwidget.h</header>
   </customwidget>
  </customwidgets>
@@ -1701,7 +1716,7 @@
  </resources>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup_config"/>
   <buttongroup name="buttonGroup_region"/>
+  <buttongroup name="buttonGroup_config"/>
  </buttongroups>
 </ui>

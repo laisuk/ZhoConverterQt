@@ -144,6 +144,24 @@ MainWindow::MainWindow(QWidget *parent)
         }
     }
 
+    // Restore and synchronize editor line-number visibility.
+    const bool showLineNumbers =
+            settings.value("editor/showLineNumbers", false).toBool();
+
+    ui->actionShowLineNumbers->setChecked(showLineNumbers);
+
+    ui->tbSource->setLineNumbersVisible(showLineNumbers);
+    ui->tbDestination->setLineNumbersVisible(showLineNumbers);
+
+    // Apply changes to both editors and persist immediately.
+    connect(ui->actionShowLineNumbers, &QAction::toggled,
+            this, [this](const bool enabled) {
+                ui->tbSource->setLineNumbersVisible(enabled);
+                ui->tbDestination->setLineNumbersVisible(enabled);
+
+                QSettings().setValue("editor/showLineNumbers", enabled);
+            });
+
     ui->actionConvertFilename->setChecked(
         settings.value("convertFilename", false).toBool()
     );
