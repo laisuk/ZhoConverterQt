@@ -1,5 +1,8 @@
 # OfficeConverter
 
+See [the balanced performance audit](PERFORMANCE.md) for optimization decisions,
+before/after phase timings, peak-memory measurements, and benchmark instructions.
+
 `src/OfficeConverter.hpp` is a standalone C++20/libzip component. It has no Qt,
 OpenCC, FMMSEG, or Jieba dependency. The legacy Minizip implementation remains
 unchanged and unused by the Office batch route; other Minizip consumers remain.

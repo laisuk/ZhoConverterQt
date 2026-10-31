@@ -2,6 +2,7 @@
 
 #include <algorithm>
 #include <array>
+#include <cstdlib>
 #include <cstring>
 #include <filesystem>
 #include <fstream>
@@ -114,6 +115,16 @@ public:
                 ~CloseSource() { zip_source_close(source); }
             } close{out.get()};
             std::vector<uint8_t> result;
+            zip_stat_t outputStat;
+            zip_stat_init(&outputStat);
+            // This is the finalized memory source's actual size, not an
+            // untrusted entry header or an estimate from the input archive.
+            // Keep reading through EOF; metadata is only a capacity hint.
+            if (zip_source_stat(out.get(), &outputStat) == 0 && (outputStat.valid & ZIP_STAT_SIZE)) {
+                if (outputStat.size > result.max_size())
+                    throw std::runtime_error("Output ZIP exceeds buffer size range.");
+                result.reserve(static_cast<size_t>(outputStat.size));
+            }
             std::array<uint8_t, 8192> buffer{};
             for (;;) {
                 const auto n = zip_source_read(out.get(), buffer.data(), buffer.size());
@@ -387,6 +398,8 @@ private:
         return data;
     }
 
+    // ZIP_CHECKCONS checks archive structure; draining every entry additionally
+    // verifies decompression, CRC and sizes, including raw-copied resources.
     static void validate(zip_t *archive) {
         const auto count = zip_get_num_entries(archive, 0);
         if (count <= 0)
@@ -477,7 +490,8 @@ private:
                 throw std::runtime_error(zip_strerror(in));
             const auto name = normalizedName(raw);
             const auto lower = toLowerCopy(name);
-            if (target(fmt, lower)) {
+            const bool isTarget = target(fmt, lower);
+            if (isTarget) {
                 auto text = readEntry(in, i, maxTargetEntryBytes);
                 if (!validUtf8(text))
                     throw std::runtime_error("Target entry is not UTF-8: " + name);
@@ -553,7 +567,7 @@ private:
                 throw std::runtime_error(zip_strerror(in));
             // ZIP_CM_DEFAULT can otherwise deflate an originally stored entry,
             // even when the source supplies its original compressed bytes.
-            if (!target(fmt, lower) && (stat.valid & ZIP_STAT_COMP_METHOD) &&
+            if (!isTarget && (stat.valid & ZIP_STAT_COMP_METHOD) &&
                 zip_set_file_compression(out, idx, stat.comp_method, 0) < 0)
                 throw std::runtime_error(zip_strerror(out));
             if ((stat.valid & ZIP_STAT_MTIME) && zip_file_set_mtime(out, idx, stat.mtime, 0) < 0)
@@ -680,6 +694,12 @@ private:
             return;
 
         std::smatch match;
+        auto begin = xml.cbegin();
+        const auto end = xml.cend();
+        // If no font attributes match, preserve the existing buffer and skip
+        // placeholder-prefix scanning/allocation.
+        if (!std::regex_search(begin, end, match, *pattern))
+            return;
         size_t counter = 0;
         // Pick a deterministic prefix absent from the entire original XML.
         // This also excludes collisions with original font values.
@@ -689,10 +709,7 @@ private:
         std::string result;
         result.reserve(xml.size());
 
-        auto begin = xml.cbegin();
-        const auto end = xml.cend();
-
-        while (std::regex_search(begin, end, match, *pattern)) {
+        do {
             const std::string marker = prefix + std::to_string(counter++) + "__";
             fontMap[marker] = match[2].str();
 
@@ -704,7 +721,7 @@ private:
                 result.append(match[3].first, match[3].second);
 
             begin = match.suffix().first;
-        }
+        } while (std::regex_search(begin, end, match, *pattern));
 
         result.append(begin, end);
         xml = std::move(result);

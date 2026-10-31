@@ -227,6 +227,44 @@ int main() {
         require(markerFile.success && Access::unpack(read(output))[0].second == markerExpected,
                 "file font-marker collisions");
 
+        // A large, poorly compressible resource exercises output growth and
+        // raw-copy preservation through both APIs, stored and deflated.
+        std::string largeBinary(4 * 1024 * 1024, '\0');
+        uint32_t randomState = 123456789;
+        for (auto &c: largeBinary) {
+            randomState ^= randomState << 13;
+            randomState ^= randomState >> 17;
+            randomState ^= randomState << 5;
+            c = static_cast<char>(randomState);
+        }
+        for (const auto method: {ZIP_CM_STORE, ZIP_CM_DEFLATE}) {
+            const auto large = Access::make({{"word/document.xml", "<t>old</t>"},
+                                             {"media/large.bin", largeBinary}}, method, true);
+            const auto memory = OfficeConverter::ConvertBytes(large, "docx", transform, true);
+            write(input, large);
+            const auto file = OfficeConverter::Convert(utf8(input), utf8(output), "docx", transform, true);
+            require(memory.success && file.success, "large resource conversion");
+            const auto original = Access::rawEntry(large, "media/large.bin");
+            require(Access::rawEntry(memory.outputBytes, "media/large.bin") == original &&
+                    Access::rawEntry(read(output), "media/large.bin") == original,
+                    "large resource compressed bytes/metadata");
+            require(Access::unpack(memory.outputBytes) == Access::unpack(read(output)),
+                    "large resource file/memory equivalence without matching fonts");
+        }
+        // Callback expansion, contraction and empty output cannot use the
+        // input ZIP size as an exact output size.
+        for (const size_t size: {size_t{0}, size_t{1}, size_t{128 * 1024}}) {
+            const std::string text(size, 'x');
+            const TextConverter callback = [&](std::string_view) { return text; };
+            const auto bytes = Access::make({{"word/document.xml", "<t>old</t>"}});
+            const auto memory = OfficeConverter::ConvertBytes(bytes, "docx", callback, true);
+            write(input, bytes);
+            const auto file = OfficeConverter::Convert(utf8(input), utf8(output), "docx", callback, true);
+            require(memory.success && file.success && Access::unpack(memory.outputBytes)[0].second == text &&
+                    Access::unpack(memory.outputBytes) == Access::unpack(read(output)),
+                    "callback output size changes");
+        }
+
         // Composition receives content and executes normalization -> engine -> postprocess.
         std::string stages;
         TextConverter pipeline = [&](std::string_view text) {
@@ -319,6 +357,10 @@ int main() {
                 "invalid callback UTF-8");
         const auto good = Access::make({{"word/document.xml", "old"}});
         require(!OfficeConverter::ConvertBytes({}, "docx", transform).success, "empty ZIP");
+        Bytes emptyArchive(22, 0); // Valid empty central directory / EOCD.
+        emptyArchive[0] = 'P'; emptyArchive[1] = 'K'; emptyArchive[2] = 5; emptyArchive[3] = 6;
+        require(!OfficeConverter::ConvertBytes(emptyArchive, "docx", transform).success,
+                "well-formed empty archive has no targets");
         require(!OfficeConverter::ConvertBytes(Bytes{'b', 'a', 'd'}, "docx", transform).success,
                 "invalid ZIP");
         require(!OfficeConverter::ConvertBytes(good, "pdf", transform).success, "unsupported");
@@ -352,6 +394,8 @@ int main() {
                 std::ranges::search(nonTargetCorrupt, old).begin();
         require(nonTarget != nonTargetCorrupt.end(), "non-target fixture");
         *nonTarget = 'x';
+        require(!OfficeConverter::ConvertBytes(nonTargetCorrupt, "docx", transform).success,
+                "non-target CRC memory validation safety");
         write(input, nonTargetCorrupt);
         write(output, Bytes{'k', 'e', 'e', 'p'});
         auto corruptFile = OfficeConverter::Convert(utf8(input), utf8(output), "docx", transform);
@@ -369,6 +413,14 @@ int main() {
                     throw std::runtime_error("injected");
                 });
         require(!fail.success && read(output) == sentinel, "callback failure preserves destination");
+        fail = OfficeConverter::Convert(utf8(input), utf8(output), "docx", [](std::string_view) -> std::string {
+            throw 42;
+        });
+        const auto unknown = OfficeConverter::ConvertBytes(good, "docx", [](std::string_view) -> std::string {
+            throw 42;
+        });
+        require(!fail.success && read(output) == sentinel && !unknown.success && unknown.outputBytes.empty(),
+                "non-standard callback exceptions preserve destination and return no bytes");
         require(fileCount(directory) == 2, "ordinary failure cleanup");
         bool rejected = false;
         try {

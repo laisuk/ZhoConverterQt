@@ -15,3 +15,12 @@ else()
 endif()
 add_test(NAME office_converter COMMAND office_converter_tests)
 set_tests_properties(office_converter PROPERTIES TIMEOUT 30)
+
+# Explicit opt-in target, separate from regression checks and their timeout.
+add_executable(office_converter_benchmark EXCLUDE_FROM_ALL office_converter_benchmark.cpp)
+target_compile_features(office_converter_benchmark PRIVATE cxx_std_20)
+target_link_libraries(office_converter_benchmark PRIVATE libzip::zip)
+set(OFFICE_BENCHMARK_HEADER "" CACHE FILEPATH "Alternate OfficeConverter header for before/after benchmarks")
+if(OFFICE_BENCHMARK_HEADER)
+    target_compile_definitions(office_converter_benchmark PRIVATE OFFICE_CONVERTER_HEADER="${OFFICE_BENCHMARK_HEADER}")
+endif()
