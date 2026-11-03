@@ -27,4 +27,8 @@ comprehensive document conversion support.
 - Source and destination text editors with character counting and configurable fonts.
 - File conversion and output filename conversion support.
 
+### Fixed
+
+- Optimized font placeholder restoration during Office and EPUB document conversion.
+
 ---
