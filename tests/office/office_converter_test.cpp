@@ -2,6 +2,27 @@
 
 int main() {
     try {
+        const std::map<std::string, std::string> restorationFonts{
+            {"__F_O_N_T_0__", "Font A"}, {"__F_O_N_T_10__", "Font B"}
+        };
+        require(Access::restoreFonts("pre__F_O_N_T_10____F_O_N_T_0__ / __F_O_N_T_0__post", restorationFonts)
+                == "preFont BFont A / Font Apost", "known/repeated/adjacent/multidigit markers");
+        require(Access::restoreFonts(
+                    "__F_O_N_T_99__ __F_O_N_T_bad__F_O_N_T_0__ __F_O_N_T___F_O_N_T_10__ __F_O_N_T_",
+                    restorationFonts)
+                == "__F_O_N_T_99__ __F_O_N_T_badFont A __F_O_N_T_Font B __F_O_N_T_",
+                "unknown/incomplete markers preserve later known markers");
+        require(Access::restoreFonts("__F_O_N_T_0____F_O_N_T_1__",
+                    {{"__F_O_N_T_0__", "__F_O_N_T_1__"}, {"__F_O_N_T_1__", "__F_O_N_T_0__"}})
+                == "__F_O_N_T_1____F_O_N_T_0__", "nonrecursive font restoration");
+        require(Access::restoreFonts("__F_O_N_T____0__", {{"__F_O_N_T____0__", "Font"}}) == "Font",
+                "collision-free extended prefix restoration");
+        require(Access::restoreFonts("__F_O_N_T_0__", {}) == "__F_O_N_T_0__"
+                && Access::restoreFonts("", restorationFonts).empty()
+                && Access::restoreFonts("plain text", restorationFonts) == "plain text"
+                && Access::restoreFonts("__F_O_N_T_0__", {{"__F_O_N_T_0__", ""}}).empty(),
+                "empty map/input/font and plain text");
+
         fs::path directory;
         directory = fs::current_path() / ("office-tests-" + std::to_string(std::random_device{}()));
         require(fs::create_directory(directory), "test directory");

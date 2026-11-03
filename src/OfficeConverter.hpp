@@ -503,13 +503,7 @@ private:
                                   : converter(text);
                 if (!validUtf8(result))
                     throw std::runtime_error("TextConverter returned invalid UTF-8.");
-                for (const auto &[marker, original]: fonts) {
-                    size_t pos = 0;
-                    while ((pos = result.find(marker, pos)) != std::string::npos) {
-                        result.replace(pos, marker.size(), original);
-                        pos += original.size();
-                    }
-                }
+                restoreFonts(result, fonts);
                 if (spool && !result.empty()) {
                     constexpr auto maxSpoolBytes =
                             (std::min)(static_cast<uint64_t>((std::numeric_limits<zip_int64_t>::max)()),
@@ -669,6 +663,37 @@ private:
 
         out.append(last, cellXml.cend());
         return out;
+    }
+
+    // Scan only the converted input; inserted font values are never scanned again.
+    static void restoreFonts(std::string &converted, const std::map<std::string, std::string> &fonts) {
+        if (fonts.empty())
+            return;
+        // maskFont may extend the prefix with underscores to avoid literal collisions.
+        const auto &marker = fonts.begin()->first;
+        const auto prefix = marker.substr(0, marker.find_first_of("0123456789"));
+        std::string restored;
+        restored.reserve(converted.size());
+        size_t cursor = 0;
+        size_t start;
+        while ((start = converted.find(prefix, cursor)) != std::string::npos) {
+            restored.append(converted, cursor, start - cursor);
+            const auto prefixEnd = start + prefix.size();
+            const auto end = converted.find("__", prefixEnd);
+            const auto font = end == std::string::npos
+                                  ? fonts.end()
+                                  : fonts.find(converted.substr(start, end + 2 - start));
+            if (font != fonts.end()) {
+                restored.append(font->second);
+                cursor = end + 2;
+            } else {
+                // Preserve unknown/incomplete markers and allow later known ones.
+                restored.append(prefix);
+                cursor = prefixEnd;
+            }
+        }
+        restored.append(converted, cursor, std::string::npos);
+        converted.swap(restored);
     }
 
     static void maskFont(std::string &xml, const std::string &format,

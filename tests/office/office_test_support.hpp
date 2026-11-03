@@ -42,6 +42,11 @@ static std::string transform(const std::string_view text) {
 // Internal access tests the validation/replacement boundary without a public
 // fault-injection API or relying on filesystem timing.
 struct OfficeConverterTestAccess {
+    static std::string restoreFonts(std::string converted, const std::map<std::string, std::string> &fonts) {
+        OfficeConverter::restoreFonts(converted, fonts);
+        return converted;
+    }
+
     static Bytes make(const Entries &entries, const zip_int32_t compression = ZIP_CM_STORE,
                       const bool metadata = false) {
         OfficeConverter::Error error;

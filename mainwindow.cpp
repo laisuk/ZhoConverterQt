@@ -150,7 +150,6 @@ MainWindow::MainWindow(QWidget *parent)
             settings.value("editor/showLineNumbers", false).toBool();
 
     ui->actionShowLineNumbers->setChecked(showLineNumbers);
-
     ui->tbSource->setLineNumbersVisible(showLineNumbers);
     ui->tbDestination->setLineNumbersVisible(showLineNumbers);
 
@@ -175,11 +174,12 @@ MainWindow::MainWindow(QWidget *parent)
     ui->actionConvertFilename->setChecked(
         settings.value("convertFilename", false).toBool()
     );
-
-    ui->actionAutoDetectCjkBatch->setChecked(settings.value("batch/autoDetectCjkEncoding", false).toBool());
-    connect(ui->actionAutoDetectCjkBatch, &QAction::toggled, this, [](const bool checked) {
-        QSettings().setValue("batch/autoDetectCjkEncoding", checked);
-    });
+    ui->actionAutoDetectCjkBatch->setChecked(
+        settings.value("batch/autoDetectCjkEncoding", false).toBool()
+    );
+    ui->actionRememberFileDialogState->setChecked(
+        settings.value("rememberFileDialogState", false).toBool()
+    );
 
     settings.beginGroup("pdf");
     ui->actionAddPageHeader->setChecked(
@@ -197,6 +197,14 @@ MainWindow::MainWindow(QWidget *parent)
             this, [](const bool checked) {
                 QSettings sts;
                 sts.setValue("convertFilename", checked);
+            });
+    connect(ui->actionAutoDetectCjkBatch, &QAction::toggled,
+            this, [](const bool checked) {
+                QSettings().setValue("batch/autoDetectCjkEncoding", checked);
+            });
+    connect(ui->actionRememberFileDialogState, &QAction::toggled,
+            this, [](const bool checked) {
+                QSettings().setValue("rememberFileDialogState", checked);
             });
 
     connect(ui->actionAddPageHeader, &QAction::toggled,
@@ -1327,10 +1335,16 @@ void MainWindow::on_btnOpenFile_clicked() {
 
     constexpr auto settingsKey = "fileDialog/open";
 
-    const auto [directory, selectedFilter] = restoreFileDialogState(
-        settingsKey, filters);
+    QString directory;
+    QString selected_filter;
 
-    QString selected_filter = selectedFilter;
+    if (ui->actionRememberFileDialogState->isChecked()) {
+        const auto [savedDirectory, savedFilter] =
+                restoreFileDialogState(settingsKey, filters);
+
+        directory = savedDirectory;
+        selected_filter = savedFilter;
+    }
 
     const QString file_name = QFileDialog::getOpenFileName(
         this,
@@ -1343,6 +1357,7 @@ void MainWindow::on_btnOpenFile_clicked() {
     if (file_name.isEmpty())
         return;
 
+    // Always save, regardless of Remember setting.
     saveFileDialogState(
         settingsKey, file_name, selected_filter, filters);
 
@@ -1629,7 +1644,6 @@ void MainWindow::on_tbSource_textChanged() const {
         .arg(ui->tbSource->document()->toPlainText().length()));
 }
 
-
 void MainWindow::on_btnAdd_clicked() {
     const QString filters =
             tr("Text Files (*.txt);;"
@@ -1640,10 +1654,16 @@ void MainWindow::on_btnAdd_clicked() {
 
     constexpr auto settingsKey = "fileDialog/batch";
 
-    const auto [directory, selectedFilter] = restoreFileDialogState(
-        settingsKey, filters);
+    QString directory;
+    QString selected_filter;
 
-    QString selected_filter = selectedFilter;
+    if (ui->actionRememberFileDialogState->isChecked()) {
+        const auto [savedDirectory, savedFilter] =
+                restoreFileDialogState(settingsKey, filters);
+
+        directory = savedDirectory;
+        selected_filter = savedFilter;
+    }
 
     const QStringList files = QFileDialog::getOpenFileNames(
         this,
@@ -1656,6 +1676,7 @@ void MainWindow::on_btnAdd_clicked() {
     if (files.isEmpty())
         return;
 
+    // Always save the latest directory and selected filter.
     saveFileDialogState(
         settingsKey, files.first(), selected_filter, filters);
 

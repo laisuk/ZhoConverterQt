@@ -1572,6 +1572,7 @@
     </property>
     <addaction name="actionConvertFilename"/>
     <addaction name="actionAutoDetectCjkBatch"/>
+    <addaction name="actionRememberFileDialogState"/>
     <addaction name="separator"/>
     <addaction name="actionAddPageHeader"/>
     <addaction name="actionCompactPdfText"/>
@@ -1710,6 +1711,20 @@
     <string>Ctrl+G</string>
    </property>
   </action>
+  <action name="actionRememberFileDialogState">
+   <property name="checkable">
+    <bool>true</bool>
+   </property>
+   <property name="checked">
+    <bool>false</bool>
+   </property>
+   <property name="text">
+    <string>Remember File Dialog State</string>
+   </property>
+   <property name="toolTip">
+    <string>Remember File Dialog State</string>
+   </property>
+  </action>
  </widget>
  <layoutdefault spacing="6" margin="11"/>
  <customwidgets>
@@ -1729,7 +1744,7 @@
  </resources>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup_config"/>
   <buttongroup name="buttonGroup_region"/>
+  <buttongroup name="buttonGroup_config"/>
  </buttongroups>
 </ui>
