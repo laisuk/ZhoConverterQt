@@ -8,7 +8,7 @@ jobs:
     runs-on: ubuntu-24.04
 
     env:
-      QT_VERSION: 6.11.2
+      QT_VERSION: 6.11.3
       QT_ROOT: ${{ github.workspace }}/Qt
 
     steps:
@@ -25,7 +25,7 @@ jobs:
             ninja-build \
             libgl1-mesa-dev
 
-      - name: Install Qt 6.11.2
+      - name: Install Qt 6.11.3
         run: |
           python3 -m pip install --user aqtinstall
 
