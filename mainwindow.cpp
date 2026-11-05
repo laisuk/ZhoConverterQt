@@ -21,7 +21,7 @@
 #include "GoToLine.h"
 
 // #include "opencc_fmmseg_capi.h"
-#include "zhoutilities.h"
+// #include "zhoutilities.h"
 #include "draglistwidget.h"
 #include "filetype_utils.h"
 #include "OfficeConverter.hpp"
@@ -761,7 +761,7 @@ void MainWindow::onPdfExtractionFinished(const QString &text) {
         m_currentTextEncoding = QStringLiteral("UTF-8");
 
         // Run your language detection / info update
-        const int text_code = ZhoCheck(text.toStdString());
+        const int text_code = openccFmmsegHelper.zhoCheck(text.toStdString());
         update_tbSource_info(text_code);
     }
 
@@ -782,7 +782,7 @@ void MainWindow::onPdfExtractionCancelled(const QString &partialText) {
         ui->tbSource->contentFilename = m_currentPdfFilePath;
         m_currentTextEncoding = QStringLiteral("UTF-8");
 
-        const int text_code = ZhoCheck(partialText.toStdString());
+        const int text_code = openccFmmsegHelper.zhoCheck(partialText.toStdString());
         update_tbSource_info(text_code);
     }
 

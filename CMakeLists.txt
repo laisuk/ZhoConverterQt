@@ -171,8 +171,6 @@ set(PROJECT_SOURCES
         src/GoToLine.cpp
         src/texteditwidget.cpp
         src/texteditwidget.h
-        src/zhoutilities.h
-        src/zhoutilities.cpp
         pdfium/PdfExtractWorker.cpp
 )
 
