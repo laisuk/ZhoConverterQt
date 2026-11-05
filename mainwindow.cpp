@@ -701,26 +701,31 @@ void MainWindow::startPdfExtraction(const QString &filePath) {
     m_pdfThread->start();
 }
 
-// void MainWindow::onCancelPdfClicked() const {
-//     if (m_pdfWorker) {
-//         // Direct call → runs immediately in GUI thread.
-//         // requestCancel() only writes an atomic<bool>, which is thread-safe.
-//         m_pdfWorker->requestCancel();
-//
-//         m_cancelPdfButton->setEnabled(false);
-//         ui->statusBar->showMessage(tr("Cancelling PDF extraction..."));
-//     }
-// }
+
 void MainWindow::onCancelPdfClicked() const {
     if (m_pdfWorker) {
-        // Existing PDF cancel logic
-        // e.g. m_pdfWorker->requestCancel();
-        ui->statusBar->showMessage("Cancelling PDF extraction...");
+        m_pdfWorker->requestCancel();
+        m_cancelPdfButton->setEnabled(false);
+        ui->statusBar->showMessage(
+            tr("Cancelling PDF extraction..."));
     } else if (m_batchWorker) {
         m_batchWorker->requestCancel();
-        ui->statusBar->showMessage("Cancelling batch...");
+        m_cancelPdfButton->setEnabled(false);
+        ui->statusBar->showMessage(
+            tr("Cancelling batch..."));
     }
 }
+
+// void MainWindow::onCancelPdfClicked() const {
+//     if (m_pdfWorker) {
+//         // Existing PDF cancel logic
+//         // e.g. m_pdfWorker->requestCancel();
+//         ui->statusBar->showMessage("Cancelling PDF extraction...");
+//     } else if (m_batchWorker) {
+//         m_batchWorker->requestCancel();
+//         ui->statusBar->showMessage("Cancelling batch...");
+//     }
+// }
 
 void MainWindow::onPdfExtractionFinished(const QString &text) {
     // Hide cancel button
