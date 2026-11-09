@@ -187,7 +187,7 @@ set(APP_SOURCES
         # Office document conversion
         src/OfficeConverter.hpp
         src/OfficeConverterMinizip.hpp
-        src/ZipPathUtils.hpp
+#        src/ZipPathUtils.hpp
 
         # Document extraction
         src/EpubHelper.h

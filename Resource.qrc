@@ -1,5 +1,11 @@
 <RCC>
     <qresource prefix="/">
+        <file>resource/icons8-add-file-50.png</file>
+        <file>resource/icons8-advance-50.png</file>
+        <file>resource/icons8-copy-50.png</file>
+        <file>resource/icons8-find-50.png</file>
+        <file>resource/icons8-font-48.png</file>
+        <file>resource/icons8-paste-50.png</file>
         <file>resource/icons8-document-40.png</file>
         <file>resource/icons8-documents-40.png</file>
         <file>resource/icons8-opened-folder-40.png</file>
@@ -10,6 +16,8 @@
         <file>resource/icons8-eye-40.png</file>
         <file>resource/icons8-playlist-64.png</file>
         <file>resource/icons8-refresh-48.png</file>
+        <file>resource/icons8-replace-50.png</file>
+        <file>resource/icons8-save-as-50.png</file>
         <file>resource/icons8-start-48.png</file>
         <file>resource/detofu.png</file>
         <file>resource/information.png</file>
