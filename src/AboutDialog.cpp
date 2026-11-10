@@ -166,13 +166,13 @@ void AboutDialog::applyStyles() {
             font-weight: 700;
         }
         QLabel#AboutSubtitle {
-            color: rgba(0,0,0,0.62);
+            color: palette(window-text);
         }
         QLabel#AboutDesc {
-            color: rgba(0,0,0,0.75);
+            color: palette(window-text);
         }
         QTextBrowser#AboutBrowser {
-            color: rgba(0,0,0,0.85);
+            color: palette(text);
         }
     )");
 }

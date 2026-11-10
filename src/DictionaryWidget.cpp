@@ -58,9 +58,9 @@ DictionaryWidget::DictionaryWidget(QWidget *parent) : QWidget(parent) {
     // status->setMargin(6);
     status->setStyleSheet(R"(
         QLabel#dictionaryStatus {
-            color: #0F6CBD;
-            background-color: rgba(15, 108, 189, 20);
-            border: 1px solid #0F6CBD;
+            color: palette(link);
+            background-color: palette(alternate-base);
+            border: 1px solid palette(link);
             border-radius: 12px;
             padding: 4px 12px;
             font-weight: 600;
@@ -78,7 +78,7 @@ DictionaryWidget::DictionaryWidget(QWidget *parent) : QWidget(parent) {
     table->setObjectName("dictionaryRows");
     table->setStyleSheet(R"(
         QTableWidget#dictionaryRows {
-            border: 2px solid #B0B0B0;
+            border: 2px solid palette(mid);
         }
     )");
     table->setHorizontalHeaderLabels({tr("Slot"), tr("Mode"), tr("Dictionary file"), tr("Remove")});
@@ -148,7 +148,7 @@ void DictionaryWidget::addRow(const DictionaryRow &row) {
     fileLayout->addWidget(path);
     fileLayout->addWidget(browse);
     auto *remove = new QPushButton(tr("✕ Remove"), table);
-    remove->setStyleSheet("QPushButton { color: #D32F2F; }");
+    remove->setStyleSheet("QPushButton:enabled { color: palette(link); }");
     table->setCellWidget(index, 0, slot);
     table->setCellWidget(index, 1, mode);
     table->setCellWidget(index, 2, fileCell);

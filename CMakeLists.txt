@@ -155,6 +155,8 @@ include_directories(${CMAKE_CURRENT_SOURCE_DIR}/pdfium)
 # include_directories(${CMAKE_SOURCE_DIR}/minizip-reduced/include)
 
 set(PROJECT_SOURCES
+        src/Theme.cpp
+        src/Theme.h
         main.cpp
         mainwindow.ui
         mainwindow.h
@@ -187,7 +189,7 @@ set(APP_SOURCES
         # Office document conversion
         src/OfficeConverter.hpp
         src/OfficeConverterMinizip.hpp
-#        src/ZipPathUtils.hpp
+        #        src/ZipPathUtils.hpp
 
         # Document extraction
         src/EpubHelper.h
@@ -450,6 +452,7 @@ if (WIN32 AND NOT CMAKE_CROSSCOMPILING AND DEPLOY_WITH_WINDEPLOYQT)
         execute_process(
             COMMAND \"${WINDEPLOYQT_EXECUTABLE}\"
                 --release
+                --force
                 --no-translations
                 --no-quick-import
                 --compiler-runtime

@@ -1,5 +1,6 @@
 #include "mainwindow.h"
 #include "DictionaryWidget.h"
+#include "Theme.h"
 #include "DictionaryFile.h"
 #include "ui_mainwindow.h"
 #include "QClipboard"
@@ -8,6 +9,8 @@
 #include <QFontDialog>
 #include <QSettings>
 #include "QMessageBox"
+#include "QAction"
+#include "QActionGroup"
 #include <QFileInfo>
 #include <QMenu>
 #include <QMouseEvent>
@@ -136,6 +139,37 @@ MainWindow::MainWindow(QWidget *parent)
     // opencc_set_parallel(openccInstance, false);
 
     QSettings settings;
+
+    // Settings -> Theme
+    auto *themeGroup = new QActionGroup(this);
+    themeGroup->setExclusive(true);
+
+    auto addMode = [&](const QString &label, const int mode) {
+        auto *action = ui->menuTheme->addAction(label);
+        action->setCheckable(true);
+        action->setData(mode);
+        themeGroup->addAction(action);
+        connect(action, &QAction::triggered, this, [mode](bool) {
+            QSettings sts;
+            sts.setValue("theme/themeMode", mode);
+            Theme::apply(mode);
+        });
+        return action;
+    };
+
+    addMode(tr("Follow System"), 0);
+    addMode(tr("Light"), 1);
+    addMode(tr("Dark"), 2);
+
+    const int savedMode = settings.value("theme/themeMode", 0).toInt();
+    const int mode = (savedMode >= 0 && savedMode <= 2) ? savedMode : 0;
+
+    for (QAction *action: themeGroup->actions()) {
+        if (action->data().toInt() == mode) {
+            action->setChecked(true);
+            break;
+        }
+    }
 
     if (const QString fontString = settings.value("editor/font").toString();
         !fontString.isEmpty()) {

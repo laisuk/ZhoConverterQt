@@ -751,7 +751,7 @@
                    </property>
                    <property name="icon">
                     <iconset resource="Resource.qrc">
-                     <normaloff>:/resource/icons8-paste-50.png</normaloff>:/resource/icons8-paste-50.png</iconset>
+                     <normaloff>:/resource/icons8-paste-40.png</normaloff>:/resource/icons8-paste-40.png</iconset>
                    </property>
                   </widget>
                  </item>
@@ -1033,7 +1033,7 @@
                    </property>
                    <property name="icon">
                     <iconset resource="Resource.qrc">
-                     <normaloff>:/resource/icons8-copy-50.png</normaloff>:/resource/icons8-copy-50.png</iconset>
+                     <normaloff>:/resource/icons8-documents-40.png</normaloff>:/resource/icons8-documents-40.png</iconset>
                    </property>
                   </widget>
                  </item>
@@ -1135,7 +1135,7 @@
               </property>
               <property name="icon">
                <iconset resource="Resource.qrc">
-                <normaloff>:/resource/icons8-plus-50.png</normaloff>:/resource/icons8-plus-50.png</iconset>
+                <normaloff>:/resource/icons8-plus-40.png</normaloff>:/resource/icons8-plus-40.png</iconset>
               </property>
              </widget>
             </item>
@@ -1155,7 +1155,7 @@
               </property>
               <property name="icon">
                <iconset resource="Resource.qrc">
-                <normaloff>:/resource/icons8-minus-50.png</normaloff>:/resource/icons8-minus-50.png</iconset>
+                <normaloff>:/resource/icons8-minus-40.png</normaloff>:/resource/icons8-minus-40.png</iconset>
               </property>
              </widget>
             </item>
@@ -1444,7 +1444,13 @@
           </property>
           <property name="icon">
            <iconset resource="Resource.qrc">
-            <normaloff>:/resource/icons8-save-as-50.png</normaloff>:/resource/icons8-save-as-50.png</iconset>
+            <normaloff>:/resource/icons8-save-as-40.png</normaloff>:/resource/icons8-save-as-40.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>22</width>
+            <height>22</height>
+           </size>
           </property>
          </widget>
         </item>
@@ -1474,8 +1480,8 @@
           </property>
           <property name="iconSize">
            <size>
-            <width>14</width>
-            <height>14</height>
+            <width>16</width>
+            <height>16</height>
            </size>
           </property>
          </widget>
@@ -1508,7 +1514,13 @@
           </property>
           <property name="icon">
            <iconset resource="Resource.qrc">
-            <normaloff>:/resource/icons8-add-file-50.png</normaloff>:/resource/icons8-add-file-50.png</iconset>
+            <normaloff>:/resource/icons8-add-file-40.png</normaloff>:/resource/icons8-add-file-40.png</iconset>
+          </property>
+          <property name="iconSize">
+           <size>
+            <width>22</width>
+            <height>22</height>
+           </size>
           </property>
          </widget>
         </item>
@@ -1577,6 +1589,15 @@
     <property name="title">
      <string>Settings</string>
     </property>
+    <widget class="QMenu" name="menuTheme">
+     <property name="title">
+      <string>Theme</string>
+     </property>
+     <property name="icon">
+      <iconset resource="Resource.qrc">
+       <normaloff>:/resource/icons8-theme-40.png</normaloff>:/resource/icons8-theme-40.png</iconset>
+     </property>
+    </widget>
     <addaction name="actionConvertFilename"/>
     <addaction name="actionAutoDetectCjkBatch"/>
     <addaction name="actionRememberFileDialogState"/>
@@ -1586,6 +1607,8 @@
     <addaction name="actionAutoReflow"/>
     <addaction name="separator"/>
     <addaction name="actionSelectEditorFont"/>
+    <addaction name="separator"/>
+    <addaction name="menuTheme"/>
    </widget>
    <widget class="QMenu" name="menuEdit">
     <property name="title">
@@ -1675,7 +1698,7 @@
   <action name="actionSelectEditorFont">
    <property name="icon">
     <iconset resource="Resource.qrc">
-     <normaloff>:/resource/icons8-font-48.png</normaloff>:/resource/icons8-font-48.png</iconset>
+     <normaloff>:/resource/icons8-font-40.png</normaloff>:/resource/icons8-font-40.png</iconset>
    </property>
    <property name="text">
     <string>Select Editor Font...</string>
@@ -1684,7 +1707,7 @@
   <action name="actionFind">
    <property name="icon">
     <iconset resource="Resource.qrc">
-     <normaloff>:/resource/icons8-find-50.png</normaloff>:/resource/icons8-find-50.png</iconset>
+     <normaloff>:/resource/icons8-search-40.png</normaloff>:/resource/icons8-search-40.png</iconset>
    </property>
    <property name="text">
     <string>Find...</string>
@@ -1696,7 +1719,7 @@
   <action name="actionReplace">
    <property name="icon">
     <iconset resource="Resource.qrc">
-     <normaloff>:/resource/icons8-replace-50.png</normaloff>:/resource/icons8-replace-50.png</iconset>
+     <normaloff>:/resource/icons8-find-and-replace-40.png</normaloff>:/resource/icons8-find-and-replace-40.png</iconset>
    </property>
    <property name="text">
     <string>Replace...</string>
@@ -1716,7 +1739,7 @@
   <action name="actionGoToLine">
    <property name="icon">
     <iconset resource="Resource.qrc">
-     <normaloff>:/resource/icons8-advance-50.png</normaloff>:/resource/icons8-advance-50.png</iconset>
+     <normaloff>:/resource/icons8-advance-40.png</normaloff>:/resource/icons8-advance-40.png</iconset>
    </property>
    <property name="text">
     <string>Go to Line ...</string>
