@@ -653,8 +653,8 @@
                    </property>
                    <property name="iconSize">
                     <size>
-                     <width>20</width>
-                     <height>20</height>
+                     <width>22</width>
+                     <height>22</height>
                     </size>
                    </property>
                   </widget>
@@ -685,8 +685,8 @@
                    </property>
                    <property name="iconSize">
                     <size>
-                     <width>20</width>
-                     <height>20</height>
+                     <width>22</width>
+                     <height>22</height>
                     </size>
                    </property>
                   </widget>
@@ -708,13 +708,13 @@
                   <widget class="QPushButton" name="btnClearTbSource">
                    <property name="maximumSize">
                     <size>
-                     <width>30</width>
+                     <width>35</width>
                      <height>16777215</height>
                     </size>
                    </property>
                    <property name="font">
                     <font>
-                     <pointsize>10</pointsize>
+                     <pointsize>11</pointsize>
                      <bold>true</bold>
                     </font>
                    </property>
@@ -723,6 +723,12 @@
                    </property>
                    <property name="text">
                     <string>AC</string>
+                   </property>
+                   <property name="iconSize">
+                    <size>
+                     <width>22</width>
+                     <height>22</height>
+                    </size>
                    </property>
                   </widget>
                  </item>
@@ -741,7 +747,7 @@
                     </font>
                    </property>
                    <property name="toolTip">
-                    <string>Paste clipboard contents to Source box</string>
+                    <string>Paste clipboard text contents to Source box</string>
                    </property>
                    <property name="whatsThis">
                     <string/>
@@ -751,7 +757,13 @@
                    </property>
                    <property name="icon">
                     <iconset resource="Resource.qrc">
-                     <normaloff>:/resource/icons8-paste-40.png</normaloff>:/resource/icons8-paste-40.png</iconset>
+                     <normaloff>:/resource/icons8-paste-as-text-40.png</normaloff>:/resource/icons8-paste-as-text-40.png</iconset>
+                   </property>
+                   <property name="iconSize">
+                    <size>
+                     <width>20</width>
+                     <height>20</height>
+                    </size>
                    </property>
                   </widget>
                  </item>
@@ -993,13 +1005,13 @@
                   <widget class="QPushButton" name="btnClearTbDestination">
                    <property name="maximumSize">
                     <size>
-                     <width>30</width>
+                     <width>35</width>
                      <height>16777215</height>
                     </size>
                    </property>
                    <property name="font">
                     <font>
-                     <pointsize>10</pointsize>
+                     <pointsize>11</pointsize>
                      <bold>true</bold>
                     </font>
                    </property>
@@ -1008,6 +1020,12 @@
                    </property>
                    <property name="text">
                     <string>AC</string>
+                   </property>
+                   <property name="iconSize">
+                    <size>
+                     <width>22</width>
+                     <height>22</height>
+                    </size>
                    </property>
                   </widget>
                  </item>
@@ -1034,6 +1052,12 @@
                    <property name="icon">
                     <iconset resource="Resource.qrc">
                      <normaloff>:/resource/icons8-documents-40.png</normaloff>:/resource/icons8-documents-40.png</iconset>
+                   </property>
+                   <property name="iconSize">
+                    <size>
+                     <width>20</width>
+                     <height>20</height>
+                    </size>
                    </property>
                   </widget>
                  </item>
@@ -1480,8 +1504,8 @@
           </property>
           <property name="iconSize">
            <size>
-            <width>16</width>
-            <height>16</height>
+            <width>20</width>
+            <height>20</height>
            </size>
           </property>
          </widget>
@@ -1742,7 +1766,7 @@
      <normaloff>:/resource/icons8-advance-40.png</normaloff>:/resource/icons8-advance-40.png</iconset>
    </property>
    <property name="text">
-    <string>Go to Line ...</string>
+    <string>Go to Line...</string>
    </property>
    <property name="shortcut">
     <string>Ctrl+G</string>
@@ -1781,7 +1805,7 @@
  </resources>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup_region"/>
   <buttongroup name="buttonGroup_config"/>
+  <buttongroup name="buttonGroup_region"/>
  </buttongroups>
 </ui>
