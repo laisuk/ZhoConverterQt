@@ -1518,12 +1518,12 @@
           </property>
           <property name="icon">
            <iconset resource="Resource.qrc">
-            <normaloff>:/resource/exit.png</normaloff>:/resource/exit.png</iconset>
+            <normaloff>:/resource/icons8-exit-48.png</normaloff>:/resource/icons8-exit-48.png</iconset>
           </property>
           <property name="iconSize">
            <size>
-            <width>20</width>
-            <height>20</height>
+            <width>21</width>
+            <height>21</height>
            </size>
           </property>
          </widget>
@@ -1676,7 +1676,7 @@
   <action name="actionExit">
    <property name="icon">
     <iconset resource="Resource.qrc">
-     <normaloff>:/resource/exit.png</normaloff>:/resource/exit.png</iconset>
+     <normaloff>:/resource/icons8-exit-48.png</normaloff>:/resource/icons8-exit-48.png</iconset>
    </property>
    <property name="text">
     <string>Exit</string>
@@ -1823,7 +1823,7 @@
  </resources>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup_region"/>
   <buttongroup name="buttonGroup_config"/>
+  <buttongroup name="buttonGroup_region"/>
  </buttongroups>
 </ui>
