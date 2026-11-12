@@ -386,7 +386,7 @@
        <enum>QTabWidget::TabShape::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>1</number>
+       <number>0</number>
       </property>
       <property name="iconSize">
        <size>
@@ -1569,7 +1569,7 @@
         <item>
          <widget class="QLabel" name="lblFileName">
           <property name="sizePolicy">
-           <sizepolicy hsizetype="Maximum" vsizetype="Preferred">
+           <sizepolicy hsizetype="Ignored" vsizetype="Preferred">
             <horstretch>0</horstretch>
             <verstretch>0</verstretch>
            </sizepolicy>
@@ -1823,7 +1823,7 @@
  </resources>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup_region"/>
   <buttongroup name="buttonGroup_config"/>
+  <buttongroup name="buttonGroup_region"/>
  </buttongroups>
 </ui>
