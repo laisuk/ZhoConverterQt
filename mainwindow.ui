@@ -386,7 +386,7 @@
        <enum>QTabWidget::TabShape::Rounded</enum>
       </property>
       <property name="currentIndex">
-       <number>0</number>
+       <number>1</number>
       </property>
       <property name="iconSize">
        <size>
@@ -1237,8 +1237,8 @@
               </property>
               <property name="iconSize">
                <size>
-                <width>21</width>
-                <height>21</height>
+                <width>22</width>
+                <height>22</height>
                </size>
               </property>
              </widget>
@@ -1289,7 +1289,7 @@
               </property>
               <property name="maximumSize">
                <size>
-                <width>30</width>
+                <width>40</width>
                 <height>16777215</height>
                </size>
               </property>
@@ -1307,12 +1307,12 @@
               </property>
               <property name="icon">
                <iconset resource="Resource.qrc">
-                <normaloff>:/resource/icons8-opened-folder-40.png</normaloff>:/resource/icons8-opened-folder-40.png</iconset>
+                <normaloff>:/resource/icons8-opened-folder-48.png</normaloff>:/resource/icons8-opened-folder-48.png</iconset>
               </property>
               <property name="iconSize">
                <size>
-                <width>21</width>
-                <height>21</height>
+                <width>22</width>
+                <height>22</height>
                </size>
               </property>
              </widget>
