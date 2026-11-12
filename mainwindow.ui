@@ -681,7 +681,7 @@
                    </property>
                    <property name="icon">
                     <iconset resource="Resource.qrc">
-                     <normaloff>:/resource/icons8-playlist-64.png</normaloff>:/resource/icons8-playlist-64.png</iconset>
+                     <normaloff>:/resource/icons8-playlist-48.png</normaloff>:/resource/icons8-playlist-48.png</iconset>
                    </property>
                    <property name="iconSize">
                     <size>
@@ -1823,7 +1823,7 @@
  </resources>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup_config"/>
   <buttongroup name="buttonGroup_region"/>
+  <buttongroup name="buttonGroup_config"/>
  </buttongroups>
 </ui>
