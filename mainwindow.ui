@@ -390,8 +390,8 @@
       </property>
       <property name="iconSize">
        <size>
-        <width>22</width>
-        <height>22</height>
+        <width>24</width>
+        <height>24</height>
        </size>
       </property>
       <widget class="QWidget" name="tabMain">
@@ -403,7 +403,7 @@
        </property>
        <attribute name="icon">
         <iconset resource="Resource.qrc">
-         <normaloff>:/resource/icons8-document-40.png</normaloff>:/resource/icons8-document-40.png</iconset>
+         <normaloff>:/resource/icons8-document-48.png</normaloff>:/resource/icons8-document-48.png</iconset>
        </attribute>
        <attribute name="title">
         <string>Main Convert （单项）</string>
@@ -757,7 +757,7 @@
                    </property>
                    <property name="icon">
                     <iconset resource="Resource.qrc">
-                     <normaloff>:/resource/icons8-paste-as-text-40.png</normaloff>:/resource/icons8-paste-as-text-40.png</iconset>
+                     <normaloff>:/resource/icons8-paste-50.png</normaloff>:/resource/icons8-paste-50.png</iconset>
                    </property>
                    <property name="iconSize">
                     <size>
@@ -1051,7 +1051,7 @@
                    </property>
                    <property name="icon">
                     <iconset resource="Resource.qrc">
-                     <normaloff>:/resource/icons8-documents-40.png</normaloff>:/resource/icons8-documents-40.png</iconset>
+                     <normaloff>:/resource/icons8-copy-50.png</normaloff>:/resource/icons8-copy-50.png</iconset>
                    </property>
                    <property name="iconSize">
                     <size>
@@ -1075,7 +1075,7 @@
       <widget class="QWidget" name="tabBatch">
        <attribute name="icon">
         <iconset resource="Resource.qrc">
-         <normaloff>:/resource/icons8-documents-40.png</normaloff>:/resource/icons8-documents-40.png</iconset>
+         <normaloff>:/resource/icons8-documents-48.png</normaloff>:/resource/icons8-documents-48.png</iconset>
        </attribute>
        <attribute name="title">
         <string>Batch Convert （批量）</string>
@@ -1159,7 +1159,13 @@
               </property>
               <property name="icon">
                <iconset resource="Resource.qrc">
-                <normaloff>:/resource/icons8-plus-40.png</normaloff>:/resource/icons8-plus-40.png</iconset>
+                <normaloff>:/resource/icons8-plus-48.png</normaloff>:/resource/icons8-plus-48.png</iconset>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>21</width>
+                <height>21</height>
+               </size>
               </property>
              </widget>
             </item>
@@ -1179,7 +1185,13 @@
               </property>
               <property name="icon">
                <iconset resource="Resource.qrc">
-                <normaloff>:/resource/icons8-minus-40.png</normaloff>:/resource/icons8-minus-40.png</iconset>
+                <normaloff>:/resource/icons8-minus-48.png</normaloff>:/resource/icons8-minus-48.png</iconset>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>21</width>
+                <height>21</height>
+               </size>
               </property>
              </widget>
             </item>
@@ -1187,7 +1199,7 @@
              <widget class="QPushButton" name="btnListClear">
               <property name="font">
                <font>
-                <pointsize>10</pointsize>
+                <pointsize>11</pointsize>
                 <bold>true</bold>
                </font>
               </property>
@@ -1196,6 +1208,12 @@
               </property>
               <property name="text">
                <string>AC</string>
+              </property>
+              <property name="iconSize">
+               <size>
+                <width>21</width>
+                <height>21</height>
+               </size>
               </property>
              </widget>
             </item>
@@ -1215,12 +1233,12 @@
               </property>
               <property name="icon">
                <iconset resource="Resource.qrc">
-                <normaloff>:/resource/icons8-eye-40.png</normaloff>:/resource/icons8-eye-40.png</iconset>
+                <normaloff>:/resource/visual.png</normaloff>:/resource/visual.png</iconset>
               </property>
               <property name="iconSize">
                <size>
-                <width>20</width>
-                <height>20</height>
+                <width>21</width>
+                <height>21</height>
                </size>
               </property>
              </widget>
@@ -1293,8 +1311,8 @@
               </property>
               <property name="iconSize">
                <size>
-                <width>20</width>
-                <height>20</height>
+                <width>21</width>
+                <height>21</height>
                </size>
               </property>
              </widget>
@@ -1309,7 +1327,7 @@
               </property>
               <property name="font">
                <font>
-                <pointsize>10</pointsize>
+                <pointsize>11</pointsize>
                 <bold>true</bold>
                </font>
               </property>
@@ -1330,7 +1348,7 @@
       <widget class="QWidget" name="tabDictionary">
        <attribute name="icon">
         <iconset resource="Resource.qrc">
-         <normaloff>:/resource/icons8-bookmark-40.png</normaloff>:/resource/icons8-bookmark-40.png</iconset>
+         <normaloff>:/resource/icons8-open-book-48.png</normaloff>:/resource/icons8-open-book-48.png</iconset>
        </attribute>
        <attribute name="title">
         <string>Dictionary（字典）</string>
@@ -1468,7 +1486,7 @@
           </property>
           <property name="icon">
            <iconset resource="Resource.qrc">
-            <normaloff>:/resource/icons8-save-as-40.png</normaloff>:/resource/icons8-save-as-40.png</iconset>
+            <normaloff>:/resource/icons8-save-as-50.png</normaloff>:/resource/icons8-save-as-50.png</iconset>
           </property>
           <property name="iconSize">
            <size>
@@ -1538,7 +1556,7 @@
           </property>
           <property name="icon">
            <iconset resource="Resource.qrc">
-            <normaloff>:/resource/icons8-add-file-40.png</normaloff>:/resource/icons8-add-file-40.png</iconset>
+            <normaloff>:/resource/icons8-add-file-50.png</normaloff>:/resource/icons8-add-file-50.png</iconset>
           </property>
           <property name="iconSize">
            <size>
@@ -1731,7 +1749,7 @@
   <action name="actionFind">
    <property name="icon">
     <iconset resource="Resource.qrc">
-     <normaloff>:/resource/icons8-search-40.png</normaloff>:/resource/icons8-search-40.png</iconset>
+     <normaloff>:/resource/icons8-find-50.png</normaloff>:/resource/icons8-find-50.png</iconset>
    </property>
    <property name="text">
     <string>Find...</string>
@@ -1743,7 +1761,7 @@
   <action name="actionReplace">
    <property name="icon">
     <iconset resource="Resource.qrc">
-     <normaloff>:/resource/icons8-find-and-replace-40.png</normaloff>:/resource/icons8-find-and-replace-40.png</iconset>
+     <normaloff>:/resource/icons8-replace-50.png</normaloff>:/resource/icons8-replace-50.png</iconset>
    </property>
    <property name="text">
     <string>Replace...</string>
@@ -1763,7 +1781,7 @@
   <action name="actionGoToLine">
    <property name="icon">
     <iconset resource="Resource.qrc">
-     <normaloff>:/resource/icons8-advance-40.png</normaloff>:/resource/icons8-advance-40.png</iconset>
+     <normaloff>:/resource/icons8-advance-50.png</normaloff>:/resource/icons8-advance-50.png</iconset>
    </property>
    <property name="text">
     <string>Go to Line...</string>
@@ -1805,7 +1823,7 @@
  </resources>
  <connections/>
  <buttongroups>
-  <buttongroup name="buttonGroup_config"/>
   <buttongroup name="buttonGroup_region"/>
+  <buttongroup name="buttonGroup_config"/>
  </buttongroups>
 </ui>
