@@ -4,7 +4,9 @@
         <file>resource/icons8-advance-50.png</file>
         <file>resource/icons8-copy-50.png</file>
         <file>resource/icons8-exit-48.png</file>
+        <file>resource/icons8-f-48.png</file>
         <file>resource/icons8-find-50.png</file>
+        <file>resource/icons8-folder-48.png</file>
         <file>resource/icons8-font-40.png</file>
         <file>resource/icons8-paste-50.png</file>
         <file>resource/icons8-document-48.png</file>
@@ -15,6 +17,7 @@
         <file>resource/icons8-bookmark-40.png</file>
         <file>resource/icons8-plus-48.png</file>
         <file>resource/icons8-minus-48.png</file>
+        <file>resource/icons8-numbers-48.png</file>
         <file>resource/visual.png</file>
         <file>resource/icons8-playlist-48.png</file>
         <file>resource/icons8-refresh-48.png</file>
@@ -22,6 +25,7 @@
         <file>resource/icons8-find-50.png</file>
         <file>resource/icons8-save-as-50.png</file>
         <file>resource/icons8-start-48.png</file>
+        <file>resource/icons8-txt-48.png</file>
         <file>resource/icons8-theme-40.png</file>
         <file>resource/detofu.png</file>
         <file>resource/information.png</file>

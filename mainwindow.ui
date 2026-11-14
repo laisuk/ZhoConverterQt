@@ -1695,6 +1695,10 @@
    <property name="checkable">
     <bool>true</bool>
    </property>
+   <property name="icon">
+    <iconset resource="Resource.qrc">
+     <normaloff>:/resource/icons8-f-48.png</normaloff>:/resource/icons8-f-48.png</iconset>
+   </property>
    <property name="text">
     <string>Convert Filename (batch)</string>
    </property>
@@ -1702,6 +1706,10 @@
   <action name="actionAutoDetectCjkBatch">
    <property name="checkable">
     <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="Resource.qrc">
+     <normaloff>:/resource/icons8-txt-48.png</normaloff>:/resource/icons8-txt-48.png</iconset>
    </property>
    <property name="text">
     <string>Auto-Detect CJK Text Encoding (Batch)</string>
@@ -1732,6 +1740,10 @@
    </property>
    <property name="checked">
     <bool>true</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="Resource.qrc">
+     <normaloff>:/resource/icons8-refresh-48.png</normaloff>:/resource/icons8-refresh-48.png</iconset>
    </property>
    <property name="text">
     <string>Auto-Reflow PDF Text</string>
@@ -1774,6 +1786,10 @@
    <property name="checkable">
     <bool>true</bool>
    </property>
+   <property name="icon">
+    <iconset resource="Resource.qrc">
+     <normaloff>:/resource/icons8-numbers-48.png</normaloff>:/resource/icons8-numbers-48.png</iconset>
+   </property>
    <property name="text">
     <string>Show Line Numbers</string>
    </property>
@@ -1796,6 +1812,10 @@
    </property>
    <property name="checked">
     <bool>false</bool>
+   </property>
+   <property name="icon">
+    <iconset resource="Resource.qrc">
+     <normaloff>:/resource/icons8-folder-48.png</normaloff>:/resource/icons8-folder-48.png</iconset>
    </property>
    <property name="text">
     <string>Remember File Dialog State</string>
