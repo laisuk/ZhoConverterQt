@@ -4,6 +4,7 @@
 #include <QSettings>
 #include <QStyleHints>
 #include <QWidget>
+#include <QPainter>
 
 namespace {
     int currentMode = 0;
@@ -83,4 +84,27 @@ void Theme::initialize() {
                          }
                      }, Qt::QueuedConnection);
     apply(QSettings().value("theme/themeMode", 0).toInt());
+}
+
+QIcon Theme::recolorIcon(const QIcon &icon) {
+    if (icon.isNull())
+        return icon;
+
+    const QColor color =
+            QApplication::palette().color(QPalette::ButtonText);
+
+    QIcon result;
+
+    for (const QSize &size: icon.availableSizes()) {
+        QPixmap pixmap = icon.pixmap(size);
+
+        QPainter painter(&pixmap);
+        painter.setCompositionMode(QPainter::CompositionMode_SourceIn);
+        painter.fillRect(pixmap.rect(), color);
+        painter.end();
+
+        result.addPixmap(pixmap);
+    }
+
+    return result;
 }
