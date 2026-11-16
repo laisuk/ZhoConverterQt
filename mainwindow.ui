@@ -136,7 +136,7 @@
         </item>
         <item>
          <property name="text">
-          <string>s2twp (简 -&gt; 繁/台/惯)</string>
+          <string>s2twp (简 -&gt; 繁/台/区)</string>
          </property>
         </item>
         <item>
@@ -146,7 +146,7 @@
         </item>
         <item>
          <property name="text">
-          <string>s2hkp (简 -&gt; 繁/港/惯)</string>
+          <string>s2hkp (简 -&gt; 繁/港/区)</string>
          </property>
         </item>
         <item>
@@ -161,7 +161,7 @@
         </item>
         <item>
          <property name="text">
-          <string>t2twp (繁 -&gt; 繁/台/惯)</string>
+          <string>t2twp (繁 -&gt; 繁/台/区)</string>
          </property>
         </item>
         <item>
@@ -171,7 +171,7 @@
         </item>
         <item>
          <property name="text">
-          <string>t2hkp (繁 -&gt; 繁/港/惯)</string>
+          <string>t2hkp (繁 -&gt; 繁/港/区)</string>
          </property>
         </item>
         <item>
@@ -181,7 +181,7 @@
         </item>
         <item>
          <property name="text">
-          <string>tw2sp (繁/台 -&gt; 简/惯)</string>
+          <string>tw2sp (繁/台 -&gt; 简/区)</string>
          </property>
         </item>
         <item>
@@ -191,7 +191,7 @@
         </item>
         <item>
          <property name="text">
-          <string>tw2tp (繁/台 -&gt; 繁/惯)</string>
+          <string>tw2tp (繁/台 -&gt; 繁/区)</string>
          </property>
         </item>
         <item>
@@ -201,7 +201,7 @@
         </item>
         <item>
          <property name="text">
-          <string>hk2sp (繁/港/惯 -&gt; 简)</string>
+          <string>hk2sp (繁/港/区 -&gt; 简)</string>
          </property>
         </item>
         <item>
@@ -211,7 +211,7 @@
         </item>
         <item>
          <property name="text">
-          <string>hk2tp (繁/港/惯 -&gt; 繁)</string>
+          <string>hk2tp (繁/港/区 -&gt; 繁)</string>
          </property>
         </item>
         <item>
