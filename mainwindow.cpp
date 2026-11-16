@@ -134,7 +134,7 @@ MainWindow::MainWindow(QWidget *parent)
         }
     });
     ui->tabWidget->setCurrentIndex(0);
-    this->resize(1000, 700);
+    this->resize(1000, 720);
     // openccInstance = opencc_new();
     // opencc_set_parallel(openccInstance, false);
 
@@ -407,11 +407,11 @@ void MainWindow::on_actionAbout_triggered() {
 #endif
 
     QString cppVersion;
-    if (cppStandard >= 202302L)
+    if constexpr (cppStandard >= 202302L)
         cppVersion = "C++23";
-    if (cppStandard >= 202002L)
+    if constexpr (cppStandard >= 202002L)
         cppVersion = "C++20";
-    else if (cppStandard >= 201703L)
+    else if constexpr (cppStandard >= 201703L)
         cppVersion = "C++17";
     else
         cppVersion = QString::number(cppStandard);
@@ -525,7 +525,7 @@ bool MainWindow::loadTextFile(const QString &filePath,
 
         if (actualEncoding.isEmpty()) {
             /// Encoding could not be identified reliably.
-            // Preserve the fallback behaviour so the file can still
+            // Preserve the fallback behavior so the file can still
             // be opened and manually reloaded with another encoding.
             actualEncoding = QStringLiteral("UTF-8");
         }
@@ -766,7 +766,7 @@ void MainWindow::onPdfExtractionFinished(const QString &text) {
     m_cancelPdfButton->hide();
 
     // Put extracted text into tbSource (Even if partially canceled,
-    // but our worker only emits finished() when not cancelled)
+    // but our worker only emits finished() when not canceled)
     QString isReflow = "";
     if (!text.isEmpty()) {
         if (ui->actionAutoReflow->isChecked()) {
