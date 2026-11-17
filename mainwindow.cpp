@@ -287,8 +287,9 @@ MainWindow::MainWindow(QWidget *parent)
                 showFindReplace(true);
             });
 
+    ui->lblFileName->setMouseTracking(true);
+    ui->lblFileName->setCursor(Qt::ArrowCursor);
     ui->lblFileName->installEventFilter(this);
-    ui->lblFileName->setCursor(Qt::PointingHandCursor);
     ui->lblFileName->setToolTip(
         tr("Click to reload the current text file using a different encoding."));
 
@@ -457,11 +458,60 @@ void MainWindow::on_actionSelectEditorFont_triggered() {
 }
 
 bool MainWindow::eventFilter(QObject *watched, QEvent *event) {
-    if (watched == ui->lblFileName &&
-        event->type() == QEvent::MouseButtonPress) {
-        if (const auto *mouseEvent = dynamic_cast<QMouseEvent *>(event); mouseEvent->button() == Qt::LeftButton) {
-            showEncodingMenu();
-            return true;
+    if (watched == ui->lblFileName) {
+        auto *label = ui->lblFileName;
+
+        if (event->type() == QEvent::Leave) {
+            label->setCursor(Qt::ArrowCursor);
+        }
+
+        if (event->type() == QEvent::MouseMove ||
+            event->type() == QEvent::MouseButtonPress) {
+            const auto *mouseEvent = dynamic_cast<QMouseEvent *>(event);
+            const QString text = label->text();
+            const QRect rect = label->contentsRect();
+            const int textWidth = label->fontMetrics().horizontalAdvance(text);
+            const Qt::Alignment alignment = label->alignment();
+
+            int textX = rect.left() + label->margin();
+
+            if (alignment & Qt::AlignRight) {
+                textX = rect.right() - label->margin() - textWidth + 1;
+            } else if (alignment & Qt::AlignHCenter) {
+                textX = rect.left() + (rect.width() - textWidth) / 2;
+            }
+
+            const qreal x = mouseEvent->position().x();
+
+            const bool overText =
+                    !text.isEmpty() &&
+                    x >= textX &&
+                    x < textX + textWidth;
+
+            const QString filePath = ui->tbSource->contentFilename;
+
+            const bool canReload =
+                    !filePath.isEmpty() &&
+                    isEncodingSelectableFile(filePath) &&
+                    ui->tabWidget->currentIndex() == 0 &&
+                    !m_pdfThread &&
+                    !m_batchThread;
+
+            if (event->type() == QEvent::MouseMove) {
+                label->setCursor(
+                    overText && canReload
+                        ? Qt::PointingHandCursor
+                        : Qt::ArrowCursor
+                );
+            }
+
+            if (event->type() == QEvent::MouseButtonPress &&
+                mouseEvent->button() == Qt::LeftButton &&
+                overText &&
+                canReload) {
+                showEncodingMenu();
+                return true;
+            }
         }
     }
 
@@ -567,7 +617,7 @@ bool MainWindow::loadTextFile(const QString &filePath,
 
     ui->tbSource->document()->setPlainText(contents);
     ui->tbSource->contentFilename = filePath;
-    ui->lblFileName->setCursor(Qt::PointingHandCursor);
+    // ui->lblFileName->setCursor(Qt::PointingHandCursor);
     ui->lblFileName->setToolTip(
         tr("Click to reload the current text file using a different encoding."));
 
